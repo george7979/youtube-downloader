@@ -2,7 +2,7 @@
 
 Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficznym.
 
-![YouTube Downloader Interface](pics/youtube-downloader-1.png)
+![YouTube Downloader Interface v1.0.1](pics/youtube-downloader-2.png)
 
 ## 🆕 Wersja 1.0.1 - Nowe funkcje!
 
