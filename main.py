@@ -22,8 +22,9 @@ def main():
         
         # Utworzenie głównego okna aplikacji
         root = tk.Tk()
-        root.title("YouTube Downloader")
-        root.geometry("800x600")
+        root.title("YouTube Downloader v1.0.1")
+        root.geometry("1100x1000")
+        root.minsize(1000, 900)
         root.resizable(True, True)
         
         # Inicjalizacja GUI

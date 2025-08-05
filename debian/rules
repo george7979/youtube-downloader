@@ -1,0 +1,38 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	dh_auto_install
+	mkdir -p debian/youtube-downloader/usr/bin
+	mkdir -p debian/youtube-downloader/usr/share/youtube-downloader
+	mkdir -p debian/youtube-downloader/usr/share/applications
+	mkdir -p debian/youtube-downloader/usr/share/icons/hicolor/256x256/apps
+	mkdir -p debian/youtube-downloader/usr/share/icons/hicolor/128x128/apps
+	mkdir -p debian/youtube-downloader/usr/share/icons/hicolor/64x64/apps
+	mkdir -p debian/youtube-downloader/usr/share/icons/hicolor/48x48/apps
+	mkdir -p debian/youtube-downloader/usr/share/icons/hicolor/32x32/apps
+	mkdir -p debian/youtube-downloader/usr/share/icons/hicolor/16x16/apps
+	
+	cp -r *.py debian/youtube-downloader/usr/share/youtube-downloader/
+	cp requirements.txt debian/youtube-downloader/usr/share/youtube-downloader/
+	cp README.md debian/youtube-downloader/usr/share/youtube-downloader/
+	cp plan.md debian/youtube-downloader/usr/share/youtube-downloader/
+	
+	-cp icons/youtube-downloader-256.png debian/youtube-downloader/usr/share/icons/hicolor/256x256/apps/youtube-downloader.png 2>/dev/null || true
+	-cp icons/youtube-downloader-128.png debian/youtube-downloader/usr/share/icons/hicolor/128x128/apps/youtube-downloader.png 2>/dev/null || true
+	-cp icons/youtube-downloader-64.png debian/youtube-downloader/usr/share/icons/hicolor/64x64/apps/youtube-downloader.png 2>/dev/null || true
+	-cp icons/youtube-downloader-48.png debian/youtube-downloader/usr/share/icons/hicolor/48x48/apps/youtube-downloader.png 2>/dev/null || true
+	-cp icons/youtube-downloader-32.png debian/youtube-downloader/usr/share/icons/hicolor/32x32/apps/youtube-downloader.png 2>/dev/null || true
+	-cp icons/youtube-downloader-16.png debian/youtube-downloader/usr/share/icons/hicolor/16x16/apps/youtube-downloader.png 2>/dev/null || true
+	
+	-cp -r pics debian/youtube-downloader/usr/share/youtube-downloader/ 2>/dev/null || true
+	
+	echo '#!/bin/bash' > debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'cd /usr/share/youtube-downloader' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'python3 main.py "$$@"' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	chmod +x debian/youtube-downloader/usr/bin/youtube-downloader
+	
+	cp debian/youtube-downloader.desktop debian/youtube-downloader/usr/share/applications/

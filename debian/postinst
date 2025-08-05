@@ -1,0 +1,29 @@
+#!/bin/bash
+
+if command -v update-icon-caches >/dev/null 2>&1; then
+    update-icon-caches /usr/share/icons/hicolor
+fi
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database /usr/share/applications
+fi
+
+if [ -n "$SUDO_USER" ]; then
+    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+else
+    USER_HOME=$HOME
+fi
+
+if [ -n "$USER_HOME" ] && [ -d "$USER_HOME" ]; then
+    mkdir -p "$USER_HOME/.youtube-downloader" || true
+fi
+
+chmod 755 /usr/bin/youtube-downloader || true
+chmod 644 /usr/share/applications/youtube-downloader.desktop || true
+
+echo "YouTube Downloader został zainstalowany pomyślnie!"
+echo "Możesz uruchomić aplikację komendą: youtube-downloader"
+echo "Lub znajdź ją w menu aplikacji systemu."
+echo ""
+echo "⚠️  UWAGA PRAWNA: Ta aplikacja jest narzędziem technicznym."
+echo "Użytkownik odpowiada za legalność pobierania treści."

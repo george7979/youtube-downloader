@@ -1,0 +1,9 @@
+youtube-downloader (1.0.1) unstable; urgency=medium
+
+  * Wersja 1.0.1 - poprawki budowania pakietu .deb
+  * Aplikacja do pobierania filmów z YouTube z interfejsem graficznym
+  * Zawiera wszystkie funkcje: pobieranie MP4/MP3, wybór rozdzielczości
+  * Obsługa błędów i progress bar
+  * Automatyczne sanityzowanie nazw plików
+
+ -- Jerzy Maczewski <jerzy.maczewski@example.com>  Mon, 05 Aug 2024 19:40:00 +0000

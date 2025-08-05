@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Minimalny skrypt postrm - usuwa katalog konfiguracyjny użytkownika
+echo "Usuwanie plików konfiguracyjnych YouTube Downloader..."
+
+# Usuwanie plików konfiguracyjnych użytkownika przy każdej deinstalacji
+# Próbuj różne sposoby znalezienia katalogu domowego użytkownika
+USER_HOME=""
+
+# Sprawdź SUDO_USER
+if [ -n "$SUDO_USER" ]; then
+    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6 2>/dev/null || echo "")
+fi
+
+# Jeśli nie znaleziono, spróbuj z LOGNAME
+if [ -z "$USER_HOME" ] && [ -n "$LOGNAME" ]; then
+    USER_HOME=$(getent passwd "$LOGNAME" | cut -d: -f6 2>/dev/null || echo "")
+fi
+
+# Jeśli nadal nie znaleziono, użyj domyślnego katalogu
+if [ -z "$USER_HOME" ]; then
+    USER_HOME="/home/jerzymaczewski"
+fi
+
+if [ -n "$USER_HOME" ] && [ -d "$USER_HOME/.youtube-downloader" ]; then
+    echo "Usuwanie katalogu konfiguracyjnego użytkownika..."
+    rm -rf "$USER_HOME/.youtube-downloader" || true
+fi
+
+echo "YouTube Downloader został usunięty z systemu." 

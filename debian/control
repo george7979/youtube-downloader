@@ -1,0 +1,28 @@
+Source: youtube-downloader
+Section: utils
+Priority: optional
+Maintainer: Jerzy Maczewski <jerzy.maczewski@example.com>
+Build-Depends: debhelper (>= 11), dh-python, python3-all
+Standards-Version: 4.5.1
+
+Package: youtube-downloader
+Architecture: all
+Depends: python3, python3-tk, python3-pip
+Description: YouTube Downloader - Aplikacja do pobierania filmów z YouTube
+ Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficznym.
+ .
+ Funkcje:
+  - Pobieranie filmów z YouTube z wklejanego linku
+  - Pobieranie z dźwiękiem w formacie MP4
+  - Wybór rozdzielczości przed pobieraniem
+  - Wybór katalogu docelowego dla pobieranych plików
+  - Walidacja linku YouTube przed pobieraniem
+  - Progress bar pokazujący postęp pobierania
+  - Obsługa błędów (film nie istnieje, brak połączenia)
+  - Informacje o filmie (tytuł, czas trwania, dostępne formaty)
+  - Przycisk "Anuluj" podczas pobierania
+  - Możliwość pobierania tylko audio (MP3)
+  - Automatyczne sanityzowanie nazw plików
+ .
+ ⚠️ UWAGA PRAWNA: Ta aplikacja jest narzędziem technicznym. 
+ Użytkownik odpowiada za legalność pobierania treści.
