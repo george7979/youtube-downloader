@@ -4,6 +4,19 @@ Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficzn
 
 ![YouTube Downloader Interface](pics/youtube-downloader-1.png)
 
+## 🆕 Wersja 1.0.1 - Nowe funkcje!
+
+### ✨ **Nowy interfejs użytkownika:**
+- 🎨 **Kompletnie przeprojektowany UI** - bardziej intuicyjny i nowoczesny design
+- 📊 **Sortowanie rozdzielczości** - lista formatów jest teraz posortowana od najwyższej do najniższej jakości
+- 📁 **Zapamiętywanie ścieżki zapisu** - aplikacja pamięta ostatnio wybrany katalog do zapisu plików
+- ⚡ **Zoptymalizowana wydajność** - szybsze ładowanie i responsywność
+
+### 📦 **Gotowy pakiet .deb:**
+- 🎯 **Łatwa instalacja** - `sudo dpkg -i youtube-downloader_1.0.1_all.deb`
+- 🔧 **Automatyczna deinstalacja** - `sudo dpkg -r youtube-downloader`
+- 🛡️ **Bezpieczne skrypty** - kompatybilne z Chrome OS i Linux
+
 ## ⚠️ UWAGA PRAWNA
 
 **Ta aplikacja jest narzędziem technicznym. Użytkownik odpowiada za legalność pobierania treści.**
@@ -36,8 +49,8 @@ Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficzn
 ### ✅ Podstawowe funkcje:
 - **Pobieranie filmów** z YouTube z wklejanego linku
 - **Pobieranie z dźwiękiem** w formacie MP4
-- **Wybór rozdzielczości** przed pobieraniem
-- **Wybór katalogu docelowego** dla pobieranych plików
+- **Wybór rozdzielczości** przed pobieraniem (posortowane od najwyższej do najniższej)
+- **Wybór katalogu docelowego** dla pobieranych plików (zapamiętywanie ostatniej ścieżki)
 - **Walidacja linku YouTube** przed pobieraniem
 - **Progress bar** pokazujący postęp pobierania
 - **Obsługa błędów** (film nie istnieje, brak połączenia)
@@ -46,6 +59,11 @@ Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficzn
 - **Możliwość pobierania tylko audio** (MP3)
 - **Automatyczne sanityzowanie nazw plików**
 
+### 🆕 Nowe funkcje w wersji 1.0.1:
+- 🎨 **Nowy interfejs użytkownika** - bardziej intuicyjny i nowoczesny design
+- 📊 **Sortowanie rozdzielczości** - lista formatów posortowana od najwyższej do najniższej jakości
+- 📁 **Zapamiętywanie ścieżki zapisu** - aplikacja pamięta ostatnio wybrany katalog
+- ⚡ **Zoptymalizowana wydajność** - szybsze ładowanie i responsywność
 
 ## 🛠️ Instalacja
 
@@ -56,10 +74,10 @@ Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficzn
 ### Instalacja z pakietu .deb (zalecana)
 ```bash
 # Pobierz pakiet .deb z GitHub Releases:
-# https://github.com/george7979/youtube-downloader/releases/tag/v1.0.0
+# https://github.com/george7979/youtube-downloader/releases/tag/v1.0.1
 
 # Zainstaluj pakiet
-sudo dpkg -i youtube-downloader_1.0.0_all.deb
+sudo dpkg -i youtube-downloader_1.0.1_all.deb
 
 # Jeśli są problemy z pakietem .deb (nie z aplikacją)
 sudo apt-get install -f
@@ -80,11 +98,8 @@ youtube-downloader
 # Usuń pakiet .deb (automatycznie usuwa środowisko wirtualne)
 sudo dpkg -r youtube-downloader
 
-# Lub ręcznie (jeśli pakiet nie został usunięty)
-sudo rm -rf /usr/share/youtube-downloader
-sudo rm -f /usr/bin/youtube-downloader
-sudo rm -f /usr/share/applications/youtube-downloader.desktop
-rm -rf ~/.youtube-downloader
+# Lub całkowita deinstalacja z plikami konfiguracyjnymi
+sudo dpkg -P youtube-downloader
 ```
 
 **Uwaga:** Deinstalacja automatycznie usuwa izolowane środowisko wirtualne aplikacji, więc nie wpływa na inne aplikacje w systemie.
@@ -113,8 +128,8 @@ Kliknij przycisk "Sprawdź" aby pobrać informacje o filmie.
 
 ### 4. Wybierz opcje
 - **Tylko audio**: Zaznacz checkbox dla pobierania tylko MP3
-- **Rozdzielczość**: Wybierz z listy rozwijanej
-- **Folder**: Kliknij "Wybierz folder" aby wybrać katalog docelowy
+- **Rozdzielczość**: Wybierz z posortowanej listy (od najwyższej do najniższej jakości)
+- **Folder**: Kliknij "Wybierz folder" aby wybrać katalog docelowy (aplikacja zapamięta ostatnią ścieżkę)
 
 ### 5. Pobierz
 Kliknij "Pobierz" aby rozpocząć pobieranie.
