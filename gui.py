@@ -89,7 +89,7 @@ class YouTubeDownloaderGUI:
             
     def setup_window(self):
         """Konfiguracja głównego okna"""
-        self.root.title("YouTube Downloader v1.0.1")
+        self.root.title("YouTube Downloader v1.0.2")
         self.root.geometry("1100x1000")
         self.root.minsize(1000, 900)
         
@@ -342,7 +342,7 @@ class YouTubeDownloaderGUI:
         status_frame.columnconfigure(0, weight=1)
         
         # Status aplikacji
-        app_status = ttk.Label(status_frame, text="YouTube Downloader v1.0.1", 
+        app_status = ttk.Label(status_frame, text="YouTube Downloader v1.0.2", 
                               font=('Segoe UI', 8), foreground='#7f8c8d')
         app_status.grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
         

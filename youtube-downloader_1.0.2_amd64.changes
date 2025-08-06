@@ -21,11 +21,11 @@ Changes:
    * Brak zależności systemowych - pakiet samodzielny
    * Poprawiona obsługa błędów i walidacja środowiska
 Checksums-Sha1:
- bf0b93362f9bd1bf5e60080e88a5ef1e22a6ebb2 100322 youtube-downloader_1.0.2_all.deb
- e8582e996511f14d97fb010c269d45c7d8b1d08b 6515 youtube-downloader_1.0.2_amd64.buildinfo
+ a89233a2efea8808e77313780dfea41581fae388 100432 youtube-downloader_1.0.2_all.deb
+ ea9b91ebda24d32293bcf58f706a02893e0bd0bb 6515 youtube-downloader_1.0.2_amd64.buildinfo
 Checksums-Sha256:
- ff5ac801df6fc273f9dd6546cec627150a967fe546cc6346990ae3243d5eda56 100322 youtube-downloader_1.0.2_all.deb
- 6853e90fe9e3f5d5c33f56cf6fb6d803bcb51f53d3c99cd115fbc6b037189ac6 6515 youtube-downloader_1.0.2_amd64.buildinfo
+ f658bc68e626a077d9ae09ad3203757935b1de00d7ab3577a60fdb4ac87be0ec 100432 youtube-downloader_1.0.2_all.deb
+ d6f9769cebcce071eef9ae65554f8babc8bc55279e585e36f32ad725f1d48f5a 6515 youtube-downloader_1.0.2_amd64.buildinfo
 Files:
- 0696d71f81b2f758d31da438d32bc4b9 100322 utils optional youtube-downloader_1.0.2_all.deb
- b0611ea97100218ad982260fe6582a8f 6515 utils optional youtube-downloader_1.0.2_amd64.buildinfo
+ 5b2b38df5103a426a8e20eed014baea3 100432 utils optional youtube-downloader_1.0.2_all.deb
+ 39406988759e4393abfb1c41a69f0447 6515 utils optional youtube-downloader_1.0.2_amd64.buildinfo

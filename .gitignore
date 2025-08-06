@@ -27,6 +27,14 @@ debian/files
 debian/youtube-downloader.substvars
 debian/youtube-downloader/
 
+# Pliki DEB (tylko w prywatnym repo)
+*.deb
+*.buildinfo
+*.changes
+
+# Cursor rules (tylko w prywatnym repo)
+cursorrules
+
 # Virtual Environment
 .venv/
 venv/
@@ -56,8 +64,6 @@ Thumbs.db
 # Timestamp files
 *-timestamps.md
 
-
-
 # Python cache files
 __pycache__/
 *.pyc
@@ -80,6 +86,3 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
-# Cursor rules (tylko w prywatnym repo)
-cursorrules
