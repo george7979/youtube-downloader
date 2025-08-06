@@ -31,8 +31,25 @@ override_dh_auto_install:
 	-cp -r pics debian/youtube-downloader/usr/share/youtube-downloader/ 2>/dev/null || true
 	
 	echo '#!/bin/bash' > debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '# Sprawdź czy środowisko wirtualne istnieje' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'if [ ! -d "/usr/share/youtube-downloader/venv" ]; then' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '    echo "❌ Błąd: Środowisko wirtualne nie istnieje"' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '    echo "Spróbuj przeinstalować aplikację: sudo apt reinstall youtube-downloader"' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '    exit 1' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'fi' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '# Sprawdź czy główny plik aplikacji istnieje' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'if [ ! -f "/usr/share/youtube-downloader/main.py" ]; then' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '    echo "❌ Błąd: Plik aplikacji nie istnieje"' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '    echo "Spróbuj przeinstalować aplikację: sudo apt reinstall youtube-downloader"' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '    exit 1' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'fi' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '# Aktywuj środowisko wirtualne i uruchom aplikację' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'source /usr/share/youtube-downloader/venv/bin/activate' >> debian/youtube-downloader/usr/bin/youtube-downloader
 	echo 'cd /usr/share/youtube-downloader' >> debian/youtube-downloader/usr/bin/youtube-downloader
-	echo 'python3 main.py "$$@"' >> debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'python main.py' >> debian/youtube-downloader/usr/bin/youtube-downloader
 	chmod +x debian/youtube-downloader/usr/bin/youtube-downloader
 	
 	cp debian/youtube-downloader.desktop debian/youtube-downloader/usr/share/applications/

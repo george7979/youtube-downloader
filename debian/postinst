@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# Sprawdź czy Python jest zainstalowany
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "🐍 Python3 nie jest zainstalowany. Instalowanie..."
+    apt-get update
+    apt-get install -y python3 python3-venv python3-pip
+fi
+
+# Utwórz środowisko wirtualne
+echo "🔧 Tworzenie środowiska wirtualnego..."
+python3 -m venv /usr/share/youtube-downloader/venv
+
+# Zainstaluj zależności w środowisku wirtualnym
+echo "📚 Instalowanie zależności w środowisku wirtualnym..."
+/usr/share/youtube-downloader/venv/bin/pip install yt-dlp
+
+# Aktualizuj ikony i desktop
 if command -v update-icon-caches >/dev/null 2>&1; then
     update-icon-caches /usr/share/icons/hicolor
 fi
@@ -8,6 +24,7 @@ if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database /usr/share/applications
 fi
 
+# Utwórz katalog logów użytkownika
 if [ -n "$SUDO_USER" ]; then
     USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
 else
@@ -21,9 +38,10 @@ fi
 chmod 755 /usr/bin/youtube-downloader || true
 chmod 644 /usr/share/applications/youtube-downloader.desktop || true
 
-echo "YouTube Downloader został zainstalowany pomyślnie!"
-echo "Możesz uruchomić aplikację komendą: youtube-downloader"
-echo "Lub znajdź ją w menu aplikacji systemu."
+echo "✅ YouTube Downloader v1.0.2 został zainstalowany pomyślnie!"
+echo "🚀 Uruchom aplikację komendą: youtube-downloader"
+echo "📱 Lub znajdź w menu aplikacji systemu"
+echo "📝 Logi będą zapisywane w: ~/.youtube-downloader/youtube_downloader.log"
 echo ""
 echo "⚠️  UWAGA PRAWNA: Ta aplikacja jest narzędziem technicznym."
 echo "Użytkownik odpowiada za legalność pobierania treści."

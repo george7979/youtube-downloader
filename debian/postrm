@@ -1,30 +1,26 @@
 #!/bin/bash
 
-# Minimalny skrypt postrm - usuwa katalog konfiguracyjny użytkownika
-echo "Usuwanie plików konfiguracyjnych YouTube Downloader..."
+echo "🗑️ Usuwanie plików aplikacji..."
 
-# Usuwanie plików konfiguracyjnych użytkownika przy każdej deinstalacji
-# Próbuj różne sposoby znalezienia katalogu domowego użytkownika
-USER_HOME=""
+# Usuń pliki aplikacji
+rm -rf /usr/share/youtube-downloader || true
+rm -f /usr/bin/youtube-downloader || true
+rm -f /usr/share/applications/youtube-downloader.desktop || true
 
-# Sprawdź SUDO_USER
+# Usuń ikony
+rm -f /usr/share/icons/hicolor/*/apps/youtube-downloader.png || true
+
+# Usuń logi użytkownika
 if [ -n "$SUDO_USER" ]; then
-    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6 2>/dev/null || echo "")
+    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+else
+    USER_HOME=$HOME
 fi
 
-# Jeśli nie znaleziono, spróbuj z LOGNAME
-if [ -z "$USER_HOME" ] && [ -n "$LOGNAME" ]; then
-    USER_HOME=$(getent passwd "$LOGNAME" | cut -d: -f6 2>/dev/null || echo "")
-fi
-
-# Jeśli nadal nie znaleziono, użyj domyślnego katalogu
-if [ -z "$USER_HOME" ]; then
-    USER_HOME="/home/jerzymaczewski"
-fi
-
-if [ -n "$USER_HOME" ] && [ -d "$USER_HOME/.youtube-downloader" ]; then
-    echo "Usuwanie katalogu konfiguracyjnego użytkownika..."
+if [ -n "$USER_HOME" ] && [ -d "$USER_HOME" ]; then
     rm -rf "$USER_HOME/.youtube-downloader" || true
 fi
 
-echo "YouTube Downloader został usunięty z systemu." 
+echo "✅ Deinstalacja zakończona!"
+echo "🐍 Środowisko wirtualne zostało usunięte"
+echo "📝 Systemowy Python pozostaje nienaruszony" 
