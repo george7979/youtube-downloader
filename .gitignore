@@ -80,3 +80,6 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# Cursor rules (tylko w prywatnym repo)
+cursorrules
