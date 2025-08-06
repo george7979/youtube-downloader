@@ -20,6 +20,13 @@ wheels/
 .installed.cfg
 *.egg
 
+# Debian build artifacts (ignoruj pliki tymczasowe, ale nie pliki DEB)
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/youtube-downloader.substvars
+debian/youtube-downloader/
+
 # Virtual Environment
 .venv/
 venv/

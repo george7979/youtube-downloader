@@ -7,6 +7,13 @@ if ! command -v python3 >/dev/null 2>&1; then
     apt-get install -y python3 python3-venv python3-pip
 fi
 
+# Sprawdź czy python3-venv jest zainstalowany
+if ! python3 -c "import venv" 2>/dev/null; then
+    echo "🐍 Pakiet python3-venv nie jest zainstalowany. Instalowanie..."
+    apt-get update
+    apt-get install -y python3-venv
+fi
+
 # Utwórz środowisko wirtualne
 echo "🔧 Tworzenie środowiska wirtualnego..."
 python3 -m venv /usr/share/youtube-downloader/venv
