@@ -62,6 +62,9 @@ class YouTubeDownloader:
                     'preferredcodec': 'mp3',
                     'preferredquality': '192',
                 }]
+                # Sprawdź czy ffmpeg jest dostępny
+                if not os.system('which ffmpeg >/dev/null 2>&1') == 0:
+                    raise Exception("FFmpeg nie jest zainstalowany. Konwersja MP3 wymaga FFmpeg.")
             else:
                 if resolution:
                     ydl_opts['format'] = f'best[height<={resolution.split("x")[1]}]/best'

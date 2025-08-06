@@ -40,6 +40,13 @@ if ! python3 -c "import pip" 2>/dev/null; then
     curl https://bootstrap.pypa.io/get-pip.py | python3
 fi
 
+# Sprawdź czy ffmpeg jest dostępny
+if ! command -v ffmpeg >/dev/null 2>&1; then
+    echo "⚠️ ffmpeg nie jest dostępny"
+    echo "Instalowanie ffmpeg w tle..."
+    nohup bash -c 'sleep 5; apt-get update && apt-get install -y ffmpeg' >/dev/null 2>&1 &
+fi
+
 # Utwórz środowisko wirtualne z lepszą obsługą błędów
 echo "🔧 Tworzenie środowiska wirtualnego..."
 

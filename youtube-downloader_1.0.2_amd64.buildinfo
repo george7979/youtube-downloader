@@ -4,14 +4,14 @@ Binary: youtube-downloader
 Architecture: all
 Version: 1.0.2
 Checksums-Md5:
- 5b2b38df5103a426a8e20eed014baea3 100432 youtube-downloader_1.0.2_all.deb
+ c27d5e23f3773675f486fa1da2deb807 100556 youtube-downloader_1.0.2_all.deb
 Checksums-Sha1:
- a89233a2efea8808e77313780dfea41581fae388 100432 youtube-downloader_1.0.2_all.deb
+ 426036a78fd5a06fa187dfefe97b6a2b93368531 100556 youtube-downloader_1.0.2_all.deb
 Checksums-Sha256:
- f658bc68e626a077d9ae09ad3203757935b1de00d7ab3577a60fdb4ac87be0ec 100432 youtube-downloader_1.0.2_all.deb
+ c3d22d91609ea739643df60d8359d07f2810163459229208ede7e3ef913ff68c 100556 youtube-downloader_1.0.2_all.deb
 Build-Origin: Ubuntu
 Build-Architecture: amd64
-Build-Date: Thu, 07 Aug 2025 00:23:09 +0200
+Build-Date: Thu, 07 Aug 2025 01:04:20 +0200
 Build-Tainted-By:
  merged-usr-via-aliased-dirs
 Installed-Build-Depends:
