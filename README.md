@@ -4,18 +4,19 @@ Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficzn
 
 ![YouTube Downloader Interface v1.0.1](pics/youtube-downloader-2.png)
 
-## 🆕 Wersja 1.0.1 - Nowe funkcje!
+## ✨ Funkcje aplikacji
 
-### ✨ **Nowy interfejs użytkownika:**
-- 🎨 **Kompletnie przeprojektowany UI** - bardziej intuicyjny i nowoczesny design
-- 📊 **Sortowanie rozdzielczości** - lista formatów jest teraz posortowana od najwyższej do najniższej jakości
-- 📁 **Zapamiętywanie ścieżki zapisu** - aplikacja pamięta ostatnio wybrany katalog do zapisu plików
-- ⚡ **Zoptymalizowana wydajność** - szybsze ładowanie i responsywność
+### 🎯 **Główne możliwości:**
+- 📥 **Pobieranie filmów** - z YouTube i innych platform
+- 🎨 **Intuicyjny interfejs** - łatwy w użyciu GUI
+- 📊 **Wybór jakości** - sortowanie formatów od najwyższej do najniższej
+- 📁 **Zapamiętywanie ścieżki** - aplikacja pamięta ostatnio wybrany katalog
+- ⚡ **Szybka praca** - zoptymalizowana wydajność
 
 ### 📦 **Gotowy pakiet .deb:**
-- 🎯 **Łatwa instalacja** - `sudo dpkg -i youtube-downloader_1.0.1_all.deb`
+- 🎯 **Łatwa instalacja** - `sudo dpkg -i youtube-downloader_1.0.2_all.deb`
 - 🔧 **Automatyczna deinstalacja** - `sudo dpkg -r youtube-downloader`
-- 🛡️ **Bezpieczne skrypty** - kompatybilne z Chrome OS i Linux
+- 🛡️ **Bezpieczne skrypty** - kompatybilne z różnymi dystrybucjami Linux
 
 ## ⚠️ UWAGA PRAWNA
 
@@ -59,8 +60,8 @@ Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficzn
 - **Możliwość pobierania tylko audio** (MP3)
 - **Automatyczne sanityzowanie nazw plików**
 
-### 🆕 Nowe funkcje w wersji 1.0.1:
-- 🎨 **Nowy interfejs użytkownika** - bardziej intuicyjny i nowoczesny design
+### 🎯 **Funkcje aplikacji:**
+- 🎨 **Intuicyjny interfejs** - łatwy w użyciu GUI
 - 📊 **Sortowanie rozdzielczości** - lista formatów posortowana od najwyższej do najniższej jakości
 - 📁 **Zapamiętywanie ścieżki zapisu** - aplikacja pamięta ostatnio wybrany katalog
 - ⚡ **Zoptymalizowana wydajność** - szybsze ładowanie i responsywność
@@ -68,22 +69,23 @@ Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficzn
 ## 🛠️ Instalacja
 
 ### Wymagania systemowe:
-- Linux (Ubuntu, Debian, Chrome OS)
-- Python 3.8+ (wbudowany w większość systemów Linux)
+- Linux (Ubuntu, Debian, Chrome OS, inne dystrybucje)
+- Python 3.8+ (automatycznie instalowany przez pakiet)
+- Dostęp do internetu (do pobierania filmów)
 
 ### Instalacja z pakietu .deb (zalecana)
 ```bash
 # Pobierz pakiet .deb z GitHub Releases:
-# https://github.com/george7979/youtube-downloader/releases/tag/v1.0.1
+# https://github.com/george7979/youtube-downloader/releases/tag/v1.0.2
 
 # Zainstaluj pakiet
-sudo dpkg -i youtube-downloader_1.0.1_all.deb
+sudo dpkg -i youtube-downloader_1.0.2_all.deb
 
 # Jeśli są problemy z pakietem .deb (nie z aplikacją)
 sudo apt-get install -f
 ```
 
-**Uwaga:** Prosta aplikacja używa izolowanego środowiska wirtualnego, więc nie wpływa na inne aplikacje w systemie. Wszystkie zależności Python są instalowane w środowisku wirtualnym aplikacji.
+**Uwaga:** Pakiet automatycznie sprawdza i instaluje wymagane zależności systemowe. Wszystkie zależności Python są instalowane w izolowanym środowisku wirtualnym aplikacji, więc nie wpływa na inne aplikacje w systemie.
 
 ### Uruchomienie po instalacji
 ```bash
@@ -103,6 +105,23 @@ sudo dpkg -P youtube-downloader
 ```
 
 **Uwaga:** Deinstalacja automatycznie usuwa izolowane środowisko wirtualne aplikacji, więc nie wpływa na inne aplikacje w systemie.
+
+## 🔧 Rozwiązywanie problemów
+
+### Jeśli aplikacja nie uruchamia się:
+```bash
+# Przeinstaluj aplikację
+sudo apt reinstall youtube-downloader
+```
+
+### Jeśli instalacja się nie powiedzie:
+```bash
+# Napraw zależności
+sudo apt-get install -f
+
+# Spróbuj ponownie
+sudo dpkg -i youtube-downloader_1.0.2_all.deb
+```
 
 ## 🚀 Uruchomienie
 

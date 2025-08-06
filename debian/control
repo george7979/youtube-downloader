@@ -7,7 +7,7 @@ Standards-Version: 4.5.1
 
 Package: youtube-downloader
 Architecture: all
-Depends: python3 | python3-minimal
+Depends: python3 | python3-minimal, python3-tk
 Description: YouTube Downloader - Aplikacja do pobierania filmów z YouTube
  Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficznym.
  .
