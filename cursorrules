@@ -196,6 +196,87 @@ youtube-downloader
 sudo dpkg --purge youtube-downloader
 ```
 
+## 📤 ZASADY WYPYCHANIA DO REPOZYTORIÓW
+
+### 🎯 **DWA REPOZYTORIA:**
+
+#### **1. PUBLICZNE REPO (origin)**
+- **URL:** https://github.com/george7979/youtube-downloader
+- **Cel:** Kod źródłowy dla społeczności
+- **Zawartość:** Kod Python, skrypty Debian, dokumentacja
+- **NIE zawiera:** Pliki DEB, buildinfo, changes
+
+#### **2. PRYWATNE REPO (private)**
+- **URL:** https://github.com/george7979/youtube-downloader-private
+- **Cel:** Pełny projekt roboczy
+- **Zawartość:** Wszystko + pliki DEB, buildinfo, changes
+
+### 📋 **ZASADY WYPYCHANIA:**
+
+#### **Do publicznego repo (origin):**
+```bash
+# 1. Upewnij się że .gitignore ignoruje pliki DEB
+# 2. Dodaj zmiany
+git add .
+
+# 3. Commit
+git commit -m "Opis zmian"
+
+# 4. Push do publicznego
+git push origin master
+```
+
+#### **Do prywatnego repo (private):**
+```bash
+# 1. Dodaj WSZYSTKO (łącznie z plikami DEB)
+git add .
+
+# 2. Commit
+git commit -m "Opis zmian + pliki DEB"
+
+# 3. Push do prywatnego
+git push private master
+```
+
+### 🔄 **PRACA Z DWOMA REPO:**
+
+#### **Nowa funkcja:**
+```bash
+# 1. Rozwij funkcję
+# 2. Testuj
+# 3. Zbuduj DEB
+sudo dpkg-buildpackage -b -us -uc
+mv ../youtube-downloader_* .
+
+# 4. Push do prywatnego (z DEB)
+git add .
+git commit -m "Nowa funkcja + DEB"
+git push private master
+
+# 5. Push do publicznego (bez DEB)
+git reset HEAD *.deb *.buildinfo *.changes
+git add .
+git commit -m "Nowa funkcja"
+git push origin master
+```
+
+#### **Aktualizacja .gitignore:**
+```bash
+# 1. Edytuj .gitignore
+# 2. Push do obu repo
+git add .gitignore
+git commit -m "Aktualizacja .gitignore"
+git push origin master
+git push private master
+```
+
+### ⚠️ **WAŻNE ZASADY:**
+- **Publiczne repo:** Tylko kod źródłowy
+- **Prywatne repo:** Wszystko + artefakty budowania
+- **Zawsze pytaj:** Przed push do publicznego repo
+- **Testuj:** Przed push do publicznego repo
+- **Dokumentuj:** Zmiany w cursorrules
+
 ### 📋 STRUKTURA PAKIETU DEB:
 ```
 youtube-downloader_1.0.2_all.deb
