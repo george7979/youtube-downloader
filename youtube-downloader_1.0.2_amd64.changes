@@ -1,0 +1,31 @@
+Format: 1.8
+Date: Mon, 05 Aug 2024 19:40:00 +0000
+Source: youtube-downloader
+Binary: youtube-downloader
+Built-For-Profiles: noudeb
+Architecture: all
+Version: 1.0.2
+Distribution: unstable
+Urgency: medium
+Maintainer: Jerzy Maczewski <jerzy.maczewski@example.com>
+Changed-By: Jerzy Maczewski <jerzy.maczewski@example.com>
+Description:
+ youtube-downloader - YouTube Downloader - Aplikacja do pobierania filmów z YouTube
+Changes:
+ youtube-downloader (1.0.2) unstable; urgency=medium
+ .
+   * Wersja 1.0.2 - samodzielny pakiet DEB z izolowanym środowiskiem wirtualnym
+   * Automatyczna instalacja Python jeśli brakuje
+   * Wszystkie zależności w środowisku wirtualnym (venv)
+   * Czysta deinstalacja - usuwa tylko aplikację, nie systemowy Python
+   * Brak zależności systemowych - pakiet samodzielny
+   * Poprawiona obsługa błędów i walidacja środowiska
+Checksums-Sha1:
+ add0509c7a657abb13acad8c0cc61c703358ec6f 101212 youtube-downloader_1.0.2_all.deb
+ 372a98731db2b8abeef27476da1e29aa6ea30895 6515 youtube-downloader_1.0.2_amd64.buildinfo
+Checksums-Sha256:
+ 2b2ddba98f590c0e1e0b44b67a60ad4942221f11df3ed7da6902cc8210e8c2d8 101212 youtube-downloader_1.0.2_all.deb
+ 9fa61b4742eed0cda09f162795e6ebc5a2d39bd9120de48fa1045cb713135317 6515 youtube-downloader_1.0.2_amd64.buildinfo
+Files:
+ 613c7baed3ab6d9087b37bc1bab77b53 101212 utils optional youtube-downloader_1.0.2_all.deb
+ f290fac14d5358b4d2b4f73a89cbdf70 6515 utils optional youtube-downloader_1.0.2_amd64.buildinfo
