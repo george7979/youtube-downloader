@@ -1,11 +1,37 @@
 youtube-downloader (1.0.2) unstable; urgency=medium
 
-  * Wersja 1.0.2 - samodzielny pakiet DEB z izolowanym środowiskiem wirtualnym
-  * Automatyczna instalacja Python jeśli brakuje
-  * Wszystkie zależności w środowisku wirtualnym (venv)
-  * Czysta deinstalacja - usuwa tylko aplikację, nie systemowy Python
-  * Brak zależności systemowych - pakiet samodzielny
-  * Poprawiona obsługa błędów i walidacja środowiska
+  * YouTube Downloader v1.0.2 - Release Notes
+  * 
+  * 📋 Główne zmiany:
+  * ✨ Uproszczenie konfiguracji aplikacji
+  *   - Zawsze używaj /tmp/ jako lokalizacji dla konfiguracji i logów
+  *   - Eliminacja problemów z uprawnieniami na różnych systemach (WSL, Linux, Chromebook)
+  *   - Spójne działanie na wszystkich platformach
+  * 
+  * 🔧 Poprawki techniczne
+  *   - Naprawiono problem z konwersją MP3 - dodano sprawdzanie dostępności FFmpeg
+  *   - Ulepszona obsługa błędów podczas pobierania
+  *   - Dodano szczegółowe logi debugowania
+  * 
+  * 🎯 Ulepszenia pakietu DEB
+  *   - Automatyczna instalacja FFmpeg w tle (jeśli brakuje)
+  *   - Poprawione skrypty postinst/postrm
+  *   - Lepsze zarządzanie środowiskiem wirtualnym
+  * 
+  * 🎯 Co zostało naprawione:
+  * ✅ Konfiguracja: Teraz działa poprawnie na WSL, Linux i Chromebook
+  * ✅ FFmpeg: Automatyczna instalacja jeśli brakuje
+  * ✅ Logi: Szczegółowe informacje debugowania w /tmp/
+  * 
+  * Lokalizacje plików:
+  * - Konfiguracja: /tmp/youtube-downloader-config.json
+  * - Logi: /tmp/youtube_downloader.log
+  * 
+  * Od wersji 1.0.1:
+  * - Uproszczona logika konfiguracji
+  * - Naprawione problemy z uprawnieniami
+  * - Lepsza kompatybilność między systemami
+  * - Automatyczna instalacja zależności
 
  -- Jerzy Maczewski <jerzy.maczewski@example.com>  Mon, 05 Aug 2024 19:40:00 +0000
 
