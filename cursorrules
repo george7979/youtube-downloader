@@ -1,0 +1,353 @@
+# Cursor Rules - Reguły pracy w projekcie YouTube Downloader
+
+## 🎯 GŁÓWNA REGUŁA: PRACA TYLKO W KATALOGU PROJEKTU
+
+### ✅ OBOWIĄZKOWE KROKI PRZED KAŻDĄ PRACĄ:
+1. **Sprawdź katalog roboczy:** `pwd`
+2. **Sprawdź zawartość:** `ls -la`
+3. **Upewnij się, że jesteś w katalogu projektu:** `youtube-downloader/`
+4. **Dopiero potem twórz/edytuj pliki**
+
+### 🚫 ZAKAZANE:
+- Tworzenie plików poza katalogiem projektu
+- Edytowanie plików w katalogu nadrzędnym
+- Praca w innych katalogach bez weryfikacji
+
+### ✅ DOZWOLONE:
+- Praca tylko w katalogu `youtube-downloader/`
+- Tworzenie plików tylko w tym katalogu
+- Edytowanie plików tylko w tym katalogu
+
+### 🔍 WERYFIKACJA:
+Przed każdą operacją sprawdź:
+```bash
+pwd && ls -la
+```
+
+**Sprawdź czy jesteś w katalogu projektu:**
+- ✅ Powinno być: `youtube-downloader/` na końcu ścieżki
+- ✅ Powinny być pliki: `main.py`, `gui.py`, `debian/`, `README.md`
+- ❌ Nie powinno być: `../youtube-downloader` lub inne katalogi
+
+## 🖥️ SETUP NA NOWEJ MASZYNIE
+
+### ✅ PIERWSZA PRACA PO CLONE:
+**OBOWIĄZKOWE:** Po ściągnięciu repo na nową maszynę:
+
+```bash
+# 1. Sprawdź gdzie jesteś
+pwd && ls -la
+
+# 2. Setup środowiska (JEDNORAZOWO)
+./dev-setup.sh
+
+# 3. Gotowe do pracy!
+./run-dev.sh
+```
+
+### 🚫 NIGDY NIE COMMITUJ .venv:
+- ❌ **Nie dodawaj** `.venv/` do git
+- ❌ **Nie pushuj** środowiska wirtualnego
+- ✅ **Używaj** `requirements.txt` + `dev-setup.sh`
+- ✅ **Odtwarzaj** `.venv` na każdej maszynie
+
+### 🔄 CODZIENNE UŻYCIE:
+```bash
+./run-dev.sh        # Uruchom aplikację (auto-aktywuje .venv)
+# lub:
+source .venv/bin/activate && python main.py
+```
+
+### 🔧 KIEDY POTRZEBUJESZ .venv:
+1. **Development** - testowanie kodu
+2. **Budowanie DEB** - `dpkg-buildpackage` wymaga zależności
+3. **Testing** - przed release
+
+### 📋 PLIKI ŚRODOWISKA:
+- `requirements.txt` - dokładne wersje zależności
+- `dev-setup.sh` - jednorazowy setup środowiska  
+- `run-dev.sh` - codzienne uruchamianie
+- `.venv/` - środowisko (tylko lokalnie, nie w git)
+
+### 📁 STRUKTURA PROJEKTU:
+```
+youtube-downloader/
+├── main.py            # Główna aplikacja
+├── gui.py             # Interfejs użytkownika
+├── downloader.py      # Logika pobierania
+├── utils.py           # Funkcje pomocnicze
+├── README.md          # Dokumentacja
+├── cursorrules        # Reguły projektu
+├── debian/            # Skrypty pakietu DEB
+│   ├── control        # Metadane pakietu
+│   ├── postinst       # Skrypt instalacji
+│   ├── postrm         # Skrypt deinstalacji
+│   ├── prerm          # Skrypt przed usunięciem
+│   └── rules          # Reguły budowania
+├── pics/              # Zasoby graficzne
+├── *.deb              # Pliki pakietów (prywatne repo)
+└── .gitignore         # Pliki ignorowane przez Git
+```
+
+### 🎯 CEL:
+Wszystkie pliki aplikacji muszą być w katalogu `youtube-downloader/` 
+
+### 🔒 GIT - ZGODA PRZED AKTUALIZACJĄ:
+**OBOWIĄZKOWE:** Przed każdą aktualizacją danych do Git (commit, push) musisz:
+1. **Zapytać użytkownika o zgodę** - "Czy mogę zaktualizować dane w Git?"
+2. **Poczekać na odpowiedź** - nie rób commit/push bez zgody
+3. **Opisać co zostanie zmienione** - powiedz co dokładnie zostanie zaktualizowane
+4. **Dopiero po zgodzie** - wykonaj operacje Git
+
+### ❌ ZAKAZANE W GIT:
+- Commit bez pytania o zgodę
+- Push bez pytania o zgodę
+- Automatyczne aktualizacje bez zgody użytkownika
+- Force push bez wyraźnej zgody
+
+### ✅ DOZWOLONE W GIT:
+- Sprawdzanie statusu: `git status`
+- Podgląd zmian: `git diff`
+- Pytanie o zgodę przed commit/push
+- Wykonywanie operacji tylko po otrzymaniu zgody
+
+## 🏗️ BUDOWANIE PAKIETÓW DEB
+
+### ✅ PRAKTYKA BUDOWANIA PAKIETÓW:
+1. **Sprawdź gotowość systemu** - python3-venv, python3-tk, pip
+2. **Użyj curl jako fallback** - jeśli ensurepip nie działa
+3. **Instalacja w tle** - dla brakujących pakietów systemowych
+4. **Sprawdzanie zależności** - weryfikacja po instalacji
+5. **Alternatywne metody** - ręczne tworzenie venv jeśli standardowe nie działa
+
+### 🔧 KLUCZOWE ELEMENTY SKRYPTÓW DEB:
+
+#### **debian/postinst - Sprawdzanie gotowości:**
+```bash
+# Sprawdź czy system jest gotowy do tworzenia venv
+echo "🔍 Sprawdzanie gotowości systemu..."
+
+# Sprawdź czy venv jest dostępny
+if ! python3 -c "import venv" 2>/dev/null; then
+    echo "⚠️ python3-venv nie jest dostępny"
+    echo "Instalowanie w tle..."
+    nohup bash -c 'sleep 5; apt-get update && apt-get install -y python3-venv' >/dev/null 2>&1 &
+fi
+
+# Sprawdź czy tkinter jest dostępny
+if ! python3 -c "import tkinter" 2>/dev/null; then
+    echo "⚠️ python3-tk nie jest dostępny"
+    echo "Instalowanie w tle..."
+    nohup bash -c 'sleep 5; apt-get update && apt-get install -y python3-tk' >/dev/null 2>&1 &
+fi
+
+# Sprawdź czy pip jest dostępny
+if ! python3 -c "import pip" 2>/dev/null; then
+    echo "⚠️ pip nie jest dostępny"
+    echo "Instalowanie pip przez curl..."
+    curl https://bootstrap.pypa.io/get-pip.py | python3
+fi
+```
+
+#### **debian/postinst - Tworzenie venv z fallback:**
+```bash
+# Próbuj standardową metodę
+if python3 -m venv /usr/share/youtube-downloader/venv 2>/dev/null; then
+    echo "✅ Środowisko wirtualne utworzone pomyślnie"
+else
+    echo "❌ Błąd: Nie udało się utworzyć środowiska wirtualnego"
+    echo "Próbuję alternatywną metodę..."
+    
+    # Usuń uszkodzone venv jeśli istnieje
+    rm -rf /usr/share/youtube-downloader/venv 2>/dev/null || true
+    
+    # Próbuj z --without-pip
+    if python3 -m venv --without-pip /usr/share/youtube-downloader/venv 2>/dev/null; then
+        echo "✅ Środowisko wirtualne utworzone bez pip"
+        # Zainstaluj pip w venv przez curl
+        curl https://bootstrap.pypa.io/get-pip.py | /usr/share/youtube-downloader/venv/bin/python
+    else
+        echo "❌ Błąd: Nie udało się utworzyć środowiska wirtualnego"
+        echo "Próbuję ręczną metodę..."
+        
+        # Ręczne utworzenie venv
+        mkdir -p /usr/share/youtube-downloader/venv/bin
+        mkdir -p /usr/share/youtube-downloader/venv/lib/python3.*/site-packages
+        mkdir -p /usr/share/youtube-downloader/venv/include
+        
+        # Skopiuj Python do venv
+        cp $(which python3) /usr/share/youtube-downloader/venv/bin/python
+        cp $(which python3) /usr/share/youtube-downloader/venv/bin/python3
+        
+        # Utwórz activate script
+        cat > /usr/share/youtube-downloader/venv/bin/activate << 'EOF'
+#!/bin/bash
+export VIRTUAL_ENV="/usr/share/youtube-downloader/venv"
+export PATH="$VIRTUAL_ENV/bin:$PATH"
+unset PYTHONHOME
+EOF
+        chmod +x /usr/share/youtube-downloader/venv/bin/activate
+        
+        # Zainstaluj pip przez curl
+        curl https://bootstrap.pypa.io/get-pip.py | /usr/share/youtube-downloader/venv/bin/python
+    fi
+fi
+```
+
+#### **debian/postinst - Instalacja zależności:**
+```bash
+# Zainstaluj zależności w środowisku wirtualnym
+echo "📚 Instalowanie zależności w środowisku wirtualnym..."
+if /usr/share/youtube-downloader/venv/bin/pip install yt-dlp 2>/dev/null; then
+    echo "✅ Zależności zainstalowane pomyślnie"
+else
+    echo "❌ Błąd: Nie udało się zainstalować zależności"
+    echo "Instalowanie w tle..."
+    nohup bash -c 'sleep 10; /usr/share/youtube-downloader/venv/bin/pip install yt-dlp' >/dev/null 2>&1 &
+fi
+
+# Sprawdź czy zależności zostały zainstalowane poprawnie
+echo "🔍 Sprawdzanie instalacji zależności..."
+if /usr/share/youtube-downloader/venv/bin/python -c "import yt_dlp" 2>/dev/null; then
+    echo "✅ Zależności działają poprawnie"
+else
+    echo "❌ Błąd: Zależności nie działają poprawnie"
+    echo "Instalowanie w tle..."
+    nohup bash -c 'sleep 10; /usr/share/youtube-downloader/venv/bin/pip install yt-dlp' >/dev/null 2>&1 &
+fi
+```
+
+### 🚫 PROBLEMY DO UNIKANIA:
+- **Blokady dpkg** - używaj instalacji w tle z `nohup`
+- **Brak ensurepip** - używaj curl jako fallback
+- **Brak pip w venv** - instaluj przez curl
+- **Brak zależności systemowych** - sprawdzaj przed tworzeniem venv
+
+### ✅ DOBRE PRAKTYKI:
+- **Sprawdzanie gotowości** - przed tworzeniem venv
+- **Instalacja w tle** - dla pakietów systemowych
+- **Fallback z curl** - dla pip i ensurepip
+- **Weryfikacja zależności** - po instalacji
+- **Alternatywne metody** - jeśli standardowe nie działają
+
+### 🔄 PROCEDURA BUDOWANIA I TESTOWANIA:
+```bash
+# 1. Przygotuj pliki DEB
+sudo dpkg-buildpackage -b -us -uc
+
+# 2. Przenieś pliki do katalogu projektu
+mv ../youtube-downloader_* . -f
+
+# 3. Testuj instalację
+sudo dpkg -i youtube-downloader_*.deb
+
+# 4. Testuj aplikację
+youtube-downloader
+
+# 5. Deinstaluj do testów
+sudo dpkg --purge youtube-downloader
+```
+
+## 📤 ZASADY WYPYCHANIA DO REPOZYTORIÓW
+
+### 🎯 **DWA REPOZYTORIA:**
+
+#### **1. PUBLICZNE REPO (origin)**
+- **URL:** https://github.com/george7979/youtube-downloader
+- **Cel:** Kod źródłowy dla społeczności
+- **Zawartość:** Kod Python, skrypty Debian, dokumentacja
+- **NIE zawiera:** Pliki DEB, buildinfo, changes
+
+#### **2. PRYWATNE REPO (private)**
+- **URL:** https://github.com/george7979/youtube-downloader-private
+- **Cel:** Pełny projekt roboczy
+- **Zawartość:** Wszystko + pliki DEB, buildinfo, changes
+
+### 📋 **ZASADY WYPYCHANIA:**
+
+#### **Do publicznego repo (origin):**
+```bash
+# 1. Dodaj zmiany (automatycznie ignoruje pliki DEB)
+git add .
+
+# 2. Commit
+git commit -m "Opis zmian"
+
+# 3. Push do publicznego
+git push origin master
+```
+
+#### **Do prywatnego repo (private):**
+```bash
+# 1. Dodaj zmiany
+git add .
+
+# 2. Dodaj pliki DEB (force add - ignoruje .gitignore)
+git add -f *.deb *.buildinfo *.changes cursorrules
+
+# 3. Commit
+git commit -m "Opis zmian + pliki DEB"
+
+# 4. Push do prywatnego
+git push private master
+```
+
+### 🔄 **PRACA Z DWOMA REPO:**
+
+#### **Nowa funkcja:**
+```bash
+# 1. Rozwij funkcję
+# 2. Testuj
+# 3. Zbuduj i przetestuj DEB (patrz: PROCEDURA BUDOWANIA I TESTOWANIA)
+sudo dpkg-buildpackage -b -us -uc
+mv ../youtube-downloader_* .
+
+# 4. Push do prywatnego (z DEB)
+git add .
+git add -f *.deb *.buildinfo *.changes cursorrules
+git commit -m "Nowa funkcja + DEB"
+git push private master
+
+# 5. Push do publicznego (bez DEB - automatycznie)
+git add .
+git commit -m "Nowa funkcja"
+git push origin master
+```
+
+#### **Aktualizacja .gitignore:**
+```bash
+# 1. Edytuj .gitignore
+# 2. Push do obu repo
+git add .gitignore
+git commit -m "Aktualizacja .gitignore"
+git push origin master
+git push private master
+```
+
+#### **Ważne zasady .gitignore:**
+- **Pliki DEB:** `*.deb`, `*.buildinfo`, `*.changes` - tylko w prywatnym repo
+- **Cursor rules:** `cursorrules` - tylko w prywatnym repo
+- **Automatyczna ochrona:** .gitignore chroni publiczne repo
+- **Force add:** `git add -f` dla plików ignorowanych w prywatnym repo
+
+### ⚠️ **WAŻNE ZASADY:**
+- **Publiczne repo:** Tylko kod źródłowy (automatycznie chronione przez .gitignore)
+- **Prywatne repo:** Wszystko + artefakty budowania (force add dla ignorowanych plików)
+- **Zawsze pytaj:** Przed push do publicznego repo
+- **Testuj:** Przed push do publicznego repo
+- **Dokumentuj:** Zmiany w cursorrules
+- **Force add:** Używaj `git add -f` dla plików DEB w prywatnym repo
+
+### 📋 STRUKTURA PAKIETU DEB:
+```
+youtube-downloader_1.0.2_all.deb
+├── DEBIAN/
+│   ├── control (zależności: python3 | python3-minimal, python3-tk)
+│   ├── postinst (sprawdzanie + instalacja w tle)
+│   ├── postrm (czysta deinstalacja)
+│   └── prerm (usuwanie venv)
+├── usr/bin/youtube-downloader (skrypt uruchamiający)
+├── usr/share/applications/youtube-downloader.desktop
+├── usr/share/icons/.../youtube-downloader.png
+└── usr/share/youtube-downloader/ (pliki aplikacji)
+```
