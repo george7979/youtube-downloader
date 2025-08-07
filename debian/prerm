@@ -1,4 +1,0 @@
-#!/bin/bash
-
-echo "🧹 Usuwanie środowiska wirtualnego..."
-rm -rf /usr/share/youtube-downloader/venv || true 
