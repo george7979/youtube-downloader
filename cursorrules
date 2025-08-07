@@ -29,6 +29,46 @@ pwd && ls -la
 - ✅ Powinny być pliki: `main.py`, `gui.py`, `debian/`, `README.md`
 - ❌ Nie powinno być: `../youtube-downloader` lub inne katalogi
 
+## 🖥️ SETUP NA NOWEJ MASZYNIE
+
+### ✅ PIERWSZA PRACA PO CLONE:
+**OBOWIĄZKOWE:** Po ściągnięciu repo na nową maszynę:
+
+```bash
+# 1. Sprawdź gdzie jesteś
+pwd && ls -la
+
+# 2. Setup środowiska (JEDNORAZOWO)
+./dev-setup.sh
+
+# 3. Gotowe do pracy!
+./run-dev.sh
+```
+
+### 🚫 NIGDY NIE COMMITUJ .venv:
+- ❌ **Nie dodawaj** `.venv/` do git
+- ❌ **Nie pushuj** środowiska wirtualnego
+- ✅ **Używaj** `requirements.txt` + `dev-setup.sh`
+- ✅ **Odtwarzaj** `.venv` na każdej maszynie
+
+### 🔄 CODZIENNE UŻYCIE:
+```bash
+./run-dev.sh        # Uruchom aplikację (auto-aktywuje .venv)
+# lub:
+source .venv/bin/activate && python main.py
+```
+
+### 🔧 KIEDY POTRZEBUJESZ .venv:
+1. **Development** - testowanie kodu
+2. **Budowanie DEB** - `dpkg-buildpackage` wymaga zależności
+3. **Testing** - przed release
+
+### 📋 PLIKI ŚRODOWISKA:
+- `requirements.txt` - dokładne wersje zależności
+- `dev-setup.sh` - jednorazowy setup środowiska  
+- `run-dev.sh` - codzienne uruchamianie
+- `.venv/` - środowisko (tylko lokalnie, nie w git)
+
 ### 📁 STRUKTURA PROJEKTU:
 ```
 youtube-downloader/
