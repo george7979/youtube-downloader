@@ -45,6 +45,7 @@ if ! command -v ffmpeg >/dev/null 2>&1; then
     echo "⚠️ ffmpeg nie jest dostępny"
     echo "Instalowanie ffmpeg w tle..."
     nohup bash -c 'sleep 5; apt-get update && apt-get install -y ffmpeg' >/dev/null 2>&1 &
+    echo "FFmpeg będzie dostępny za kilka minut po zakończeniu instalacji"
 fi
 
 # Utwórz środowisko wirtualne z lepszą obsługą błędów
@@ -145,7 +146,11 @@ if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database /usr/share/applications
 fi
 
-# Utwórz katalog logów użytkownika
+# Konfiguracja i logi będą zapisywane w /tmp/ (zawsze dostępny)
+echo "📝 Konfiguracja i logi będą zapisywane w /tmp/"
+echo "🔄 Dane będą dostępne do restartu systemu"
+
+# Utwórz katalog logów użytkownika (dla kompatybilności)
 if [ -n "$SUDO_USER" ]; then
     USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
 else

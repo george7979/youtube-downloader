@@ -19,22 +19,11 @@ def setup_logging(enable_file_logging=True):
     handlers = [logging.StreamHandler()]
     
     if enable_file_logging:
-        # Używamy katalogu domowego użytkownika zamiast katalogu aplikacji
-        home_dir = os.path.expanduser("~")
-        log_dir = os.path.join(home_dir, ".youtube-downloader")
-        
-        # Tworzenie katalogu logów jeśli nie istnieje
-        try:
-            os.makedirs(log_dir, exist_ok=True)
-            log_file = os.path.join(log_dir, "youtube_downloader.log")
-            handlers.append(logging.FileHandler(log_file))
-            print(f"📝 Logi zapisywane w: {log_file}")
-        except OSError:
-            # Jeśli nie można utworzyć katalogu, używamy katalogu tymczasowego
-            log_dir = "/tmp"
-            log_file = os.path.join(log_dir, "youtube_downloader.log")
-            handlers.append(logging.FileHandler(log_file))
-            print(f"📝 Logi zapisywane w: {log_file}")
+        # Zawsze używaj /tmp/ - prostsze i bardziej niezawodne
+        log_dir = "/tmp"
+        log_file = os.path.join(log_dir, "youtube_downloader.log")
+        handlers.append(logging.FileHandler(log_file))
+        print(f"📝 Logi zapisywane w: {log_file}")
     
     logging.basicConfig(
         level=logging.INFO,

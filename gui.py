@@ -21,8 +21,8 @@ class YouTubeDownloaderGUI:
         self.video_info = None
         self.download_thread = None
         
-        # Konfiguracja pliku konfiguracyjnego
-        self.config_file = os.path.expanduser("~/.youtube-downloader/config.json")
+        # Konfiguracja pliku konfiguracyjnego (z fallback)
+        self.config_file = self._get_config_path()
         
         # Ustawienie ikony aplikacji
         self.setup_icon()
@@ -36,8 +36,23 @@ class YouTubeDownloaderGUI:
         # Wczytanie ostatnio użytego katalogu
         self.load_last_directory()
         
+        # Jeśli nie ma zapisanej lokalizacji, ustaw domyślną i zapisz
+        if not self.selected_directory:
+            default_dir = os.path.expanduser("~/Downloads")
+            if os.path.exists(default_dir):
+                self.selected_directory = default_dir
+                print(f"📁 Ustawiam domyślną lokalizację: {default_dir}")
+                self.save_last_directory(default_dir)
+        
         # Inicjalizacja interfejsu
         self.setup_ui()
+        
+    def _get_config_path(self):
+        """Znajdź odpowiednią ścieżkę dla konfiguracji"""
+        # Zawsze używaj /tmp/ - prostsze i bardziej niezawodne
+        config_file = "/tmp/youtube-downloader-config.json"
+        print(f"✅ Używam konfiguracji: {config_file}")
+        return config_file
         
     def setup_icon(self):
         """Ustawienie ikony aplikacji"""
@@ -101,25 +116,43 @@ class YouTubeDownloaderGUI:
         
     def load_last_directory(self):
         """Wczytanie ostatnio użytego katalogu"""
+        config_file = "/tmp/youtube-downloader-config.json"
         try:
-            if os.path.exists(self.config_file):
-                with open(self.config_file, 'r') as f:
+            print(f"🔍 Sprawdzam konfigurację: {config_file}")
+            if os.path.exists(config_file):
+                print(f"✅ Plik konfiguracyjny istnieje")
+                with open(config_file, 'r') as f:
                     config = json.load(f)
                     last_dir = config.get('last_directory')
+                    print(f"📁 Ostatni katalog: {last_dir}")
                     if last_dir and os.path.exists(last_dir):
                         self.selected_directory = last_dir
-        except Exception:
-            # W przypadku błędu używamy domyślnej lokalizacji
+                        print(f"✅ Wczytano katalog: {last_dir}")
+                    else:
+                        print(f"❌ Katalog nie istnieje lub jest pusty: {last_dir}")
+            else:
+                print(f"❌ Plik konfiguracyjny nie istnieje: {config_file}")
+        except Exception as e:
+            print(f"❌ Błąd wczytywania konfiguracji: {e}")
             pass
             
     def save_last_directory(self, directory):
         """Zapisanie ostatnio użytego katalogu"""
         try:
-            os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
+            config_dir = os.path.dirname(self.config_file)
+            print(f"Tworzenie katalogu: {config_dir}")
+            os.makedirs(config_dir, exist_ok=True)
+            
             config = {'last_directory': directory}
+            print(f"Zapisywanie do: {self.config_file}")
             with open(self.config_file, 'w') as f:
                 json.dump(config, f)
-        except Exception:
+            print(f"✅ Zapisano konfigurację: {self.config_file}")
+        except Exception as e:
+            print(f"❌ Błąd zapisu konfiguracji: {e}")
+            print(f"   Katalog: {os.path.dirname(self.config_file)}")
+            print(f"   Plik: {self.config_file}")
+            print(f"   Uprawnienia: {oct(os.stat(os.path.expanduser('~')).st_mode)[-3:]}")
             # Ignoruj błędy zapisu konfiguracji
             pass
         
@@ -497,6 +530,9 @@ class YouTubeDownloaderGUI:
     def _download_complete(self, result):
         """Zakończenie pobierania"""
         if result:
+            # Zapisz lokalizację po udanym pobieraniu
+            if self.selected_directory:
+                self.save_last_directory(self.selected_directory)
             messagebox.showinfo("Sukces", f"Film został pobrany:\n{result['filename']}")
             self.status_var.set("Pobieranie zakończone")
             self.status_bar.configure(foreground='#27ae60')
