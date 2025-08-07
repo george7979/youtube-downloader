@@ -1,0 +1,50 @@
+#!/bin/bash
+
+echo "🗑️ Usuwanie plików aplikacji..."
+
+# Usuń pliki aplikacji
+rm -rf /usr/share/youtube-downloader || true
+rm -f /usr/bin/youtube-downloader || true
+rm -f /usr/share/applications/youtube-downloader.desktop || true
+
+# Usuń ikony
+rm -f /usr/share/icons/hicolor/*/apps/youtube-downloader.png || true
+
+# Usuń logi użytkownika i katalog roboczy
+echo "🗑️ Usuwanie katalogu roboczego użytkownika..."
+
+# Sprawdź różne sposoby znalezienia katalogu domowego użytkownika
+USER_HOME=""
+
+# Sprawdź SUDO_USER
+if [ -n "$SUDO_USER" ]; then
+    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6 2>/dev/null || echo "")
+fi
+
+# Jeśli nie znaleziono, spróbuj z LOGNAME
+if [ -z "$USER_HOME" ] && [ -n "$LOGNAME" ]; then
+    USER_HOME=$(getent passwd "$LOGNAME" | cut -d: -f6 2>/dev/null || echo "")
+fi
+
+# Jeśli nadal nie znaleziono, użyj domyślnego katalogu
+if [ -z "$USER_HOME" ]; then
+    USER_HOME="/home/username"
+fi
+
+echo "🔍 Katalog domowy użytkownika: $USER_HOME"
+
+if [ -n "$USER_HOME" ] && [ -d "$USER_HOME" ]; then
+    CONFIG_DIR="$USER_HOME/.youtube-downloader"
+    echo "🗑️ Usuwanie: $CONFIG_DIR"
+    if [ -d "$CONFIG_DIR" ]; then
+        rm -rf "$CONFIG_DIR" || echo "⚠️ Nie udało się usunąć katalogu roboczego"
+    else
+        echo "ℹ️ Katalog roboczy nie istnieje"
+    fi
+else
+    echo "⚠️ Nie można znaleźć katalogu domowego użytkownika"
+fi
+
+echo "✅ Deinstalacja zakończona!"
+echo "🐍 Środowisko wirtualne zostało usunięte"
+echo "📝 Systemowy Python pozostaje nienaruszony" 
