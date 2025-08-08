@@ -1,1 +1,1 @@
-yt-dlp==2025.7.21
+public-src/requirements.txt

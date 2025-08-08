@@ -7,7 +7,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 # Zmienne
-VERSION := $(shell ./version-manager.sh show | grep "Aktualna wersja:" | cut -d: -f2 | xargs)
+VERSION := $(shell ./build-tools/version-manager.sh show | grep "Aktualna wersja:" | cut -d: -f2 | xargs)
 PACKAGE_NAME := youtube-downloader
 DEB_FILE := $(PACKAGE_NAME)_$(VERSION)_all.deb
 
@@ -29,19 +29,19 @@ define log_warning
 	@echo -e "$(YELLOW)⚠️  $(1)$(NC)"
 endef
 
-.PHONY: help build clean test install version check deps ci
+.PHONY: help build clean test install version check deps ci test-dual-repo ci-check
 
 help: ## Pokaż tę pomoc
-	@echo "YouTube Downloader Build System"
+	@printf "$(BLUE)YouTube Downloader Build System$(NC)\n"
 	@echo ""
-	@echo "Dostępne cele:"
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@printf "$(GREEN)Dostępne cele:$(NC)\n"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  $(YELLOW)%-15s$(NC) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo ""
-	@echo "Aktualna wersja: $(VERSION)"
+	@printf "$(BLUE)Aktualna wersja:$(NC) $(GREEN)$(VERSION)$(NC)\n"
 
 build: check ## Zbuduj pakiet DEB
 	$(call log_info,Budowanie pakietu $(DEB_FILE)...)
-	@./build-deb.sh
+	@./build-tools/build-deb.sh
 	$(call log_success,Pakiet zbudowany: $(DEB_FILE))
 
 clean: ## Wyczyść pliki build
@@ -77,21 +77,21 @@ uninstall: ## Usuń pakiet
 	$(call log_success,Pakiet usunięty)
 
 version: ## Pokaż aktualną wersję
-	@./version-manager.sh show
+	@./build-tools/version-manager.sh show
 
 bump-patch: ## Zwiększ wersję patch (1.0.3 -> 1.0.4)
 	$(call log_info,Zwiększanie wersji patch...)
-	@./version-manager.sh bump patch
+	@./build-tools/version-manager.sh bump patch
 	$(call log_success,Wersja patch zwiększona)
 
 bump-minor: ## Zwiększ wersję minor (1.0.3 -> 1.1.0)
 	$(call log_info,Zwiększanie wersji minor...)
-	@./version-manager.sh bump minor
+	@./build-tools/version-manager.sh bump minor
 	$(call log_success,Wersja minor zwiększona)
 
 bump-major: ## Zwiększ wersję major (1.0.3 -> 2.0.0)
 	$(call log_info,Zwiększanie wersji major...)
-	@./version-manager.sh bump major
+	@./build-tools/version-manager.sh bump major
 	$(call log_success,Wersja major zwiększona)
 
 check: ## Sprawdź wymagania systemowe
@@ -104,7 +104,7 @@ check: ## Sprawdź wymagania systemowe
 	@test -f downloader.py || { echo "❌ Brak downloader.py"; exit 1; }
 	@test -f utils.py || { echo "❌ Brak utils.py"; exit 1; }
 	@test -x build-deb.sh || { echo "❌ build-deb.sh nie jest wykonywalny"; exit 1; }
-	@test -x version-manager.sh || { echo "❌ version-manager.sh nie jest wykonywalny"; exit 1; }
+	@test -x build-tools/version-manager.sh || { echo "❌ version-manager.sh nie jest wykonywalny"; exit 1; }
 	$(call log_success,Wszystkie wymagania spełnione)
 
 deps: ## Zainstaluj zależności budowania
@@ -137,9 +137,20 @@ release: clean bump-patch build test ## Pełny release (bump patch + build + tes
 
 ci: clean check build test ## Continuous Integration pipeline
 	$(call log_info,CI Pipeline...)
+	@./scripts/ci-check.sh
 	@sha256sum $(DEB_FILE) > $(DEB_FILE).sha256
 	@md5sum $(DEB_FILE) > $(DEB_FILE).md5
 	$(call log_success,CI Pipeline zakończone pomyślnie)
+
+test-dual-repo: ## Test dual-repository workflow
+	$(call log_info,Testowanie dual-repo workflow...)
+	@./scripts/test-dual-repo.sh
+	$(call log_success,Dual-repo workflow tests passed)
+
+ci-check: ## Comprehensive CI checks
+	$(call log_info,Uruchamianie comprehensive CI checks...)
+	@./scripts/ci-check.sh
+	$(call log_success,All CI checks passed)
 
 info: ## Pokaż informacje o projekcie
 	@echo "YouTube Downloader Build System"
@@ -147,7 +158,7 @@ info: ## Pokaż informacje o projekcie
 	@echo "Wersja:          $(VERSION)"
 	@echo "Pakiet:          $(DEB_FILE)"
 	@echo "Build script:    ./build-deb.sh"
-	@echo "Version manager: ./version-manager.sh"
+	@echo "Version manager: ./build-tools/version-manager.sh"
 	@echo "Dokumentacja:    BUILDING.md"
 	@echo ""
 	@if [ -f "$(DEB_FILE)" ]; then \
@@ -156,7 +167,7 @@ info: ## Pokaż informacje o projekcie
 		echo "Status pakietu:  ❌ Nie istnieje"; \
 	fi
 	@echo ""
-	@./version-manager.sh show
+	@./build-tools/version-manager.sh show
 
 # Zaawansowane cele
 docker-build: ## Zbuduj w kontenerze Docker (wymaga Dockerfile)
@@ -175,7 +186,7 @@ debug-version: ## Debug version manager
 	@echo "VERSION: $(VERSION)"
 	@echo "DEB_FILE: $(DEB_FILE)"
 	@echo ""
-	@bash -x ./version-manager.sh show
+	@bash -x ./build-tools/version-manager.sh show
 
 debug-build: ## Debug build script
 	@echo "=== Debug Build Script ==="
