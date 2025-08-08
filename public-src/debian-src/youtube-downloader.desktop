@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=YouTube Downloader
+Name[pl]=YouTube Downloader
+Comment=Download videos from YouTube
+Comment[pl]=Pobieraj filmy z YouTube
+Exec=youtube-downloader
+Icon=youtube-downloader
+Terminal=false
+Categories=Network;Video;AudioVideo;
+Keywords=youtube;download;video;mp4;mp3;
+StartupNotify=true
