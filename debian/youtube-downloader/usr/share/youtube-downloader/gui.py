@@ -49,64 +49,10 @@ class YouTubeDownloaderGUI:
         
     def _get_config_path(self):
         """Znajdź odpowiednią ścieżkę dla konfiguracji"""
-        
-        # Detekcja Chromebook
-        def is_chromebook():
-            try:
-                with open('/etc/os-release', 'r') as f:
-                    content = f.read().lower()
-                    return 'chrome' in content or 'chromium' in content
-            except:
-                pass
-            return False
-        
-        # Dla Chromebook - zawsze używaj /tmp z bezpiecznym prefixem
-        if is_chromebook():
-            import tempfile
-            config_dir = tempfile.gettempdir()
-            config_file = os.path.join(config_dir, f"youtube-downloader-{os.getuid()}-config.json")
-            print(f"🖥️ Chromebook wykryty - używam /tmp: {config_file}")
-            return config_file
-        
-        # Hybrydowe rozwiązanie dla innych systemów
-        try:
-            # Próbuj katalog w środowisku wirtualnym (najlepsze rozwiązanie)
-            venv_config_dir = "/usr/share/youtube-downloader/venv/config"
-            if os.path.exists("/usr/share/youtube-downloader/venv"):
-                os.makedirs(venv_config_dir, mode=0o755, exist_ok=True)
-                config_file = os.path.join(venv_config_dir, "config.json")
-                print(f"✅ Używam konfiguracji w środowisku wirtualnym: {config_file}")
-                return config_file
-            
-            # Fallback do katalogu domowego (bezpieczniejszy)
-            config_dir = os.path.join(os.path.expanduser("~"), ".youtube-downloader")
-            os.makedirs(config_dir, mode=0o700, exist_ok=True)
-            config_file = os.path.join(config_dir, "config.json")
-            
-            # Test zapisu i odczytu z lepszą obsługą błędów
-            test_content = "test"
-            try:
-                with open(config_file, 'w') as f:
-                    f.write(test_content)
-                with open(config_file, 'r') as f:
-                    read_content = f.read()
-                if read_content == test_content:
-                    print(f"✅ Używam bezpiecznej konfiguracji: {config_file}")
-                    return config_file
-                else:
-                    raise OSError("Test zapisu/odczytu nie powiódł się - zawartość się nie zgadza")
-            except (OSError, IOError) as e:
-                print(f"⚠️ Test zapisu/odczytu nie powiódł się: {e}")
-                raise
-            
-        except (OSError, PermissionError) as e:
-            print(f"⚠️ Problem z katalogiem domowym: {e}")
-            # Fallback do /tmp z bezpiecznym prefixem
-            import tempfile
-            config_dir = tempfile.gettempdir()
-            config_file = os.path.join(config_dir, f"youtube-downloader-{os.getuid()}-config.json")
-            print(f"⚠️ Używam fallback konfiguracji: {config_file}")
-            return config_file
+        # Zawsze używaj /tmp/ - prostsze i bardziej niezawodne
+        config_file = "/tmp/youtube-downloader-config.json"
+        print(f"✅ Używam konfiguracji: {config_file}")
+        return config_file
         
     def setup_icon(self):
         """Ustawienie ikony aplikacji"""
@@ -158,7 +104,7 @@ class YouTubeDownloaderGUI:
             
     def setup_window(self):
         """Konfiguracja głównego okna"""
-        self.root.title("YouTube Downloader v1.0.2")
+        self.root.title("YouTube Downloader v1.0.3")
         self.root.geometry("1100x1000")
         self.root.minsize(1000, 900)
         
@@ -170,38 +116,20 @@ class YouTubeDownloaderGUI:
         
     def load_last_directory(self):
         """Wczytanie ostatnio użytego katalogu"""
-        config_file = self._get_config_path()
+        config_file = "/tmp/youtube-downloader-config.json"
         try:
-            print(f"🔍 Sprawdzam bezpieczną konfigurację: {config_file}")
+            print(f"🔍 Sprawdzam konfigurację: {config_file}")
             if os.path.exists(config_file):
                 print(f"✅ Plik konfiguracyjny istnieje")
-                
-                # Sprawdź czy plik nie jest pusty
-                if os.path.getsize(config_file) == 0:
-                    print(f"⚠️ Plik konfiguracyjny jest pusty - tworzę nowy")
-                    # Utwórz domyślną konfigurację
-                    default_config = {'last_directory': ''}
-                    with open(config_file, 'w') as f:
-                        json.dump(default_config, f)
-                    return
-                
                 with open(config_file, 'r') as f:
-                    try:
-                        config = json.load(f)
-                        last_dir = config.get('last_directory')
-                        print(f"📁 Ostatni katalog: {last_dir}")
-                        if last_dir and os.path.exists(last_dir):
-                            self.selected_directory = last_dir
-                            print(f"✅ Wczytano katalog: {last_dir}")
-                        else:
-                            print(f"❌ Katalog nie istnieje lub jest pusty: {last_dir}")
-                    except json.JSONDecodeError as e:
-                        print(f"❌ Błąd parsowania JSON: {e}")
-                        print(f"   Tworzę nową konfigurację...")
-                        # Utwórz nową konfigurację jeśli JSON jest uszkodzony
-                        default_config = {'last_directory': ''}
-                        with open(config_file, 'w') as f:
-                            json.dump(default_config, f)
+                    config = json.load(f)
+                    last_dir = config.get('last_directory')
+                    print(f"📁 Ostatni katalog: {last_dir}")
+                    if last_dir and os.path.exists(last_dir):
+                        self.selected_directory = last_dir
+                        print(f"✅ Wczytano katalog: {last_dir}")
+                    else:
+                        print(f"❌ Katalog nie istnieje lub jest pusty: {last_dir}")
             else:
                 print(f"❌ Plik konfiguracyjny nie istnieje: {config_file}")
         except Exception as e:
@@ -211,41 +139,21 @@ class YouTubeDownloaderGUI:
     def save_last_directory(self, directory):
         """Zapisanie ostatnio użytego katalogu"""
         try:
-            config_file = self._get_config_path()
-            config_dir = os.path.dirname(config_file)
-            print(f"📁 Tworzenie katalogu: {config_dir}")
-            
-            # Upewnij się, że katalog istnieje
+            config_dir = os.path.dirname(self.config_file)
+            print(f"Tworzenie katalogu: {config_dir}")
             os.makedirs(config_dir, exist_ok=True)
             
-            # Sprawdź uprawnienia do zapisu
-            if not os.access(config_dir, os.W_OK):
-                print(f"❌ Brak uprawnień do zapisu w: {config_dir}")
-                return
-            
-            # Wczytaj istniejącą konfigurację lub utwórz nową
-            config = {}
-            if os.path.exists(config_file) and os.path.getsize(config_file) > 0:
-                try:
-                    with open(config_file, 'r') as f:
-                        config = json.load(f)
-                except (json.JSONDecodeError, IOError):
-                    print(f"⚠️ Nie można wczytać istniejącej konfiguracji - tworzę nową")
-                    config = {}
-            
-            # Zaktualizuj konfigurację
-            config['last_directory'] = directory
-            
-            print(f"💾 Zapisywanie do: {config_file}")
-            with open(config_file, 'w') as f:
-                json.dump(config, f, indent=2)
-            print(f"✅ Zapisano konfigurację: {config_file}")
-            
+            config = {'last_directory': directory}
+            print(f"Zapisywanie do: {self.config_file}")
+            with open(self.config_file, 'w') as f:
+                json.dump(config, f)
+            print(f"✅ Zapisano konfigurację: {self.config_file}")
         except Exception as e:
             print(f"❌ Błąd zapisu konfiguracji: {e}")
-            print(f"   Katalog: {os.path.dirname(config_file) if 'config_file' in locals() else 'nieznany'}")
-            print(f"   Plik: {config_file if 'config_file' in locals() else 'nieznany'}")
-            # Ignoruj błędy zapisu konfiguracji - aplikacja może działać bez zapisywania
+            print(f"   Katalog: {os.path.dirname(self.config_file)}")
+            print(f"   Plik: {self.config_file}")
+            print(f"   Uprawnienia: {oct(os.stat(os.path.expanduser('~')).st_mode)[-3:]}")
+            # Ignoruj błędy zapisu konfiguracji
             pass
         
     def setup_ui(self):
@@ -467,7 +375,7 @@ class YouTubeDownloaderGUI:
         status_frame.columnconfigure(0, weight=1)
         
         # Status aplikacji
-        app_status = ttk.Label(status_frame, text="YouTube Downloader v1.0.2", 
+        app_status = ttk.Label(status_frame, text="YouTube Downloader v1.0.3", 
                               font=('Segoe UI', 8), foreground='#7f8c8d')
         app_status.grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
         
@@ -497,7 +405,8 @@ class YouTubeDownloaderGUI:
             self.video_info = self.downloader.get_video_info(url)
             self.root.after(0, self._update_video_info)
         except Exception as e:
-            self.root.after(0, lambda: self.show_error(f"Błąd podczas sprawdzania: {e}"))
+            error_msg = f"Błąd podczas sprawdzania: {e}"
+            self.root.after(0, lambda: self.show_error(error_msg))
         finally:
             self.root.after(0, lambda: self.check_button.config(state="normal"))
             
@@ -610,7 +519,8 @@ class YouTubeDownloaderGUI:
             self.root.after(0, lambda: self._download_complete(result))
             
         except Exception as e:
-            self.root.after(0, lambda: self.show_error(f"Błąd podczas pobierania: {e}"))
+            error_msg = f"Błąd podczas pobierania: {e}"
+            self.root.after(0, lambda: self.show_error(error_msg))
         finally:
             self.root.after(0, self._reset_ui)
             

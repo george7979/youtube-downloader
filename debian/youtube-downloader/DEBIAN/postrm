@@ -1,17 +1,33 @@
 #!/bin/bash
 
-echo "🗑️ Usuwanie plików aplikacji..."
+case "$1" in
+    remove|purge)
+        echo "🗑️ Usuwanie plików aplikacji..."
+        
+        # Usuń pliki aplikacji tylko przy remove/purge
+        rm -rf /usr/share/youtube-downloader || true
+        rm -f /usr/bin/youtube-downloader || true
+        rm -f /usr/share/applications/youtube-downloader.desktop || true
 
-# Usuń pliki aplikacji
-rm -rf /usr/share/youtube-downloader || true
-rm -f /usr/bin/youtube-downloader || true
-rm -f /usr/share/applications/youtube-downloader.desktop || true
+        # Usuń ikony
+        rm -f /usr/share/icons/hicolor/*/apps/youtube-downloader.png || true
+        ;;
+    upgrade|abort-upgrade)
+        echo "🔄 Upgrade - zachowuję pliki aplikacji"
+        ;;
+    *)
+        echo "🗑️ Inne działanie ($1) - usuwam pliki"
+        rm -rf /usr/share/youtube-downloader || true
+        rm -f /usr/bin/youtube-downloader || true
+        rm -f /usr/share/applications/youtube-downloader.desktop || true
+        rm -f /usr/share/icons/hicolor/*/apps/youtube-downloader.png || true
+        ;;
+esac
 
-# Usuń ikony
-rm -f /usr/share/icons/hicolor/*/apps/youtube-downloader.png || true
-
-# Usuń logi użytkownika i katalog roboczy
-echo "🗑️ Usuwanie katalogu roboczego użytkownika..."
+# Usuń logi użytkownika tylko przy purge
+case "$1" in
+    purge)
+        echo "🗑️ Usuwanie katalogu roboczego użytkownika..."
 
 # Sprawdź różne sposoby znalezienia katalogu domowego użytkownika
 USER_HOME=""
@@ -45,6 +61,13 @@ else
     echo "⚠️ Nie można znaleźć katalogu domowego użytkownika"
 fi
 
-echo "✅ Deinstalacja zakończona!"
-echo "🐍 Środowisko wirtualne zostało usunięte"
-echo "📝 Systemowy Python pozostaje nienaruszony" 
+        echo "✅ Deinstalacja zakończona!"
+        echo "🐍 Środowisko wirtualne zostało usunięte"
+        echo "📝 Systemowy Python pozostaje nienaruszony"
+        ;;
+    *)
+        echo "✅ Akcja $1 zakończona"
+        ;;
+esac
+
+exit 0 

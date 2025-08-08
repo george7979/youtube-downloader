@@ -104,7 +104,7 @@ class YouTubeDownloaderGUI:
             
     def setup_window(self):
         """Konfiguracja głównego okna"""
-        self.root.title("YouTube Downloader v1.0.2")
+        self.root.title("YouTube Downloader v1.0.3")
         self.root.geometry("1100x1000")
         self.root.minsize(1000, 900)
         
@@ -375,7 +375,7 @@ class YouTubeDownloaderGUI:
         status_frame.columnconfigure(0, weight=1)
         
         # Status aplikacji
-        app_status = ttk.Label(status_frame, text="YouTube Downloader v1.0.2", 
+        app_status = ttk.Label(status_frame, text="YouTube Downloader v1.0.3", 
                               font=('Segoe UI', 8), foreground='#7f8c8d')
         app_status.grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
         
@@ -405,7 +405,8 @@ class YouTubeDownloaderGUI:
             self.video_info = self.downloader.get_video_info(url)
             self.root.after(0, self._update_video_info)
         except Exception as e:
-            self.root.after(0, lambda: self.show_error(f"Błąd podczas sprawdzania: {e}"))
+            error_msg = f"Błąd podczas sprawdzania: {e}"
+            self.root.after(0, lambda: self.show_error(error_msg))
         finally:
             self.root.after(0, lambda: self.check_button.config(state="normal"))
             
@@ -518,7 +519,8 @@ class YouTubeDownloaderGUI:
             self.root.after(0, lambda: self._download_complete(result))
             
         except Exception as e:
-            self.root.after(0, lambda: self.show_error(f"Błąd podczas pobierania: {e}"))
+            error_msg = f"Błąd podczas pobierania: {e}"
+            self.root.after(0, lambda: self.show_error(error_msg))
         finally:
             self.root.after(0, self._reset_ui)
             
