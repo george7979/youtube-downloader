@@ -80,3 +80,14 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# Private development files
+cursorrules
+.cursorrules
+*.local
+build-scripts/
+internal-docs/
+dev-setup.sh
+private-*
+.env.dev
+TODO-dev.md
