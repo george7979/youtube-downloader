@@ -1,0 +1,9 @@
+# Instaluj pliki aplikacji w odpowiednie lokalizacje
+main.py usr/share/youtube-downloader/
+gui.py usr/share/youtube-downloader/
+downloader.py usr/share/youtube-downloader/
+utils.py usr/share/youtube-downloader/
+requirements.txt usr/share/youtube-downloader/
+README.md usr/share/youtube-downloader/
+plan.md usr/share/youtube-downloader/
+pics/* usr/share/youtube-downloader/pics/

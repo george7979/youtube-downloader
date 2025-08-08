@@ -1,0 +1,46 @@
+youtube-downloader (1.0.3) stable; urgency=medium
+
+  * Aktualizacja do wersji 1.0.3
+  * [DODAJ OPIS ZMIAN TUTAJ]
+
+ -- Jerzy Maczewski <jerzy.maczewski@example.com>  Fri, 08 Aug 2025 12:18:28 +0200
+
+youtube-downloader (1.0.4) stable; urgency=medium
+
+  * Aktualizacja do wersji 1.0.4
+  * [DODAJ OPIS ZMIAN TUTAJ]
+
+ -- Jerzy Maczewski <jerzy.maczewski@example.com>  Fri, 08 Aug 2025 12:10:19 +0200
+
+youtube-downloader (1.0.3) stable; urgency=medium
+
+  * Aktualizacja do wersji 1.0.3
+  * [DODAJ OPIS ZMIAN TUTAJ]
+
+ -- Jerzy Maczewski <jerzy.maczewski@example.com>  Fri, 08 Aug 2025 12:10:19 +0200
+
+youtube-downloader (1.0.3) stable; urgency=medium
+
+  * Initial release
+  * Dodano pobieranie filmów z YouTube z GUI
+  * Obsługa formatów MP4 i MP3
+  * Wybór rozdzielczości i katalogu docelowego
+  * Progress bar i możliwość anulowania
+  * Walidacja linków i obsługa błędów
+  * Automatyczne sanityzowanie nazw plików
+
+ -- Jerzy Maczewski <jerzy.maczewski@example.com>  Thu, 08 Aug 2025 12:00:00 +0000
+
+youtube-downloader (1.0.2) stable; urgency=low
+
+  * Poprawki błędów w interfejsie
+  * Ulepszenia stabilności
+
+ -- Jerzy Maczewski <jerzy.maczewski@example.com>  Wed, 07 Aug 2025 12:00:00 +0000
+
+youtube-downloader (1.0.1) stable; urgency=low
+
+  * Wstępna wersja beta
+  * Podstawowa funkcjonalność pobierania
+
+ -- Jerzy Maczewski <jerzy.maczewski@example.com>  Tue, 06 Aug 2025 12:00:00 +0000
