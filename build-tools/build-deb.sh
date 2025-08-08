@@ -20,15 +20,16 @@ log_error() { echo -e "${RED}❌ $1${NC}"; }
 
 # Konfiguracja
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$SCRIPT_DIR"
+# Ustaw katalog projektu na rodzica build-tools/
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build"
 DEBIAN_DIR="$BUILD_DIR/debian"
 PACKAGE_DIR="$DEBIAN_DIR/youtube-downloader"
 
 # Wczytaj wersję z main.py
 get_version_from_source() {
-    if [[ -f "$PROJECT_ROOT/main.py" ]]; then
-        grep -o 'YouTube Downloader v[0-9]\+\.[0-9]\+\.[0-9]\+' "$PROJECT_ROOT/main.py" | sed 's/YouTube Downloader v//' || echo "1.0.3"
+    if [[ -f "$PROJECT_ROOT/version.py" ]]; then
+        python3 -c "import re;from pathlib import Path;ns={};exec(Path('$PROJECT_ROOT/version.py').read_text(),ns);print(ns.get('__version__','1.0.3'))" 2>/dev/null || echo "1.0.3"
     else
         echo "1.0.3"
     fi
@@ -66,7 +67,13 @@ check_required_files() {
 clean_build() {
     log_info "Czyszczenie poprzedniego build..."
     rm -rf "$BUILD_DIR"
-    rm -f "$PROJECT_ROOT"/*.deb
+    # Domyślnie nie usuwaj plików .deb, aby zachować lokalne artefakty
+    if [[ "${CLEAN_OLD_DEB:-0}" == "1" ]]; then
+        rm -f "$PROJECT_ROOT"/*.deb || true
+        log_info "Usunięto stare pliki .deb (CLEAN_OLD_DEB=1)"
+    else
+        log_info "Pomijam usuwanie plików .deb (ustaw CLEAN_OLD_DEB=1 aby usunąć)"
+    fi
     log_success "Build directory wyczyszczone"
 }
 
@@ -98,6 +105,7 @@ copy_application_files() {
     cp "$PROJECT_ROOT/gui.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     cp "$PROJECT_ROOT/downloader.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     cp "$PROJECT_ROOT/utils.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
+    cp "$PROJECT_ROOT/version.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     cp "$PROJECT_ROOT/requirements.txt" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     
     # Dokumentacja
@@ -193,11 +201,16 @@ create_control_file() {
 Package: $PACKAGE_NAME
 Version: $VERSION
 Architecture: all
-Maintainer: Jerzy Maczewski <jerzy.maczewski@example.com>
+ Maintainer: Jerzy Maczewski <jerzymaczewski@gmail.com>
 Installed-Size: $INSTALLED_SIZE
-Depends: python3 | python3-minimal, python3-tk, python3-venv
+Depends: ${misc:Depends}, ${python3:Depends}, python3, python3-tk, python3-venv, python3-pip
+Recommends: ffmpeg
+Suggests: vlc
 Section: utils
 Priority: optional
+Homepage: https://github.com/george7979/youtube-downloader
+Vcs-Git: https://github.com/george7979/youtube-downloader.git
+Vcs-Browser: https://github.com/george7979/youtube-downloader
 Description: YouTube Downloader - Aplikacja do pobierania filmów z YouTube
  Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficznym.
  .

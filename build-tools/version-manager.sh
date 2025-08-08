@@ -19,19 +19,20 @@ log_error() { echo -e "${RED}❌ $1${NC}"; }
 
 # Konfiguracja
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$SCRIPT_DIR"
+# Ustaw katalog projektu na rodzica build-tools/
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Pliki do aktualizacji wersji
 VERSION_FILES=(
-    "main.py"
+    "version.py"
     "debian-src/changelog"
     "README.md"
 )
 
 # Funkcja do pobierania aktualnej wersji z main.py
 get_current_version() {
-    if [[ -f "$PROJECT_ROOT/main.py" ]]; then
-        grep -o 'YouTube Downloader v[0-9]\+\.[0-9]\+\.[0-9]\+' "$PROJECT_ROOT/main.py" | sed 's/YouTube Downloader v//' || echo "1.0.3"
+    if [[ -f "$PROJECT_ROOT/version.py" ]]; then
+        python3 -c "from pathlib import Path;ns={};exec(Path('$PROJECT_ROOT/version.py').read_text(),ns);print(ns.get('__version__','1.0.3'))" 2>/dev/null || echo "1.0.3"
     else
         echo "1.0.3"
     fi
@@ -68,20 +69,17 @@ version_compare() {
     return 0  # version1 == version2
 }
 
-# Funkcja do aktualizacji wersji w main.py
-update_main_py() {
+# Funkcja do aktualizacji version.py
+update_version_file() {
     local new_version="$1"
-    local file="$PROJECT_ROOT/main.py"
-    
+    local file="$PROJECT_ROOT/version.py"
     if [[ ! -f "$file" ]]; then
-        log_error "Plik main.py nie istnieje"
-        return 1
+        log_warning "Brak version.py - tworzę nowy"
+        echo "__version__ = \"$new_version\"" > "$file"
+    else
+        sed -i "s/^__version__ = \".*\"/__version__ = \"$new_version\"/" "$file"
     fi
-    
-    # Aktualizuj tytuł okna
-    sed -i "s/YouTube Downloader v[0-9]\+\.[0-9]\+\.[0-9]\+/YouTube Downloader v$new_version/g" "$file"
-    
-    log_success "Zaktualizowano main.py"
+    log_success "Zaktualizowano version.py"
 }
 
 # Funkcja do aktualizacji README.md
@@ -238,7 +236,7 @@ update_version() {
     fi
     
     # Aktualizuj wszystkie pliki
-    update_main_py "$new_version"
+    update_version_file "$new_version"
     update_readme "$new_version"
     update_changelog "$new_version"
     

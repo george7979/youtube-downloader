@@ -298,7 +298,7 @@ DEBIAN/postinst
 ├── 🔍 Sprawdzenie zależności systemowych (python3-venv, python3-tk)
 ├── 🔧 Tworzenie środowiska wirtualnego (3 metody fallback)
 ├── 🔒 Bezpieczne pobieranie pip przez SSL (jeśli potrzeba)
-├── 📦 Instalacja zależności aplikacji (yt-dlp>=2025.7.21)
+├── 📦 Instalacja zależności aplikacji (yt-dlp>=2024.10,<2026.0)
 └── ✅ Weryfikacja poprawności instalacji
 ```
 
@@ -410,7 +410,7 @@ Suggests: vlc
 
 # Instalacja głównych zależności
 "$VENV_DIR/bin/pip" install \
-    yt-dlp requests urllib3 certifi brotli pycryptodomex \
+    "yt-dlp>=2024.10,<2026.0" requests urllib3 certifi brotli pycryptodomex \
     --no-warn-script-location
 ```
 
@@ -520,7 +520,7 @@ ls -la /usr/share/youtube-downloader/
 # Ręczne odtworzenie venv
 sudo rm -rf /usr/share/youtube-downloader/venv
 sudo python3 -m venv /usr/share/youtube-downloader/venv
-sudo /usr/share/youtube-downloader/venv/bin/pip install "yt-dlp>=2025.7.21"
+sudo /usr/share/youtube-downloader/venv/bin/pip install "yt-dlp>=2024.10,<2026.0"
 ```
 
 #### **Problem: Brak pip w venv**
@@ -547,7 +547,7 @@ python main.py
 #### **Problem: Import Error yt_dlp**
 ```bash
 # Reinstalacja zależności
-sudo /usr/share/youtube-downloader/venv/bin/pip install --upgrade "yt-dlp>=2025.7.21"
+sudo /usr/share/youtube-downloader/venv/bin/pip install --upgrade "yt-dlp>=2024.10,<2026.0"
 
 # Sprawdź konflikt z systemowym yt-dlp
 which yt-dlp  # Nie powinno znajdować jeśli używamy venv

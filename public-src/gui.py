@@ -7,9 +7,11 @@ GUI aplikacji do pobierania filmów z YouTube
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import threading
+import logging
 import os
 import json
 from downloader import YouTubeDownloader
+from version import __version__
 from utils import validate_youtube_url, extract_timestamps
 
 class YouTubeDownloaderGUI:
@@ -41,7 +43,7 @@ class YouTubeDownloaderGUI:
             default_dir = os.path.expanduser("~/Downloads")
             if os.path.exists(default_dir):
                 self.selected_directory = default_dir
-                print(f"📁 Ustawiam domyślną lokalizację: {default_dir}")
+                logging.info(f"📁 Ustawiam domyślną lokalizację: {default_dir}")
                 self.save_last_directory(default_dir)
         
         # Inicjalizacja interfejsu
@@ -51,7 +53,7 @@ class YouTubeDownloaderGUI:
         """Znajdź odpowiednią ścieżkę dla konfiguracji"""
         # Zawsze używaj /tmp/ - prostsze i bardziej niezawodne
         config_file = "/tmp/youtube-downloader-config.json"
-        print(f"✅ Używam konfiguracji: {config_file}")
+        logging.info(f"✅ Używam konfiguracji: {config_file}")
         return config_file
         
     def setup_icon(self):
@@ -104,7 +106,7 @@ class YouTubeDownloaderGUI:
             
     def setup_window(self):
         """Konfiguracja głównego okna"""
-        self.root.title("YouTube Downloader v1.0.3")
+        self.root.title(f"YouTube Downloader v{__version__}")
         self.root.geometry("1100x1000")
         self.root.minsize(1000, 900)
         
@@ -118,41 +120,38 @@ class YouTubeDownloaderGUI:
         """Wczytanie ostatnio użytego katalogu"""
         config_file = "/tmp/youtube-downloader-config.json"
         try:
-            print(f"🔍 Sprawdzam konfigurację: {config_file}")
+            logging.debug(f"🔍 Sprawdzam konfigurację: {config_file}")
             if os.path.exists(config_file):
-                print(f"✅ Plik konfiguracyjny istnieje")
+                logging.debug(f"✅ Plik konfiguracyjny istnieje")
                 with open(config_file, 'r') as f:
                     config = json.load(f)
                     last_dir = config.get('last_directory')
-                    print(f"📁 Ostatni katalog: {last_dir}")
+                    logging.debug(f"📁 Ostatni katalog: {last_dir}")
                     if last_dir and os.path.exists(last_dir):
                         self.selected_directory = last_dir
-                        print(f"✅ Wczytano katalog: {last_dir}")
+                        logging.info(f"✅ Wczytano katalog: {last_dir}")
                     else:
-                        print(f"❌ Katalog nie istnieje lub jest pusty: {last_dir}")
+                        logging.warning(f"❌ Katalog nie istnieje lub jest pusty: {last_dir}")
             else:
-                print(f"❌ Plik konfiguracyjny nie istnieje: {config_file}")
+                logging.debug(f"❌ Plik konfiguracyjny nie istnieje: {config_file}")
         except Exception as e:
-            print(f"❌ Błąd wczytywania konfiguracji: {e}")
+            logging.error(f"❌ Błąd wczytywania konfiguracji: {e}")
             pass
             
     def save_last_directory(self, directory):
         """Zapisanie ostatnio użytego katalogu"""
         try:
             config_dir = os.path.dirname(self.config_file)
-            print(f"Tworzenie katalogu: {config_dir}")
+            logging.debug(f"Tworzenie katalogu: {config_dir}")
             os.makedirs(config_dir, exist_ok=True)
             
             config = {'last_directory': directory}
-            print(f"Zapisywanie do: {self.config_file}")
+            logging.debug(f"Zapisywanie do: {self.config_file}")
             with open(self.config_file, 'w') as f:
                 json.dump(config, f)
-            print(f"✅ Zapisano konfigurację: {self.config_file}")
+            logging.info(f"✅ Zapisano konfigurację: {self.config_file}")
         except Exception as e:
-            print(f"❌ Błąd zapisu konfiguracji: {e}")
-            print(f"   Katalog: {os.path.dirname(self.config_file)}")
-            print(f"   Plik: {self.config_file}")
-            print(f"   Uprawnienia: {oct(os.stat(os.path.expanduser('~')).st_mode)[-3:]}")
+            logging.error(f"❌ Błąd zapisu konfiguracji: {e}")
             # Ignoruj błędy zapisu konfiguracji
             pass
         
@@ -375,7 +374,7 @@ class YouTubeDownloaderGUI:
         status_frame.columnconfigure(0, weight=1)
         
         # Status aplikacji
-        app_status = ttk.Label(status_frame, text="YouTube Downloader v1.0.3", 
+        app_status = ttk.Label(status_frame, text=f"YouTube Downloader v{__version__}", 
                               font=('Segoe UI', 8), foreground='#7f8c8d')
         app_status.grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
         

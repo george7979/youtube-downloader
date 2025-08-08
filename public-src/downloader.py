@@ -5,8 +5,8 @@ Główna logika pobierania filmów z YouTube
 """
 
 import os
+import logging
 import yt_dlp
-import threading
 from pathlib import Path
 from utils import sanitize_filename
 
@@ -70,7 +70,7 @@ class YouTubeDownloader:
         # Próbuj każdą konfigurację
         for config in configs:
             try:
-                print(f"🔄 Próba z {config['name']}...")
+                logging.info(f"🔄 Próba z {config['name']}...")
                 with yt_dlp.YoutubeDL(config['opts']) as ydl:
                     info = ydl.extract_info(url, download=False)
                 
@@ -86,11 +86,11 @@ class YouTubeDownloader:
                         'upload_date': info.get('upload_date', ''),
                     }
                     
-                    print(f"✅ {config['name']} zadziałał!")
+                    logging.info(f"✅ {config['name']} zadziałał!")
                     return video_info
                     
             except Exception as e:
-                print(f"❌ {config['name']} nie zadziałał: {str(e)[:100]}...")
+                logging.warning(f"❌ {config['name']} nie zadziałał: {str(e)[:100]}...")
                 continue
                 
         # Jeśli żadna konfiguracja nie zadziałała
@@ -152,7 +152,7 @@ class YouTubeDownloader:
         # Próbuj każdy klient
         for config in download_configs:
             try:
-                print(f"🔄 Pobieranie z {config['name']}...")
+                logging.info(f"🔄 Pobieranie z {config['name']}...")
                 
                 # Połącz bazowe opcje z opcjami klienta
                 ydl_opts = {**base_opts, **config['opts']}
@@ -184,7 +184,7 @@ class YouTubeDownloader:
                     if audio_only and not filename.endswith('.mp3'):
                         filename = filename.rsplit('.', 1)[0] + '.mp3'
                         
-                    print(f"✅ {config['name']} - pobieranie zakończone pomyślnie!")
+                    logging.info(f"✅ {config['name']} - pobieranie zakończone pomyślnie!")
                     return {
                         'filename': os.path.basename(filename),
                         'full_path': filename,
@@ -195,7 +195,7 @@ class YouTubeDownloader:
                     
             except Exception as e:
                 error_msg = str(e)
-                print(f"❌ {config['name']} nie zadziałał: {error_msg[:100]}...")
+                logging.warning(f"❌ {config['name']} nie zadziałał: {error_msg[:100]}...")
                 
                 # Sprawdź czy to błąd anulowania
                 if self.cancel_flag:
@@ -269,10 +269,10 @@ class YouTubeDownloader:
             with open(timestamp_path, 'w', encoding='utf-8') as f:
                 f.write(content)
                 
-            print(f"Zapisano timestamps: {timestamp_filename}")
+            logging.info(f"Zapisano timestamps: {timestamp_filename}")
             
         except Exception as e:
-            print(f"Błąd podczas zapisywania timestampów: {e}")
+            logging.error(f"Błąd podczas zapisywania timestampów: {e}")
             
     def get_available_formats(self, url):
         """Pobieranie dostępnych formatów"""

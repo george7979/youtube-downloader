@@ -10,6 +10,7 @@ from tkinter import messagebox
 from gui import YouTubeDownloaderGUI
 from downloader import YouTubeDownloader
 from utils import setup_logging, cleanup_old_logs
+from version import __version__
 
 def main():
     """Główna funkcja aplikacji"""
@@ -22,7 +23,7 @@ def main():
         
         # Utworzenie głównego okna aplikacji
         root = tk.Tk()
-        root.title("YouTube Downloader v1.0.3")
+        root.title(f"YouTube Downloader v{__version__}")
         root.geometry("1100x1000")
         root.minsize(1000, 900)
         root.resizable(True, True)
@@ -34,7 +35,7 @@ def main():
         root.mainloop()
         
     except Exception as e:
-        print(f"Błąd podczas uruchamiania aplikacji: {e}")
+        # Zaloguj błąd, a komunikat pokaż w GUI
         messagebox.showerror("Błąd", f"Nie udało się uruchomić aplikacji:\n{e}")
         sys.exit(1)
 

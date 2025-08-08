@@ -29,7 +29,7 @@ define log_warning
 	@echo -e "$(YELLOW)⚠️  $(1)$(NC)"
 endef
 
-.PHONY: help build clean test install version check deps ci test-dual-repo ci-check
+.PHONY: help build clean test install version check deps ci test-dual-repo ci-check push-private sync-public push-public
 
 help: ## Pokaż tę pomoc
 	@printf "$(BLUE)YouTube Downloader Build System$(NC)\n"
@@ -44,10 +44,10 @@ build: check ## Zbuduj pakiet DEB
 	@./build-tools/build-deb.sh
 	$(call log_success,Pakiet zbudowany: $(DEB_FILE))
 
-clean: ## Wyczyść pliki build
+clean: ## Wyczyść pliki build (bez usuwania lokalnych .deb)
 	$(call log_info,Czyszczenie plików build...)
 	@rm -rf build/
-	@rm -f *.deb *.md5 *.sha256
+	@rm -f *.md5 *.sha256
 	@rm -f .version-backup
 	$(call log_success,Pliki build usunięte)
 
@@ -70,6 +70,16 @@ install: test ## Zainstaluj pakiet lokalnie
 	@sudo dpkg -i $(DEB_FILE)
 	@sudo apt-get install -f || true
 	$(call log_success,Pakiet zainstalowany)
+
+push-private: ## Wypchnij całe lokalne repo do private (łącznie z ignorowanymi); interaktywne potwierdzenia
+	@./scripts/push-to-private.sh
+
+sync-public: ## Przygotuj okrojony kod do publikacji w katalogu public-src/
+	@./scripts/sync-to-public.sh
+
+push-public: ## Opublikuj zawartość public-src/ do publicznego repo na GitHub
+	@echo "ℹ️  Upewnij się, że masz tag w formacie vX.Y.Z (np. v$$(python3 -c 'ns={};exec(open("version.py").read(),ns);print(ns.get("__version__","0.0.0"))'))"
+	@./scripts/sync-to-public-github.sh
 
 uninstall: ## Usuń pakiet
 	$(call log_info,Usuwanie pakietu...)
@@ -103,8 +113,8 @@ check: ## Sprawdź wymagania systemowe
 	@test -f gui.py || { echo "❌ Brak gui.py"; exit 1; }
 	@test -f downloader.py || { echo "❌ Brak downloader.py"; exit 1; }
 	@test -f utils.py || { echo "❌ Brak utils.py"; exit 1; }
-	@test -x build-deb.sh || { echo "❌ build-deb.sh nie jest wykonywalny"; exit 1; }
-	@test -x build-tools/version-manager.sh || { echo "❌ version-manager.sh nie jest wykonywalny"; exit 1; }
+	@test -x build-tools/build-deb.sh || { echo "❌ build-tools/build-deb.sh nie jest wykonywalny"; exit 1; }
+	@test -x build-tools/version-manager.sh || { echo "❌ build-tools/version-manager.sh nie jest wykonywalny"; exit 1; }
 	$(call log_success,Wszystkie wymagania spełnione)
 
 deps: ## Zainstaluj zależności budowania
@@ -193,7 +203,8 @@ debug-build: ## Debug build script
 	@DEBUG=1 ./build-deb.sh
 
 # Sprawdź czy wszystkie pliki istnieją przed budowaniem
-$(DEB_FILE): main.py gui.py downloader.py utils.py requirements.txt build-deb.sh
+
+$(DEB_FILE): main.py gui.py downloader.py utils.py requirements.txt build-tools/build-deb.sh
 	@$(MAKE) build
 
 # Aliasy dla wygody

@@ -6,9 +6,10 @@ echo "🔄 Synchronizing PRIVATE -> PUBLIC"
 # Pliki do synchronizacji
 PUBLIC_FILES=(
     "main.py"
-    "gui.py" 
+    "gui.py"
     "downloader.py"
     "utils.py"
+    "version.py"
     "requirements.txt"
     "README.md"
     "LICENSE"
@@ -28,13 +29,17 @@ for file in "${PUBLIC_FILES[@]}"; do
 done
 
 echo "🔄 Creating sanitized README for public..."
-# Sanitize README - usuń sekcje deweloperskie
+# Sanitize README - usuń sekcje deweloperskie (jeśli istnieją w README)
 if [ -f "README.md" ]; then
-    # Usuń sekcje z deweloperskimi detalami
-    sed '/## Development/,$d' README.md > public-src/README.md
-    
-    # Dodaj sekcję instalacji dla użytkowników
-    cat >> public-src/README.md << 'ENDREADME'
+    if grep -q "## Development" README.md; then
+        sed '/## Development/,$d' README.md > public-src/README.md
+    else
+        cp README.md public-src/README.md
+    fi
+
+    # Dodaj sekcję instalacji dla użytkowników (unikaj duplikacji)
+    if ! grep -q "## Instalacja" public-src/README.md; then
+cat >> public-src/README.md << 'ENDREADME'
 
 ## Instalacja
 
@@ -57,6 +62,7 @@ sudo apt-get install -f  # Napraw ewentualne zależności
 
 Jeśli masz problemy, sprawdź [Issues](https://github.com/user/youtube-downloader/issues).
 ENDREADME
+    fi
 fi
 
 echo "✅ Files synchronized to public-src/"

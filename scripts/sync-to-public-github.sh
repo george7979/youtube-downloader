@@ -125,9 +125,18 @@ echo ""
 echo "📤 COMMIT AND PUSH TO PUBLIC"
 echo "============================"
 
+# Wymagany tag wydania (vX.Y.Z) – zabezpiecza publikację
+REQUIRED_TAG_REGEX='^v[0-9]+\.[0-9]+\.[0-9]+$'
+LATEST_TAG=$(git -C "$OLDPWD" describe --tags --abbrev=0 2>/dev/null || true)
+if [[ -z "$LATEST_TAG" || ! "$LATEST_TAG" =~ $REQUIRED_TAG_REGEX ]]; then
+  echo "❌ Brak poprawnego taga wydania w repo prywatnym (wymagany format vX.Y.Z). Przerwano."
+  echo "💡 Użyj: git tag v$(python3 -c 'ns={};exec(open("version.py").read(),ns);print(ns.get("__version__","0.0.0"))') && git push origin --tags"
+  cd "$OLDPWD"; rm -rf "$TEMP_DIR"; exit 1
+fi
+
 # Git config dla public repo
 git config user.name "Jerzy Maczewski"
-git config user.email "jerzy.maczewski@example.com"
+git config user.email "jerzymaczewski@gmail.com"
 
 # Add wszystkie pliki
 git add .

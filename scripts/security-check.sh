@@ -1,4 +1,30 @@
 #!/bin/bash
+set -e
+
+echo "🔍 Security check: scanning for obvious secrets and private files"
+
+EXIT_CODE=0
+
+# 1) Skan pod common secrets (bez .git)
+if grep -R -I -n -E "(password|secret|api_key|token|PRIVATE KEY|BEGIN RSA|BEGIN OPENSSH)" . --exclude-dir=.git --exclude-dir=build --exclude-dir=__pycache__ >/tmp/security-grep.log 2>/dev/null; then
+  echo "⚠️  Potencjalne sekrety znalezione:"
+  head -n 10 /tmp/security-grep.log
+  EXIT_CODE=1
+else
+  echo "✅ Brak oczywistych sekretów (w szybkim skanie)"
+fi
+
+# 2) Zakazane pliki w public-src
+if find public-src -name "cursorrules" -o -name ".cursorrules" | grep -q .; then
+  echo "❌ Zakazane pliki (cursorrules) znalezione w public-src/"
+  find public-src -name "cursorrules" -o -name ".cursorrules"
+  EXIT_CODE=1
+else
+  echo "✅ Brak zakazanych plików w public-src/"
+fi
+
+exit $EXIT_CODE
+#!/bin/bash
 
 echo "🔍 SECURITY CHECK - Dual Repository"
 echo "===================================="

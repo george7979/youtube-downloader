@@ -285,8 +285,8 @@ def cleanup_old_logs(max_size_mb=10):
         max_size_mb (int): Maksymalny rozmiar pliku log w MB
     """
     try:
-        home_dir = os.path.expanduser("~")
-        log_dir = os.path.join(home_dir, ".youtube-downloader")
+        # Ujednolicone miejsce logów: /tmp (spójne z setup_logging)
+        log_dir = "/tmp"
         log_file = os.path.join(log_dir, "youtube_downloader.log")
         
         if os.path.exists(log_file):

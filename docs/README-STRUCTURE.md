@@ -38,13 +38,7 @@ youtube-downloader-dev/              # 🔒 PRIVATE REPOSITORY
 ├── 📁 dev-tools/                    # 🛠️ DEVELOPMENT UTILITIES
 │   └── (reserved for future tools)
 │
-├── 🔗 SYMLINKS (for development):
-│   ├── main.py → public-src/main.py
-│   ├── gui.py → public-src/gui.py
-│   ├── downloader.py → public-src/downloader.py
-│   ├── utils.py → public-src/utils.py
-│   ├── requirements.txt → public-src/requirements.txt
-│   └── debian-src → public-src/debian-src
+├── (no symlinks) – pliki źródłowe trzymamy w root; `public-src/` jest snapshotem publikacyjnym
 │
 ├── 📋 PROJECT MANAGEMENT:
 │   ├── Makefile                     # → Build automation
@@ -61,15 +55,14 @@ youtube-downloader-dev/              # 🔒 PRIVATE REPOSITORY
 ## 🔄 Workflow Katalogów
 
 ### **1. Development Workflow**
-- **Pracuj z**: Symlinks w root (main.py, gui.py, etc.)
-- **Source of truth**: `public-src/` directory
-- **Build tools**: `build-tools/` directory  
-- **Documentation**: `docs/` directory
+- **Pracuj w**: root (main.py, gui.py, downloader.py, utils.py)
+- **Source of truth**: root
+- **Public snapshot**: `make sync-public` przygotowuje `public-src/`
+- **Build tools**: `build-tools/`, **Documentation**: `docs/`
 
 ### **2. Dual-Repo Sync**
-- **Sync source**: `public-src/` → PUBLIC repository
-- **Sync tools**: `scripts/sync-to-public-github.sh`
-- **Security**: `scripts/security-check.sh`
+- **Krok 1**: `make sync-public` (root → public-src)
+- **Krok 2**: `make push-public` (public-src → public GitHub, z security check i potwierdzeniem)
 
 ### **3. Build Process**
 - **Main script**: `build-tools/build-deb.sh`
@@ -95,16 +88,18 @@ youtube-downloader-dev/              # 🔒 PRIVATE REPOSITORY
 
 ### **Daily Development:**
 ```bash
-# Edit files through symlinks (normalnie)
-vim main.py                    # Edytuje public-src/main.py
-vim gui.py                     # Edytuje public-src/gui.py
+# Praca w repo prywatnym
+vim main.py gui.py downloader.py utils.py
 
-# Build with organized tools
-make build                     # Używa build-tools/build-deb.sh
-make version                   # Używa build-tools/version-manager.sh
+# Build
+make build
 
-# Sync to public when ready
-./scripts/sync-to-public-github.sh
+# Wersja
+./build-tools/version-manager.sh bump patch  # lub set X.Y.Z
+
+# Publikacja (gdy gotowe)
+make sync-public
+make push-public
 ```
 
 ### **New Team Member Setup:**
@@ -138,16 +133,10 @@ cp new-sync-tool.sh scripts/
 
 ## 🔍 Troubleshooting
 
-### **Symlinks not working:**
+### **Publikacja nie zawiera zmian:**
 ```bash
-# Recreate symlinks
-rm main.py gui.py downloader.py utils.py requirements.txt debian-src
-ln -s public-src/main.py main.py
-ln -s public-src/gui.py gui.py
-ln -s public-src/downloader.py downloader.py
-ln -s public-src/utils.py utils.py
-ln -s public-src/requirements.txt requirements.txt
-ln -s public-src/debian-src debian-src
+# Upewnij się, że odświeżyłeś snapshot
+make sync-public
 ```
 
 ### **Build tools not found:**

@@ -52,7 +52,7 @@ make info
 
 ### 🚫 NIGDY NIE COMMITUJ ARTEFAKTÓW:
 - ❌ **Nie dodawaj** `build/` do git
-- ❌ **Nie pushuj** pakietów `.deb`
+- ❌ **Nie pushuj** pakietów `.deb` (do public)
 - ❌ **Nie commituj** plików tymczasowych
 - ✅ **Używaj** `.gitignore` do ochrony
 - ✅ **Buduj** pakiety na żądanie
@@ -74,11 +74,11 @@ make install
 
 ### 🔧 NARZĘDZIA ZARZĄDZANIA WERSJAMI:
 ```bash
-./version-manager.sh show          # Pokaż aktualną wersję
-./version-manager.sh bump patch    # Zwiększ wersję patch (1.0.3 → 1.0.4)
-./version-manager.sh bump minor    # Zwiększ wersję minor (1.0.3 → 1.1.0)  
-./version-manager.sh bump major    # Zwiększ wersję major (1.0.3 → 2.0.0)
-./version-manager.sh set 1.0.5     # Ustaw konkretną wersję
+./build-tools/version-manager.sh show          # Pokaż aktualną wersję
+./build-tools/version-manager.sh bump patch    # Zwiększ wersję patch (1.0.3 → 1.0.4)
+./build-tools/version-manager.sh bump minor    # Zwiększ wersję minor (1.0.3 → 1.1.0)  
+./build-tools/version-manager.sh bump major    # Zwiększ wersję major (1.0.3 → 2.0.0)
+./build-tools/version-manager.sh set 1.0.5     # Ustaw konkretną wersję
 ```
 
 ### 📋 AUTOMATYZACJA MAKEFILE:
@@ -99,8 +99,8 @@ make deps           # Zainstaluj zależności budowania
 ```
 youtube-downloader/
 ├── 🔨 NARZĘDZIA BUDOWANIA:
-├── build-deb.sh              # Główny skrypt budowania
-├── version-manager.sh         # Zarządzanie wersjami  
+├── build-tools/build-deb.sh       # Główny skrypt budowania
+├── build-tools/version-manager.sh # Zarządzanie wersjami  
 ├── Makefile                   # Automatyzacja make
 │
 ├── 📚 DOKUMENTACJA:
@@ -111,7 +111,7 @@ youtube-downloader/
 ├── cursorrules               # Reguły projektu
 │
 ├── 📦 DEBIAN PACKAGING:
-├── debian-src/               # Standardowe pliki debian
+├── public-src/debian-src/         # Standardowe pliki debian do publikacji
 │   ├── changelog             # Historia wersji
 │   ├── control               # Metadane pakietu
 │   ├── rules                 # Reguły budowania
@@ -245,14 +245,7 @@ fi
 #### **debian/postinst - Instalacja zależności:**
 ```bash
 # Zainstaluj zależności w środowisku wirtualnym
-echo "📚 Instalowanie zależności w środowisku wirtualnym..."
-if /usr/share/youtube-downloader/venv/bin/pip install yt-dlp 2>/dev/null; then
-    echo "✅ Zależności zainstalowane pomyślnie"
-else
-    echo "❌ Błąd: Nie udało się zainstalować zależności"
-    echo "Instalowanie w tle..."
-    nohup bash -c 'sleep 10; /usr/share/youtube-downloader/venv/bin/pip install yt-dlp' >/dev/null 2>&1 &
-fi
+/usr/share/youtube-downloader/venv/bin/pip install "yt-dlp>=2024.10,<2026.0"
 
 # Sprawdź czy zależności zostały zainstalowane poprawnie
 echo "🔍 Sprawdzanie instalacji zależności..."
@@ -292,10 +285,10 @@ make test
 #### **Pełny release workflow:**
 ```bash
 # 1. Zwiększ wersję
-./version-manager.sh bump patch
+./build-tools/version-manager.sh bump patch
 
 # 2. Uzupełnij opis zmian w changelog
-nano debian-src/changelog
+nano public-src/debian-src/changelog
 
 # 3. Zbuduj i przetestuj
 make release
@@ -369,7 +362,7 @@ make info
 #### **Dlaczego środowisko wirtualne?**
 - ✅ **Brak konfliktów** z systemowymi pakietami Python
 - ✅ **Czysta deinstalacja** - usuwa wszystkie zależności aplikacji  
-- ✅ **Precyzyjna kontrola wersji** zależności (yt-dlp>=2025.7.21)
+- ✅ **Precyzyjna kontrola wersji** zależności (yt-dlp>=2024.10,<2026.0)
 - ✅ **Identyczne środowisko** na każdym systemie Linux
 - ✅ **Bezpieczeństwo** - ograniczone uprawnienia aplikacji
 
@@ -530,7 +523,7 @@ python main.py
 # Ręczna rekonstrukcja
 sudo rm -rf /usr/share/youtube-downloader/venv
 sudo python3 -m venv /usr/share/youtube-downloader/venv  
-sudo /usr/share/youtube-downloader/venv/bin/pip install "yt-dlp>=2025.7.21"
+sudo /usr/share/youtube-downloader/venv/bin/pip install "yt-dlp>=2024.10,<2026.0"
 sudo chmod -R 755 /usr/share/youtube-downloader/venv
 ```
 
@@ -556,7 +549,7 @@ else
     echo "❌ Weryfikacja środowiska Python: BŁĄD"
 fi
 
-# Test FFmpeg (jak używa downloader.py:169)
+# Test FFmpeg (jak używa downloader.py)
 if which ffmpeg >/dev/null 2>&1; then
     echo "✅ FFmpeg dostępny"
 else
