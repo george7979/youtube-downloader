@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+  upgrade|failed-upgrade)
+    echo "ℹ️  prerm: aktualizacja - zachowuję venv"
+    ;;
+  remove|deconfigure)
+    echo "ℹ️  prerm: usuwanie - przygotowanie do czyszczenia"
+    ;;
+esac
+
+exit 0
+
+

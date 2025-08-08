@@ -33,11 +33,13 @@ git status --porcelain || true
 
 echo ""
 echo "🧮 Skanuję pliki ignorowane przez .gitignore, które ZOSTANĄ dołączone do commita..."
-IGNORED_LIST=$(git ls-files -oi --exclude-standard -z || true)
-IGNORED_COUNT=$(printf "%s" "$IGNORED_LIST" | tr '\0' '\n' | sed '/^$/d' | wc -l)
+# Uwaga: wyjście z -z zawiera bajty NUL; nie zapisuj do zmiennej powłoki (ucięcie przy NUL)
+IGNORED_TMP=$(mktemp)
+git ls-files -oi --exclude-standard -z > "$IGNORED_TMP" || true
+IGNORED_COUNT=$(tr '\0' '\n' < "$IGNORED_TMP" | sed '/^$/d' | wc -l)
 if [ "$IGNORED_COUNT" -gt 0 ]; then
   echo "⚠️  Znaleziono $IGNORED_COUNT ignorowanych plików, które zostaną dołączone (podgląd 20):"
-  printf "%s" "$IGNORED_LIST" | tr '\0' '\n' | sed '/^$/d' | head -20 | while read -r f; do
+  tr '\0' '\n' < "$IGNORED_TMP" | sed '/^$/d' | head -20 | while read -r f; do
     [ -e "$f" ] && du -h "$f" 2>/dev/null || echo "$f"
   done
 else
@@ -57,7 +59,7 @@ git add -A
 
 # 2) Wymuś dodanie plików ignorowanych
 if [ "$IGNORED_COUNT" -gt 0 ]; then
-  printf "%s" "$IGNORED_LIST" | xargs -0 -r git add -f --
+  xargs -0 -r git add -f -- < "$IGNORED_TMP"
 fi
 
 # 3) Jawnie dołącz .venv jeśli istnieje (na wypadek globalnych reguł ignorowania)
@@ -87,5 +89,8 @@ git push origin HEAD
 echo "✅ Push zakończony"
 
 echo ""
-echo "💡 Uwaga: Lokalne pliki *.deb NIE są usuwane ani commitowane (ignorowane przez .gitignore)."
+echo "💡 Uwaga: Dołączono także ignorowane pliki (np. .venv, artefakty w tym *.deb)."
+
+# Sprzątanie
+[ -n "$IGNORED_TMP" ] && rm -f "$IGNORED_TMP" 2>/dev/null || true
 

@@ -1,0 +1,67 @@
+#!/bin/bash
+set -e
+
+PACKAGE_NAME="youtube-downloader"
+APP_DIR="/usr/share/${PACKAGE_NAME}"
+VENV_DIR="${APP_DIR}/venv"
+PYTHON_BIN="python3"
+
+echo "🔧 postinst: konfiguracja środowiska dla ${PACKAGE_NAME}"
+
+# Upewnij się, że katalog aplikacji istnieje
+if [ ! -d "${APP_DIR}" ]; then
+  echo "❌ Brak katalogu aplikacji: ${APP_DIR}"
+  exit 1
+fi
+
+# Tworzenie venv (standardowa metoda)
+VENV_CREATED=false
+echo "🔄 Tworzenie środowiska wirtualnego..."
+if ${PYTHON_BIN} -m venv "${VENV_DIR}" 2>/dev/null; then
+  VENV_CREATED=true
+  echo "✅ venv utworzony"
+else
+  echo "⚠️  Nie udało się utworzyć venv standardowo, próba bez pip..."
+  if ${PYTHON_BIN} -m venv --without-pip "${VENV_DIR}" 2>/dev/null; then
+    # Pobierz pip
+    echo "🔄 Instalacja pip w venv..."
+    curl -fsSL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
+    "${VENV_DIR}/bin/python" /tmp/get-pip.py --no-warn-script-location
+    rm -f /tmp/get-pip.py
+    VENV_CREATED=true
+    echo "✅ venv bez pip + instalacja pip zakończona"
+  fi
+fi
+
+if [ "${VENV_CREATED}" != "true" ]; then
+  echo "❌ Nie udało się utworzyć środowiska wirtualnego"
+  exit 1
+fi
+
+# Upgrade pip (best effort)
+"${VENV_DIR}/bin/pip" install --upgrade pip >/dev/null 2>&1 || true
+
+# Instalacja zależności aplikacji
+REQ_FILE="${APP_DIR}/requirements.txt"
+if [ -f "${REQ_FILE}" ]; then
+  echo "📦 Instalacja zależności z requirements.txt"
+  "${VENV_DIR}/bin/pip" install -r "${REQ_FILE}" --no-warn-script-location
+else
+  echo "ℹ️  Brak requirements.txt, instaluję minimalne zależności"
+  "${VENV_DIR}/bin/pip" install yt-dlp --no-warn-script-location
+fi
+
+# Weryfikacja importu yt_dlp
+if ! "${VENV_DIR}/bin/python" - <<'PY'
+import yt_dlp
+print("yt-dlp import OK")
+PY
+then
+  echo "❌ Weryfikacja yt-dlp nie powiodła się"
+  exit 1
+fi
+
+echo "✅ postinst: konfiguracja zakończona pomyślnie"
+exit 0
+
+

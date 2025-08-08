@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+
+PACKAGE_NAME="youtube-downloader"
+APP_DIR="/usr/share/${PACKAGE_NAME}"
+VENV_DIR="${APP_DIR}/venv"
+
+echo "🧹 postrm: czyszczenie po usunięciu pakietu"
+
+if [ "$1" = "purge" ] || [ "$1" = "remove" ]; then
+  if [ -d "${VENV_DIR}" ]; then
+    rm -rf "${VENV_DIR}" || true
+    echo "✅ Usunięto venv"
+  fi
+  # Uporządkuj katalog aplikacji, jeśli pusty
+  rmdir "${APP_DIR}" 2>/dev/null || true
+fi
+
+exit 0
+
+
