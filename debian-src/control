@@ -1,11 +1,27 @@
-Package: youtube-downloader
-Version: 1.0.3
-Architecture: all
-Maintainer: Jerzy Maczewski <jerzy.maczewski@example.com>
-Installed-Size: 195
-Depends: python3 | python3-minimal, python3-tk, python3-venv
+Source: youtube-downloader
 Section: utils
 Priority: optional
+Maintainer: Jerzy Maczewski <jerzy.maczewski@example.com>
+Build-Depends: debhelper-compat (= 13),
+               python3-all,
+               python3-setuptools,
+               dh-python
+Standards-Version: 4.5.1
+Homepage: https://github.com/george7979/youtube-downloader
+Vcs-Git: https://github.com/george7979/youtube-downloader.git
+Vcs-Browser: https://github.com/george7979/youtube-downloader
+Rules-Requires-Root: no
+
+Package: youtube-downloader
+Architecture: all
+Depends: ${misc:Depends},
+         ${python3:Depends},
+         python3,
+         python3-tk,
+         python3-venv,
+         python3-pip
+Recommends: ffmpeg
+Suggests: vlc
 Description: YouTube Downloader - Aplikacja do pobierania filmów z YouTube
  Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficznym.
  .

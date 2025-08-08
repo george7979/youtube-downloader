@@ -1,0 +1,230 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build DEB Package
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+    
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          debhelper \
+          devscripts \
+          dh-python \
+          dpkg-dev \
+          fakeroot \
+          python3-all \
+          python3-setuptools \
+          python3-dev \
+          python3-pip \
+          python3-venv \
+          lintian \
+          git
+    
+    - name: Make scripts executable
+      run: |
+        chmod +x build-deb.sh
+        chmod +x version-manager.sh
+        chmod +x debian-src/rules
+    
+    - name: Check build requirements
+      run: make check
+    
+    - name: Show version info
+      run: make version
+    
+    - name: Build DEB package
+      run: make build
+    
+    - name: Test package
+      run: make test
+    
+    - name: Generate checksums
+      run: |
+        sha256sum *.deb > checksums.sha256
+        md5sum *.deb > checksums.md5
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: deb-package
+        path: |
+          *.deb
+          checksums.*
+          
+    - name: Archive build logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-logs
+        path: |
+          build/
+          *.log
+
+  # Test instalacji w różnych dystrybucjach
+  test-install:
+    name: Test Installation
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os-version: ['20.04', '22.04', '24.04']
+    
+    container:
+      image: ubuntu:${{ matrix.os-version }}
+      
+    steps:
+    - name: Install basic tools
+      run: |
+        apt-get update
+        apt-get install -y wget curl
+        
+    - name: Download package
+      uses: actions/download-artifact@v3
+      with:
+        name: deb-package
+        
+    - name: Test package installation
+      run: |
+        echo "Testing on Ubuntu ${{ matrix.os-version }}"
+        dpkg --info *.deb
+        
+        # Spróbuj zainstalować (może się nie udać z powodu zależności)
+        dpkg -i *.deb || true
+        
+        # Napraw zależności
+        apt-get install -f -y
+        
+        # Sprawdź czy jest zainstalowany
+        dpkg -l | grep youtube-downloader
+        
+        # Sprawdź czy plik wykonywalny istnieje
+        test -f /usr/bin/youtube-downloader
+        echo "✅ Installation test passed on Ubuntu ${{ matrix.os-version }}"
+
+  # Release tylko dla tagów
+  release:
+    name: Create Release
+    needs: [build, test-install]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: deb-package
+        
+    - name: Get version from tag
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: YouTube Downloader v${{ steps.version.outputs.VERSION }}
+        draft: false
+        prerelease: false
+        body: |
+          ## YouTube Downloader v${{ steps.version.outputs.VERSION }}
+          
+          ### 📦 Instalacja
+          ```bash
+          # Pobierz i zainstaluj
+          wget https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/youtube-downloader_${{ steps.version.outputs.VERSION }}_all.deb
+          sudo dpkg -i youtube-downloader_${{ steps.version.outputs.VERSION }}_all.deb
+          sudo apt-get install -f
+          ```
+          
+          ### 🚀 Uruchomienie
+          ```bash
+          youtube-downloader
+          ```
+          
+          ### ✅ Przetestowano na:
+          - Ubuntu 20.04 LTS
+          - Ubuntu 22.04 LTS  
+          - Ubuntu 24.04 LTS
+          
+          ### 📋 Sumy kontrolne
+          Sprawdź integralność plików używając dołączonych plików checksums.
+          
+          ---
+          
+          **⚠️ UWAGA PRAWNA:** Ta aplikacja jest narzędziem technicznym. Użytkownik odpowiada za legalność pobierania treści.
+    
+    - name: Upload DEB package
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./youtube-downloader_${{ steps.version.outputs.VERSION }}_all.deb
+        asset_name: youtube-downloader_${{ steps.version.outputs.VERSION }}_all.deb
+        asset_content_type: application/vnd.debian.binary-package
+    
+    - name: Upload SHA256 checksums
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./checksums.sha256
+        asset_name: checksums.sha256
+        asset_content_type: text/plain
+    
+    - name: Upload MD5 checksums
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./checksums.md5
+        asset_name: checksums.md5
+        asset_content_type: text/plain
+
+  # Opcjonalnie: publikuj w repozytorium APT
+  publish-apt:
+    name: Publish to APT Repository
+    needs: [release]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') && github.repository_owner == 'george7979'
+    
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: deb-package
+        
+    - name: Publish to APT repo
+      # To można zaimplementować jeśli masz swoje repozytorium APT
+      run: |
+        echo "Publishing to APT repository would go here"
+        echo "Package: $(ls *.deb)"
+        # reprepro includedeb stable *.deb

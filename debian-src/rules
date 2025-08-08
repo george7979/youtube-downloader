@@ -1,0 +1,70 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+export PYBUILD_NAME = youtube-downloader
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf build/
+	rm -rf *.egg-info/
+	find . -name "__pycache__" -type d -exec rm -rf {} +
+	find . -name "*.pyc" -delete
+
+override_dh_auto_build:
+	# Nie budujemy nic specjalnego, pliki Python są gotowe
+
+override_dh_auto_install:
+	# Instaluj pliki aplikacji
+	mkdir -p $(CURDIR)/debian/youtube-downloader/usr/share/youtube-downloader
+	mkdir -p $(CURDIR)/debian/youtube-downloader/usr/bin
+	mkdir -p $(CURDIR)/debian/youtube-downloader/usr/share/applications
+	mkdir -p $(CURDIR)/debian/youtube-downloader/usr/share/doc/youtube-downloader
+	
+	# Kopiuj pliki Python
+	cp $(CURDIR)/main.py $(CURDIR)/debian/youtube-downloader/usr/share/youtube-downloader/
+	cp $(CURDIR)/gui.py $(CURDIR)/debian/youtube-downloader/usr/share/youtube-downloader/
+	cp $(CURDIR)/downloader.py $(CURDIR)/debian/youtube-downloader/usr/share/youtube-downloader/
+	cp $(CURDIR)/utils.py $(CURDIR)/debian/youtube-downloader/usr/share/youtube-downloader/
+	cp $(CURDIR)/requirements.txt $(CURDIR)/debian/youtube-downloader/usr/share/youtube-downloader/
+	
+	# Kopiuj dokumentację
+	cp $(CURDIR)/README.md $(CURDIR)/debian/youtube-downloader/usr/share/youtube-downloader/
+	cp $(CURDIR)/plan.md $(CURDIR)/debian/youtube-downloader/usr/share/youtube-downloader/
+	
+	# Kopiuj obrazki jeśli istnieją
+	if [ -d $(CURDIR)/pics ]; then \
+		mkdir -p $(CURDIR)/debian/youtube-downloader/usr/share/youtube-downloader/pics && \
+		cp -r $(CURDIR)/pics/* $(CURDIR)/debian/youtube-downloader/usr/share/youtube-downloader/pics/; \
+	fi
+	
+	# Stwórz plik wykonywalny
+	echo '#!/bin/bash' > $(CURDIR)/debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'if [ ! -d "/usr/share/youtube-downloader/venv" ]; then' >> $(CURDIR)/debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '    echo "❌ Błąd: Środowisko wirtualne nie istnieje"' >> $(CURDIR)/debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '    echo "Spróbuj przeinstalować aplikację: sudo apt reinstall youtube-downloader"' >> $(CURDIR)/debian/youtube-downloader/usr/bin/youtube-downloader
+	echo '    exit 1' >> $(CURDIR)/debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'fi' >> $(CURDIR)/debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'source /usr/share/youtube-downloader/venv/bin/activate' >> $(CURDIR)/debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'cd /usr/share/youtube-downloader' >> $(CURDIR)/debian/youtube-downloader/usr/bin/youtube-downloader
+	echo 'python main.py' >> $(CURDIR)/debian/youtube-downloader/usr/bin/youtube-downloader
+	
+	chmod +x $(CURDIR)/debian/youtube-downloader/usr/bin/youtube-downloader
+
+override_dh_installdocs:
+	dh_installdocs README.md
+
+override_dh_compress:
+	dh_compress -X.py -X.md
+
+# Nie usuwaj plików Python podczas strip
+override_dh_strip_nondeterminism:
+
+# Pomiń niektóre standardowe kroki
+override_dh_auto_test:
+	# Pomijamy testy automatyczne
+
+override_dh_python3:
+	dh_python3 --skip-private

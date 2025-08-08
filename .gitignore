@@ -1,43 +1,19 @@
+# Build artifacts
+build/
+*.deb
+*.md5
+*.sha256
+
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
+*.pyc
+*.pyo
+*.pyd
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Debian build artifacts and packages (public repo)
-debian/
-*.deb
-*.buildinfo 
-*.changes
-
-# Cursor rules (tylko w prywatnym repo)
-cursorrules
-
-# Virtual Environment
-.venv/
-venv/
-ENV/
 env/
-
-# Logs
-*.log
-youtube_downloader.log
+venv/
+.env
+.venv
 
 # IDE
 .vscode/
@@ -49,34 +25,10 @@ youtube_downloader.log
 .DS_Store
 Thumbs.db
 
-# Downloaded videos (optional)
-*.mp4
-*.mp3
-*.mkv
-*.avi
+# Logs
+*.log
+debug.log
 
-# Timestamp files
-*-timestamps.md
-
-# Python cache files
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# Temporary
+tmp/
+temp/
