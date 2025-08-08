@@ -1,15 +1,1 @@
-# YouTube Downloader - Zależności dla środowiska wirtualnego
-# Te zależności są instalowane w izolowanym środowisku wirtualnym aplikacji
-# i nie wpływają na systemowe instalacje Python
-
-# Główna biblioteka do pobierania z YouTube
-yt-dlp>=2025.7.21
-
-# Opcjonalne biblioteki
-# markdown>=3.5.1  # Do formatowania plików .md (opcjonalnie)
-
-# Biblioteki standardowe (wbudowane w Python):
-# - tkinter (GUI)
-# - threading (wątki)
-# - os, pathlib (operacje na plikach)
-# - re (regex dla timestampów)
+yt-dlp==2025.7.21

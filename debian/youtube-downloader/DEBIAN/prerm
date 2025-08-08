@@ -1,4 +1,18 @@
 #!/bin/bash
 
-echo "🧹 Usuwanie środowiska wirtualnego..."
-rm -rf /usr/share/youtube-downloader/venv || true 
+case "$1" in
+    remove|deconfigure)
+        echo "🧹 Usuwanie środowiska wirtualnego..."
+        rm -rf /usr/share/youtube-downloader/venv || true
+        ;;
+    upgrade)
+        echo "🔄 Przygotowanie do aktualizacji..."
+        echo "💾 Zachowuję środowisko wirtualne dla aktualizacji"
+        ;;
+    *)
+        echo "🧹 Usuwanie środowiska wirtualnego..."
+        rm -rf /usr/share/youtube-downloader/venv || true
+        ;;
+esac
+
+exit 0 

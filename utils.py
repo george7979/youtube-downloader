@@ -130,21 +130,39 @@ def timestamp_to_seconds(timestamp):
         return 0
 
 def sanitize_filename(filename):
-    """Sanityzacja nazwy pliku"""
-    # Usuwanie niedozwolonych znaków
+    """Sanityzacja nazwy pliku z wzmocnioną walidacją"""
+    if not filename or not isinstance(filename, str):
+        return "unknown_file"
+    
+    # Usuwanie niedozwolonych znaków i potencjalnie niebezpiecznych sekwencji
     invalid_chars = '<>:"/\\|?*'
     for char in invalid_chars:
         filename = filename.replace(char, '_')
+    
+    # Zabezpieczenie przed path traversal
+    filename = filename.replace('..', '_')
+    filename = filename.replace('./', '_')
+    filename = filename.replace('\\', '_')
+    
+    # Usuwanie znaków kontrolnych i nie-ASCII w niebezpiecznym kontekście
+    filename = ''.join(char if (char.isprintable() and ord(char) < 127) or char in ' .-_' else '_' for char in filename)
     
     # Usuwanie wielokrotnych spacji i podkreślników
     filename = re.sub(r'\s+', ' ', filename)
     filename = re.sub(r'_+', '_', filename)
     
-    # Ograniczenie długości
+    # Usuwanie kropek na początku/końcu (ukryte pliki/rozszerzenia)
+    filename = filename.strip('. ')
+    
+    # Zabezpieczenie przed pustym wynikiem
+    if not filename:
+        filename = "sanitized_file"
+    
+    # Ograniczenie długości (kompatybilność z systemami plików)
     if len(filename) > 200:
         filename = filename[:200]
     
-    return filename.strip()
+    return filename
 
 def get_file_size_mb(file_path):
     """Pobieranie rozmiaru pliku w MB"""
@@ -186,10 +204,27 @@ def create_directory_if_not_exists(directory):
         return False
 
 def is_valid_directory(directory):
-    """Sprawdzenie czy katalog jest poprawny"""
+    """Sprawdzenie czy katalog jest poprawny z wzmocnioną walidacją"""
     try:
-        return os.path.isdir(directory) and os.access(directory, os.W_OK)
-    except OSError:
+        if not directory or not isinstance(directory, str):
+            return False
+            
+        # Zabezpieczenie przed path traversal
+        if '..' in directory or directory.startswith('.'):
+            return False
+            
+        # Sprawdzenie czy ścieżka jest bezwzględna lub względna względem home
+        if not (os.path.isabs(directory) or directory.startswith('~')):
+            return False
+            
+        # Rozszerzenie ścieżki jeśli zawiera ~
+        expanded_path = os.path.expanduser(directory)
+        
+        # Sprawdzenie czy katalog istnieje i ma uprawnienia do zapisu
+        return (os.path.isdir(expanded_path) and 
+                os.access(expanded_path, os.W_OK) and
+                os.access(expanded_path, os.R_OK))
+    except (OSError, TypeError, ValueError):
         return False
 
 def get_safe_filename(title, extension='.mp4'):

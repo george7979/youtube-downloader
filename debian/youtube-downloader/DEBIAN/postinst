@@ -19,13 +19,15 @@ secure_curl() {
         return 1
     fi
     
-    # Bezpieczne pobieranie z curl
+    # Bezpieczne pobieranie z curl z timeout
     if [ -n "$output" ]; then
         curl --tlsv1.2 --proto '=https' --fail --silent --show-error \
+            --connect-timeout 10 --max-time 60 \
             --cacert /etc/ssl/certs/ca-certificates.crt \
             --output "$output" "$url"
     else
         curl --tlsv1.2 --proto '=https' --fail --silent --show-error \
+            --connect-timeout 10 --max-time 60 \
             --cacert /etc/ssl/certs/ca-certificates.crt \
             "$url"
     fi
@@ -67,63 +69,85 @@ install_pip_secure() {
 echo "🎬 YouTube Downloader - Instalacja"
 echo "=================================="
 
-# Funkcja do czekania na zwolnienie blokady dpkg
-wait_for_dpkg() {
-    while fuser /var/lib/dpkg/lock >/dev/null 2>&1 || fuser /var/lib/apt/lists/lock >/dev/null 2>&1 || fuser /var/cache/apt/archives/lock >/dev/null 2>&1; do
-        echo "⏳ Czekam na zwolnienie blokady dpkg..."
-        sleep 5
-    done
-}
+# Funkcja usunięta - wait_for_dpkg powodowała deadlock podczas instalacji pakietu
 
-# Sprawdź czy Python jest zainstalowany
+# Sprawdzenie zależności - powinny być już zainstalowane przez dpkg
+echo "🔍 Weryfikacja zależności..."
+
 if ! command -v python3 >/dev/null 2>&1; then
-    echo "🐍 Python3 nie jest zainstalowany. Instalowanie..."
-    wait_for_dpkg
-    apt-get update
-    apt-get install -y python3 python3-venv python3-pip python3-tk
+    echo "❌ Błąd: Python3 nie jest dostępny"
+    echo "💡 To nie powinno się zdarzyć - zależności powinny być zainstalowane automatycznie"
+    exit 1
 fi
 
-# Sprawdź czy system jest gotowy do tworzenia venv
-echo "🔍 Sprawdzanie gotowości systemu..."
-
-# Sprawdź czy venv jest dostępny
 if ! python3 -c "import venv" 2>/dev/null; then
-    echo "⚠️ python3-venv nie jest dostępny"
-    echo "Instalowanie w tle..."
-    nohup bash -c 'sleep 5; apt-get update && apt-get install -y python3-venv' >/dev/null 2>&1 &
+    echo "❌ Błąd: python3-venv nie jest dostępny"
+    echo "💡 To nie powinno się zdarzyć - zależności powinny być zainstalowane automatycznie"
+    exit 1
 fi
 
-# Sprawdź czy tkinter jest dostępny
 if ! python3 -c "import tkinter" 2>/dev/null; then
-    echo "⚠️ python3-tk nie jest dostępny"
-    echo "Instalowanie w tle..."
-    nohup bash -c 'sleep 5; apt-get update && apt-get install -y python3-tk' >/dev/null 2>&1 &
+    echo "❌ Błąd: python3-tk nie jest dostępny"
+    echo "💡 To nie powinno się zdarzyć - zależności powinny być zainstalowane automatycznie"
+    exit 1
 fi
 
-# Sprawdź czy pip jest dostępny
-if ! python3 -c "import pip" 2>/dev/null; then
-    echo "⚠️ pip nie jest dostępny"
-    echo "Instalowanie pip przez bezpieczny curl..."
-    install_pip_secure "python3"
-fi
-
-# Sprawdź czy ffmpeg jest dostępny
 if ! command -v ffmpeg >/dev/null 2>&1; then
-    echo "⚠️ ffmpeg nie jest dostępny"
-    echo "Instalowanie ffmpeg w tle..."
-    nohup bash -c 'sleep 5; apt-get update && apt-get install -y ffmpeg' >/dev/null 2>&1 &
-    echo "FFmpeg będzie dostępny za kilka minut po zakończeniu instalacji"
+    echo "⚠️ FFmpeg nie jest dostępny"
+    echo "🔄 Instalowanie FFmpeg w tle..."
+    
+    # Stwórz skrypt instalacji FFmpeg i uruchom w tle
+    cat > /tmp/install-ffmpeg-yt-downloader.sh << 'EOF'
+#!/bin/bash
+sleep 5  # Poczekaj na zakończenie dpkg
+echo "🔄 Automatyczna instalacja FFmpeg..." | logger -t youtube-downloader
+export DEBIAN_FRONTEND=noninteractive
+if apt-get update -qq && apt-get install -y -qq ffmpeg >/dev/null 2>&1; then
+    echo "✅ FFmpeg zainstalowany pomyślnie" | logger -t youtube-downloader
+    echo "✅ FFmpeg zainstalowany! YouTube Downloader ma pełną funkcjonalność" | wall 2>/dev/null || true
+else
+    echo "❌ Instalacja FFmpeg nieudana" | logger -t youtube-downloader
+    echo "💡 Zainstaluj ręcznie: sudo apt install ffmpeg" | wall 2>/dev/null || true
 fi
+rm -f /tmp/install-ffmpeg-yt-downloader.sh
+EOF
+    chmod +x /tmp/install-ffmpeg-yt-downloader.sh
+    nohup /tmp/install-ffmpeg-yt-downloader.sh >/dev/null 2>&1 &
+    
+    echo "⚠️ FFmpeg będzie zainstalowany w tle za kilka sekund"
+    echo "💡 Aplikacja będzie działać, ale bez konwersji MP3 do czasu instalacji FFmpeg"
+else
+    echo "✅ FFmpeg już jest dostępny"
+fi
+
+echo "✅ Wszystkie zależności są dostępne"
 
 # Utwórz środowisko wirtualne z lepszą obsługą błędów
 echo "🔧 Tworzenie środowiska wirtualnego..."
 
-# Próbuj standardową metodę
-if python3 -m venv /usr/share/youtube-downloader/venv 2>/dev/null; then
-    echo "✅ Środowisko wirtualne utworzone pomyślnie"
+# Sprawdź czy venv już istnieje i jest prawidłowy (np. z poprzedniej instalacji)
+if [ -d "/usr/share/youtube-downloader/venv" ] && [ -f "/usr/share/youtube-downloader/venv/bin/activate" ]; then
+    echo "📦 Znaleziono istniejące środowisko wirtualne"
+    if /usr/share/youtube-downloader/venv/bin/python -c "import sys; print(sys.version)" >/dev/null 2>&1; then
+        echo "✅ Istniejące środowisko wirtualne jest prawidłowe"
+        VENV_EXISTS=true
+    else
+        echo "⚠️ Istniejące środowisko wirtualne jest uszkodzone, tworzę nowe..."
+        rm -rf /usr/share/youtube-downloader/venv 2>/dev/null || true
+        VENV_EXISTS=false
+    fi
 else
-    echo "❌ Błąd: Nie udało się utworzyć środowiska wirtualnego"
-    echo "Próbuję alternatywną metodę..."
+    VENV_EXISTS=false
+fi
+
+# Twórz venv tylko jeśli nie istnieje lub jest uszkodzony
+if [ "$VENV_EXISTS" = "false" ]; then
+    # Próbuj standardową metodę
+    if python3 -m venv /usr/share/youtube-downloader/venv 2>/dev/null; then
+        echo "✅ Środowisko wirtualne utworzone pomyślnie"
+    else
+        echo "❌ Błąd: Nie udało się utworzyć środowiska wirtualnego"
+        echo "Próbuję alternatywną metodę..."
     
     # Usuń uszkodzone venv jeśli istnieje
     rm -rf /usr/share/youtube-downloader/venv 2>/dev/null || true
@@ -157,6 +181,7 @@ EOF
         
         # Zainstaluj pip przez bezpieczny curl
         install_pip_secure "/usr/share/youtube-downloader/venv/bin/python"
+    fi
     fi
 fi
 
@@ -200,8 +225,13 @@ if /usr/share/youtube-downloader/venv/bin/python -c "import yt_dlp" 2>/dev/null;
     echo "✅ Zależności działają poprawnie"
 else
     echo "❌ Błąd: Zależności nie działają poprawnie"
-    echo "Instalowanie w tle..."
-    nohup bash -c 'sleep 10; /usr/share/youtube-downloader/venv/bin/pip install "yt-dlp>=2025.7.21"' >/dev/null 2>&1 &
+    echo "🔄 Próbuje ponownie zainstalować yt-dlp..."
+    if /usr/share/youtube-downloader/venv/bin/pip install "yt-dlp>=2025.7.21"; then
+        echo "✅ yt-dlp zainstalowany ponownie"
+    else
+        echo "❌ Nie udało się zainstalować yt-dlp"
+        echo "💡 Spróbuj ręcznie: /usr/share/youtube-downloader/venv/bin/pip install yt-dlp"
+    fi
 fi
 
 # Aktualizuj ikony i desktop
@@ -228,16 +258,25 @@ if [ -n "$USER_HOME" ] && [ -d "$USER_HOME" ]; then
     mkdir -p "$USER_HOME/.youtube-downloader" || true
 fi
 
-chmod 755 /usr/bin/youtube-downloader || true
-chmod 644 /usr/share/applications/youtube-downloader.desktop || true
+# Ustaw uprawnienia tylko jeśli pliki istnieją
+if [ -f "/usr/bin/youtube-downloader" ]; then
+    chmod 755 /usr/bin/youtube-downloader || true
+else
+    echo "⚠️ Ostrzeżenie: /usr/bin/youtube-downloader nie istnieje"
+fi
 
-echo "✅ YouTube Downloader v1.0.2 został zainstalowany pomyślnie!"
+if [ -f "/usr/share/applications/youtube-downloader.desktop" ]; then
+    chmod 644 /usr/share/applications/youtube-downloader.desktop || true
+else
+    echo "⚠️ Ostrzeżenie: youtube-downloader.desktop nie istnieje"
+fi
+
+echo "✅ YouTube Downloader v1.0.3 został zainstalowany pomyślnie!"
 echo "🚀 Uruchom aplikację komendą: youtube-downloader"
 echo "📱 Lub znajdź w menu aplikacji systemu"
 echo "📝 Logi będą zapisywane w: ~/.youtube-downloader/youtube_downloader.log"
 echo ""
-echo "🔄 Instalowanie zależności w tle... (może potrwać kilka minut)"
-echo "Jeśli aplikacja nie działa, spróbuj ponownie za kilka minut"
+echo "🔄 Instalacja zakończona"
 echo ""
 echo "⚠️  UWAGA PRAWNA: Ta aplikacja jest narzędziem technicznym."
 echo "Użytkownik odpowiada za legalność pobierania treści."
