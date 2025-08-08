@@ -22,9 +22,18 @@ log_error() { echo -e "${RED}❌ $1${NC}"; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Ustaw katalog projektu na rodzica build-tools/
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BUILD_DIR="$PROJECT_ROOT/build"
+
+# Buduj w katalogu tymczasowym (poza projektem), chyba że jawnie nadpisano
+# Użyj zmiennej BUILD_DIR_OVERRIDE aby wskazać własny katalog build
+BUILD_DIR="${BUILD_DIR_OVERRIDE:-$(mktemp -d -p /tmp ytdl-build-XXXXXX)}"
 DEBIAN_DIR="$BUILD_DIR/debian"
 PACKAGE_DIR="$DEBIAN_DIR/youtube-downloader"
+
+# Sprzątanie katalogu tymczasowego po zakończeniu (można wyłączyć: KEEP_BUILD=1)
+if [ "${KEEP_BUILD:-0}" != "1" ]; then
+    cleanup() { rm -rf "$BUILD_DIR" 2>/dev/null || true; }
+    trap cleanup EXIT
+fi
 
 # Wczytaj wersję z main.py
 get_version_from_source() {
@@ -42,6 +51,7 @@ FULL_PACKAGE_NAME="${PACKAGE_NAME}_${VERSION}_all"
 log_info "=== YouTube Downloader DEB Builder ==="
 log_info "Wersja: $VERSION"
 log_info "Katalog roboczy: $PROJECT_ROOT"
+log_info "Katalog build (tymczasowy): $BUILD_DIR"
 
 # Sprawdź wymagane pliki
 check_required_files() {
@@ -65,16 +75,17 @@ check_required_files() {
 
 # Wyczyść poprzedni build
 clean_build() {
-    log_info "Czyszczenie poprzedniego build..."
-    rm -rf "$BUILD_DIR"
-    # Domyślnie nie usuwaj plików .deb, aby zachować lokalne artefakty
+    log_info "Przygotowanie katalogu build..."
+    mkdir -p "$BUILD_DIR"
+    rm -rf "$BUILD_DIR"/* 2>/dev/null || true
+    # Domyślnie nie usuwaj plików .deb w katalogu projektu, aby zachować lokalne artefakty
     if [[ "${CLEAN_OLD_DEB:-0}" == "1" ]]; then
         rm -f "$PROJECT_ROOT"/*.deb || true
         log_info "Usunięto stare pliki .deb (CLEAN_OLD_DEB=1)"
     else
         log_info "Pomijam usuwanie plików .deb (ustaw CLEAN_OLD_DEB=1 aby usunąć)"
     fi
-    log_success "Build directory wyczyszczone"
+    log_success "Katalog build gotowy: $BUILD_DIR"
 }
 
 # Stwórz strukturę katalogów
@@ -201,9 +212,9 @@ create_control_file() {
 Package: $PACKAGE_NAME
 Version: $VERSION
 Architecture: all
- Maintainer: Jerzy Maczewski <jerzymaczewski@gmail.com>
+Maintainer: Jerzy Maczewski <jerzymaczewski@gmail.com>
 Installed-Size: $INSTALLED_SIZE
-Depends: ${misc:Depends}, ${python3:Depends}, python3, python3-tk, python3-venv, python3-pip
+Depends: python3, python3-tk, python3-venv, python3-pip
 Recommends: ffmpeg
 Suggests: vlc
 Section: utils

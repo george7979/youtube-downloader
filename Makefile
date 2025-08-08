@@ -29,7 +29,7 @@ define log_warning
 	@echo -e "$(YELLOW)⚠️  $(1)$(NC)"
 endef
 
-.PHONY: help build clean test install version check deps ci test-dual-repo ci-check push-private sync-public push-public
+.PHONY: help build clean test install version check deps ci test-dual-repo ci-check push-private push-private-all sync-public push-public
 
 help: ## Pokaż tę pomoc
 	@printf "$(BLUE)YouTube Downloader Build System$(NC)\n"
@@ -73,6 +73,9 @@ install: test ## Zainstaluj pakiet lokalnie
 
 push-private: ## Wypchnij całe lokalne repo do private (łącznie z ignorowanymi); interaktywne potwierdzenia
 	@./scripts/push-to-private.sh
+
+push-private-all: ## Wypchnij pełny stan (w tym ignorowane i *.deb) do private bez potwierdzeń
+	@ASSUME_YES=1 SKIP_VERIFY=1 ./scripts/push-to-private.sh
 
 sync-public: ## Przygotuj okrojony kod do publikacji w katalogu public-src/
 	@./scripts/sync-to-public.sh
@@ -178,17 +181,6 @@ info: ## Pokaż informacje o projekcie
 	fi
 	@echo ""
 	@./build-tools/version-manager.sh show
-
-# Zaawansowane cele
-docker-build: ## Zbuduj w kontenerze Docker (wymaga Dockerfile)
-	@if [ -f Dockerfile ]; then \
-		$(call log_info,Budowanie w Docker...); \
-		docker build -t $(PACKAGE_NAME)-builder .; \
-		docker run --rm -v $(PWD):/workspace $(PACKAGE_NAME)-builder make build; \
-		$(call log_success,Docker build zakończony); \
-	else \
-		$(call log_warning,Brak Dockerfile - pomijam Docker build); \
-	fi
 
 # Debug cele
 debug-version: ## Debug version manager
