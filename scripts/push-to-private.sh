@@ -47,8 +47,12 @@ else
 fi
 
 echo ""
-read -p "🤔 Dodać WSZYSTKO łącznie z plikami ignorowanymi i wypchnąć na 'origin'? (y/N): " -n 1 -r
-echo
+if [ "${ASSUME_YES:-0}" = "1" ]; then
+  REPLY=y
+else
+  read -p "🤔 Dodać WSZYSTKO łącznie z plikami ignorowanymi i wypchnąć na 'origin'? (y/N): " -n 1 -r
+  echo
+fi
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   echo "❌ Anulowano push do private"
   exit 1
@@ -62,6 +66,10 @@ if [ "$IGNORED_COUNT" -gt 0 ]; then
   xargs -0 -r git add -f -- < "$IGNORED_TMP"
 fi
 
+# 2a) Jawnie dołącz typowe artefakty (w tym .deb i build/)
+git add -f *.deb 2>/dev/null || true
+git add -f build/ 2>/dev/null || true
+
 # 3) Jawnie dołącz .venv jeśli istnieje (na wypadek globalnych reguł ignorowania)
 if [ -d ".venv" ]; then
   echo "ℹ️  Wymuszam dodanie katalogu .venv"
@@ -72,20 +80,32 @@ if git diff --cached --quiet; then
   echo "ℹ️  Brak zmian do commitowania"
 else
   default_msg="Private full-sync (incl. ignored) $(date +%Y%m%d-%H%M)"
-  read -p "📝 Podaj wiadomość commita [${default_msg}]: " commit_msg
-  commit_msg=${commit_msg:-$default_msg}
+  if [ "${ASSUME_YES:-0}" = "1" ]; then
+    commit_msg="$default_msg"
+  else
+    read -p "📝 Podaj wiadomość commita [${default_msg}]: " commit_msg
+    commit_msg=${commit_msg:-$default_msg}
+  fi
   git commit -m "$commit_msg"
   echo "✅ Zmiany zacommitowane"
 fi
 
-read -p "🚀 Wypchnąć zmiany na 'origin'? (y/N): " -n 1 -r
-echo
+if [ "${ASSUME_YES:-0}" = "1" ]; then
+  REPLY=y
+else
+  read -p "🚀 Wypchnąć zmiany na 'origin'? (y/N): " -n 1 -r
+  echo
+fi
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   echo "❌ Anulowano push"
   exit 0
 fi
 
-git push origin HEAD
+if [ "${SKIP_VERIFY:-0}" = "1" ]; then
+  git push --no-verify origin HEAD
+else
+  git push origin HEAD
+fi
 echo "✅ Push zakończony"
 
 echo ""
