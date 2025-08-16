@@ -19,6 +19,8 @@ cursorrules
 # Private scripts
 scripts/push-to-private.sh
 scripts/*private*
+scripts/force-sync-public.sh
+scripts/sync-to-public*.sh
 
 # Temporary files
 .version-backup
