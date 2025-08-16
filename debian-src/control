@@ -17,21 +17,21 @@ Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}, python3, python3-tk, python3-venv, python3-pip
 Recommends: ffmpeg
 Suggests: vlc
-Description: YouTube Downloader - Aplikacja do pobierania filmów z YouTube
- Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficznym.
+Description: YouTube Downloader - Download videos from YouTube
+ Simple Python application for downloading YouTube videos with GUI.
  .
- Funkcje:
-  - Pobieranie filmów z YouTube z wklejanego linku
-  - Pobieranie z dźwiękiem w formacie MP4
-  - Wybór rozdzielczości przed pobieraniem
-  - Wybór katalogu docelowego dla pobieranych plików
-  - Walidacja linku YouTube przed pobieraniem
-  - Progress bar pokazujący postęp pobierania
-  - Obsługa błędów (film nie istnieje, brak połączenia)
-  - Informacje o filmie (tytuł, czas trwania, dostępne formaty)
-  - Przycisk "Anuluj" podczas pobierania
-  - Możliwość pobierania tylko audio (MP3)
-  - Automatyczne sanityzowanie nazw plików
+ Features:
+  - Download YouTube videos from pasted URL
+  - Download with audio in MP4 format
+  - Select resolution before downloading
+  - Choose destination folder for downloads
+  - YouTube URL validation before download
+  - Progress bar showing download status
+  - Error handling (video not found, no connection)
+  - Video information (title, duration, available formats)
+  - Cancel button during download
+  - Audio-only download (MP3)
+  - Automatic filename sanitization
  .
- ⚠️ UWAGA PRAWNA: Ta aplikacja jest narzędziem technicznym.
- Użytkownik odpowiada za legalność pobierania treści.
+ ⚠️ LEGAL NOTICE: This application is a technical tool.
+ User is responsible for legality of downloaded content.
