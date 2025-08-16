@@ -14,7 +14,7 @@ Rules-Requires-Root: no
 
 Package: youtube-downloader
 Architecture: all
-Depends: ${misc:Depends}, ${python3:Depends}, python3, python3-tk, python3-venv, python3-pip
+Depends: ${misc:Depends}, ${python3:Depends}, python3, python3-tk, python3-venv
 Recommends: ffmpeg
 Suggests: vlc
 Description: YouTube Downloader - Download videos from YouTube

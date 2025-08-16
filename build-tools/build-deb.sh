@@ -215,7 +215,7 @@ Version: $VERSION
 Architecture: all
 Maintainer: Jerzy Maczewski <jerzymaczewski@gmail.com>
 Installed-Size: $INSTALLED_SIZE
-Depends: python3, python3-tk, python3-venv, python3-pip
+Depends: python3, python3-tk, python3-venv
 Recommends: ffmpeg
 Suggests: vlc
 Section: utils
