@@ -2,6 +2,27 @@
 # YouTube Downloader - Git Ignore Rules
 # ===============================================
 
+# ===============================================
+# SENSITIVE FILES - NEVER ON MAIN BRANCH
+# ===============================================
+
+# Developer documentation (develop only)
+CLAUDE.md
+PRD.md
+TODO*.md
+NOTES*.md
+
+# IDE configurations  
+cursorrules
+.cursorrules
+
+# Private scripts
+scripts/push-to-private.sh
+scripts/*private*
+
+# Temporary files
+.version-backup
+
 # Python Runtime
 __pycache__/
 *.py[cod]
