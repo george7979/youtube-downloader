@@ -1,6 +1,0 @@
-youtube-downloader (--dry-run) stable; urgency=medium
-
-  * Aktualizacja do wersji --dry-run
-  * Automatycznie wygenerowane przez build script
-
- -- Jerzy Maczewski <jerzy.maczewski@example.com>  Fri, 08 Aug 2025 13:00:10 +0200

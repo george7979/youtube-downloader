@@ -1,0 +1,17 @@
+# Development dependencies for YouTube Downloader
+# Single Repository Architecture
+
+# Core application dependencies
+-r requirements.txt
+
+# Testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Code quality tools  
+flake8>=5.0.0
+pylint>=2.15.0
+black>=22.0.0
+
+# Type checking
+mypy>=0.991
