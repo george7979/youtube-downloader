@@ -57,6 +57,22 @@ else
     report_success "No .cursorrules files found"
 fi
 
+# Check for developer documentation files
+if git ls-tree -r --name-only $BRANCH | grep -E "^(CLAUDE\.md|PRD\.md|TODO.*\.md|NOTES.*\.md)$" > /dev/null; then
+    report_error "Developer documentation found - MUST NOT be in main branch"
+    git ls-tree -r --name-only $BRANCH | grep -E "^(CLAUDE\.md|PRD\.md|TODO.*\.md|NOTES.*\.md)$"
+else
+    report_success "No developer documentation files found"
+fi
+
+# Check for temporary files
+if git ls-tree -r --name-only $BRANCH | grep -E "\.version-backup$" > /dev/null; then
+    report_error "Temporary backup files found - MUST NOT be in main branch"
+    git ls-tree -r --name-only $BRANCH | grep -E "\.version-backup$"
+else
+    report_success "No temporary backup files found"
+fi
+
 # Check for environment files
 if git ls-tree -r --name-only $BRANCH | grep -E "\.(env|local)$" > /dev/null; then
     report_error "Environment files found - MUST NOT be in main branch"
