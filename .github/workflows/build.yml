@@ -64,7 +64,7 @@ jobs:
         md5sum *.deb > checksums.md5
     
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: deb-package
         path: |
@@ -73,7 +73,7 @@ jobs:
           
     - name: Archive build logs
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-logs
         path: |
@@ -99,7 +99,7 @@ jobs:
         apt-get install -y wget curl
         
     - name: Download package
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: deb-package
         
@@ -133,7 +133,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: deb-package
         
@@ -218,7 +218,7 @@ jobs:
     
     steps:
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: deb-package
         
