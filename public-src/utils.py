@@ -9,6 +9,7 @@ import logging
 import os
 from pathlib import Path
 from urllib.parse import urlparse
+from translations import t
 
 def setup_logging(enable_file_logging=True):
     """Konfiguracja logowania
@@ -254,7 +255,7 @@ def parse_youtube_id(url):
 def format_duration(seconds):
     """Formatowanie czasu trwania"""
     if not seconds or seconds <= 0:
-        return "Nieznany"
+        return t("Nieznany")
     
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
@@ -304,4 +305,4 @@ def cleanup_old_logs(max_size_mb=10):
                 
                 print(f"📝 Log został zrotowany (rozmiar: {size_mb:.1f}MB)")
     except Exception as e:
-        print(f"⚠️ Nie udało się wyczyścić logów: {e}")
+        print(f"⚠️ {t('Nie udało się wyczyścić logów')}: {e}")

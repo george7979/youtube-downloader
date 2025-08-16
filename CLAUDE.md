@@ -64,6 +64,19 @@ make ci-check           # Comprehensive CI validation checks
 make test-dual-repo     # Validate dual-repository workflow integrity
 ```
 
+### Testing & Quality Assurance
+
+For comprehensive testing procedures including:
+- User Acceptance Testing (UAT) workflows
+- Version-specific testing checklists  
+- Quality gates and approval criteria
+- User feedback templates and issue tracking
+
+See [`docs/TESTING_CHECKLIST.md`](docs/TESTING_CHECKLIST.md)
+
+The `make test` command performs technical package validation (dpkg info, lintian checks).
+Full UAT procedures should follow the comprehensive checklist documentation.
+
 ### Development Environment
 ```bash
 # Python environment (if developing outside .deb packaging)

@@ -11,6 +11,7 @@ from gui import YouTubeDownloaderGUI
 from downloader import YouTubeDownloader
 from utils import setup_logging, cleanup_old_logs
 from version import __version__
+from translations import t
 
 def main():
     """Główna funkcja aplikacji"""
@@ -36,7 +37,7 @@ def main():
         
     except Exception as e:
         # Zaloguj błąd, a komunikat pokaż w GUI
-        messagebox.showerror("Błąd", f"Nie udało się uruchomić aplikacji:\n{e}")
+        messagebox.showerror(t("Błąd"), f"{t('Nie udało się uruchomić aplikacji')}:\n{e}")
         sys.exit(1)
 
 if __name__ == "__main__":

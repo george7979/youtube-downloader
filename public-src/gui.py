@@ -13,6 +13,7 @@ import json
 from downloader import YouTubeDownloader
 from version import __version__
 from utils import validate_youtube_url, extract_timestamps
+from translations import t
 
 class YouTubeDownloaderGUI:
     def __init__(self, root):
@@ -222,7 +223,7 @@ class YouTubeDownloaderGUI:
         self.url_entry.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), padx=(0, 10))
         
         # Przycisk sprawdzania
-        self.check_button = ttk.Button(url_frame, text="Sprawdź", 
+        self.check_button = ttk.Button(url_frame, text=t("Sprawdź"), 
                                       command=self.check_video, style='Primary.TButton')
         self.check_button.grid(row=1, column=2)
         
@@ -264,13 +265,13 @@ class YouTubeDownloaderGUI:
         # Checkbox audio
         self.audio_only_var = tk.BooleanVar()
         self.audio_checkbox = ttk.Checkbutton(options_frame, 
-                                            text="Tylko audio (MP3)", 
+                                            text=t("Tylko audio (MP3)"), 
                                             variable=self.audio_only_var, 
                                             command=self.on_audio_change)
         self.audio_checkbox.grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(0, 8))
         
         # Rozdzielczość
-        ttk.Label(options_frame, text="Rozdzielczość:", style='Subtitle.TLabel').grid(
+        ttk.Label(options_frame, text=t("Rozdzielczość:"), style='Subtitle.TLabel').grid(
             row=2, column=0, sticky=tk.W, pady=(0, 5))
         
         self.resolution_var = tk.StringVar()
@@ -288,11 +289,11 @@ class YouTubeDownloaderGUI:
         folder_container.grid(row=3, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=(8, 5))
         folder_container.columnconfigure(0, weight=1)
         
-        self.folder_button = ttk.Button(folder_container, text="Wybierz folder", 
+        self.folder_button = ttk.Button(folder_container, text=t("Wybierz folder"), 
                                        command=self.select_directory, style='Secondary.TButton')
         self.folder_button.grid(row=0, column=1, padx=(10, 0))
         
-        self.path_label = ttk.Label(folder_container, text="Nie wybrano folderu", 
+        self.path_label = ttk.Label(folder_container, text=t("Nie wybrano folderu"), 
                                    style='Subtitle.TLabel', foreground='#7f8c8d')
         self.path_label.grid(row=0, column=0, sticky=(tk.W, tk.E))
         
@@ -307,16 +308,16 @@ class YouTubeDownloaderGUI:
         download_frame.columnconfigure(1, weight=1)
         
         # Nagłówek sekcji
-        ttk.Label(download_frame, text="Pobieranie", style='Subtitle.TLabel').grid(
+        ttk.Label(download_frame, text=t("Pobieranie"), style='Subtitle.TLabel').grid(
             row=0, column=0, columnspan=3, sticky=tk.W, pady=(0, 8))
         
         # Przycisk pobierania
-        self.download_button = ttk.Button(download_frame, text="Rozpocznij pobieranie", 
+        self.download_button = ttk.Button(download_frame, text=t("Rozpocznij pobieranie"), 
                                         command=self.start_download, style='Primary.TButton')
         self.download_button.grid(row=1, column=0, sticky=tk.W)
         
         # Przycisk anulowania
-        self.cancel_button = ttk.Button(download_frame, text="Anuluj", 
+        self.cancel_button = ttk.Button(download_frame, text=t("Anuluj"), 
                                       command=self.cancel_download, 
                                       state="disabled", style='Secondary.TButton')
         self.cancel_button.grid(row=1, column=2, padx=(10, 0))
@@ -404,7 +405,7 @@ class YouTubeDownloaderGUI:
             self.video_info = self.downloader.get_video_info(url)
             self.root.after(0, self._update_video_info)
         except Exception as e:
-            error_msg = f"Błąd podczas sprawdzania: {e}"
+            error_msg = f"{t('Błąd podczas sprawdzania')}: {e}"
             self.root.after(0, lambda: self.show_error(error_msg))
         finally:
             self.root.after(0, lambda: self.check_button.config(state="normal"))
@@ -412,16 +413,16 @@ class YouTubeDownloaderGUI:
     def _update_video_info(self):
         """Aktualizacja informacji o filmie"""
         if self.video_info:
-            info_text = f"Tytuł: {self.video_info.get('title', 'Nieznany')}\n"
-            info_text += f"Czas trwania: {self.video_info.get('duration', 'Nieznany')}\n"
-            info_text += f"Dostępne formaty: {len(self.video_info.get('formats', []))}"
+            info_text = f"{t('Tytuł')}: {self.video_info.get('title', t('Nieznany'))}\n"
+            info_text += f"{t('Czas trwania')}: {self.video_info.get('duration', t('Nieznany'))}\n"
+            info_text += f"{t('Dostępne formaty')}: {len(self.video_info.get('formats', []))}"
             
             self.info_text.delete(1.0, tk.END)
             self.info_text.insert(1.0, info_text)
             
             # Aktualizacja listy rozdzielczości z sortowaniem
             formats = self.video_info.get('formats', [])
-            resolutions = [f.get('resolution', 'Nieznana') for f in formats if f.get('resolution')]
+            resolutions = [f.get('resolution', t('Nieznana')) for f in formats if f.get('resolution')]
             
             # Usunięcie duplikatów i sortowanie od najwyższej do najniższej
             unique_resolutions = list(set(resolutions))
@@ -444,10 +445,10 @@ class YouTubeDownloaderGUI:
             if sorted_resolutions:
                 self.resolution_combo.set(sorted_resolutions[0])  # Ustawiamy najwyższą rozdzielczość
                 
-            self.status_var.set("Film sprawdzony")
+            self.status_var.set(t("Film sprawdzony"))
             self.status_bar.configure(foreground='#27ae60')
         else:
-            self.show_error("Nie udało się pobrać informacji o filmie")
+            self.show_error(t("Nie udało się pobrać informacji o filmie"))
             
     def on_audio_change(self):
         """Obsługa zmiany opcji audio"""
@@ -475,11 +476,11 @@ class YouTubeDownloaderGUI:
     def start_download(self):
         """Rozpoczęcie pobierania"""
         if not self.video_info:
-            self.show_error("Najpierw sprawdź film")
+            self.show_error(t("Najpierw sprawdź film"))
             return
             
         if not self.selected_directory:
-            self.show_error("Wybierz folder docelowy")
+            self.show_error(t("Wybierz folder docelowy"))
             return
             
         url = self.url_entry.get().strip()
@@ -489,7 +490,7 @@ class YouTubeDownloaderGUI:
         self.download_button.config(state="disabled")
         self.cancel_button.config(state="normal")
         self.progress['value'] = 0
-        self.status_var.set("Rozpoczynanie pobierania...")
+        self.status_var.set(t("Rozpoczynanie pobierania..."))
         self.status_bar.configure(foreground='#f39c12')
         
         # Pobieranie w osobnym wątku
@@ -518,7 +519,7 @@ class YouTubeDownloaderGUI:
             self.root.after(0, lambda: self._download_complete(result))
             
         except Exception as e:
-            error_msg = f"Błąd podczas pobierania: {e}"
+            error_msg = f"{t('Błąd podczas pobierania')}: {e}"
             self.root.after(0, lambda: self.show_error(error_msg))
         finally:
             self.root.after(0, self._reset_ui)
@@ -526,7 +527,7 @@ class YouTubeDownloaderGUI:
     def _update_progress(self, percentage):
         """Aktualizacja postępu pobierania"""
         self.root.after(0, lambda: self.progress.config(value=percentage))
-        self.root.after(0, lambda: self.status_var.set(f"Pobieranie... {percentage}%"))
+        self.root.after(0, lambda: self.status_var.set(f"{t('Pobieranie...')} {percentage}%"))
         
     def _download_complete(self, result):
         """Zakończenie pobierania"""
@@ -534,17 +535,17 @@ class YouTubeDownloaderGUI:
             # Zapisz lokalizację po udanym pobieraniu
             if self.selected_directory:
                 self.save_last_directory(self.selected_directory)
-            messagebox.showinfo("Sukces", f"Film został pobrany:\n{result['filename']}")
-            self.status_var.set("Pobieranie zakończone")
+            messagebox.showinfo(t("Sukces"), f"{t('Film został pobrany')}:\n{result['filename']}")
+            self.status_var.set(t("Pobieranie zakończone"))
             self.status_bar.configure(foreground='#27ae60')
         else:
-            self.show_error("Nie udało się pobrać filmu")
+            self.show_error(t("Nie udało się pobrać filmu"))
             
     def cancel_download(self):
         """Anulowanie pobierania"""
         if self.download_thread and self.download_thread.is_alive():
             self.downloader.cancel_download()
-            self.status_var.set("Pobieranie anulowane")
+            self.status_var.set(t("Pobieranie anulowane"))
             self.status_bar.configure(foreground='#e74c3c')
             
     def _reset_ui(self):
@@ -556,5 +557,5 @@ class YouTubeDownloaderGUI:
         """Wyświetlenie błędu"""
         self.error_text.delete(1.0, tk.END)
         self.error_text.insert(1.0, message)
-        self.status_var.set("Błąd")
+        self.status_var.set(t("Błąd"))
         self.status_bar.configure(foreground='#e74c3c')

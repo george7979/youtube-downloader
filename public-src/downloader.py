@@ -9,6 +9,7 @@ import logging
 import yt_dlp
 from pathlib import Path
 from utils import sanitize_filename
+from translations import t
 
 class YouTubeDownloader:
     def __init__(self):
@@ -76,12 +77,12 @@ class YouTubeDownloader:
                 
                     # Przygotowanie informacji
                     video_info = {
-                        'title': info.get('title', 'Nieznany tytuł'),
+                        'title': info.get('title', t('Nieznany tytuł')),
                         'duration': self._format_duration(info.get('duration', 0)),
                         'description': info.get('description', ''),
                         'formats': info.get('formats', []),
                         'thumbnail': info.get('thumbnail', ''),
-                        'uploader': info.get('uploader', 'Nieznany autor'),
+                        'uploader': info.get('uploader', t('Nieznany autor')),
                         'view_count': info.get('view_count', 0),
                         'upload_date': info.get('upload_date', ''),
                     }
@@ -94,7 +95,7 @@ class YouTubeDownloader:
                 continue
                 
         # Jeśli żadna konfiguracja nie zadziałała
-        raise Exception("Nie udało się pobrać informacji o filmie żadną z dostępnych metod. YouTube może blokować dostęp z Twojego IP.")
+        raise Exception(t("Nie udało się pobrać informacji o filmie żadną z dostępnych metod. YouTube może blokować dostęp z Twojego IP."))
             
     def download_video(self, url, output_dir, resolution=None, audio_only=False, progress_callback=None):
         """Pobieranie filmu"""
@@ -167,7 +168,7 @@ class YouTubeDownloader:
                     }]
                     # Sprawdź czy ffmpeg jest dostępny
                     if not os.system('which ffmpeg >/dev/null 2>&1') == 0:
-                        raise Exception("FFmpeg nie jest zainstalowany. Konwersja MP3 wymaga FFmpeg.")
+                        raise Exception(t("FFmpeg nie jest zainstalowany. Konwersja MP3 wymaga FFmpeg."))
                 else:
                     if resolution:
                         ydl_opts['format'] = f'best[height<={resolution.split("x")[1]}]/best'
@@ -188,7 +189,7 @@ class YouTubeDownloader:
                     return {
                         'filename': os.path.basename(filename),
                         'full_path': filename,
-                        'title': info.get('title', 'Nieznany tytuł'),
+                        'title': info.get('title', t('Nieznany tytuł')),
                         'duration': info.get('duration', 0),
                         'filesize': os.path.getsize(filename) if os.path.exists(filename) else 0,
                     }
@@ -199,7 +200,7 @@ class YouTubeDownloader:
                 
                 # Sprawdź czy to błąd anulowania
                 if self.cancel_flag:
-                    raise Exception("Pobieranie zostało anulowane")
+                    raise Exception(t("Pobieranie zostało anulowane"))
                 
                 # Jeśli to błędy YouTube, spróbuj następny klient
                 if any(keyword in error_msg.lower() for keyword in [
@@ -209,12 +210,12 @@ class YouTubeDownloader:
                     continue
                 else:
                     # Inny błąd - przerwij
-                    raise Exception(f"Błąd podczas pobierania: {e}")
+                    raise Exception(f"{t('Błąd podczas pobierania')}: {e}")
                 
         # Jeśli żaden klient nie zadziałał
         self.current_download = None
         self.cancel_flag = False
-        raise Exception("Nie udało się pobrać filmu żadnym z dostępnych klientów. YouTube może blokować dostęp lub film może być niedostępny.")
+        raise Exception(t("Nie udało się pobrać filmu żadnym z dostępnych klientów. YouTube może blokować dostęp lub film może być niedostępny."))
             
     def _progress_hook(self, d, callback):
         """Hook do śledzenia postępu pobierania"""
@@ -230,7 +231,7 @@ class YouTubeDownloader:
     def _format_duration(self, seconds):
         """Formatowanie czasu trwania"""
         if not seconds:
-            return "Nieznany"
+            return t("Nieznany")
             
         hours = seconds // 3600
         minutes = (seconds % 3600) // 60
@@ -269,10 +270,10 @@ class YouTubeDownloader:
             with open(timestamp_path, 'w', encoding='utf-8') as f:
                 f.write(content)
                 
-            logging.info(f"Zapisano timestamps: {timestamp_filename}")
+            logging.info(f"{t('Zapisano timestamps')}: {timestamp_filename}")
             
         except Exception as e:
-            logging.error(f"Błąd podczas zapisywania timestampów: {e}")
+            logging.error(f"{t('Błąd podczas zapisywania timestampów')}: {e}")
             
     def get_available_formats(self, url):
         """Pobieranie dostępnych formatów"""
@@ -317,7 +318,7 @@ class YouTubeDownloader:
                 return video_formats
                 
         except Exception as e:
-            raise Exception(f"Nie udało się pobrać formatów: {e}")
+            raise Exception(f"{t('Nie udało się pobrać formatów')}: {e}")
             
     def validate_url(self, url):
         """Walidacja URL YouTube"""

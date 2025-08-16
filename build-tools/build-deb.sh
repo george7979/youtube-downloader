@@ -116,12 +116,13 @@ copy_application_files() {
     cp "$PROJECT_ROOT/gui.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     cp "$PROJECT_ROOT/downloader.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     cp "$PROJECT_ROOT/utils.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
+    cp "$PROJECT_ROOT/translations.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     cp "$PROJECT_ROOT/version.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     cp "$PROJECT_ROOT/requirements.txt" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     
     # Dokumentacja
     cp "$PROJECT_ROOT/README.md" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
-    cp "$PROJECT_ROOT/plan.md" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
+    cp "$PROJECT_ROOT/PRD.md" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     
     # Obrazki jeśli istnieją
     if [[ -d "$PROJECT_ROOT/pics" ]]; then

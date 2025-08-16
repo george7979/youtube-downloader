@@ -86,6 +86,15 @@ sudo dpkg -P youtube-downloader
 
 **Uwaga:** Deinstalacja automatycznie usuwa izolowane środowisko wirtualne aplikacji, więc nie wpływa na inne aplikacje w systemie.
 
+## 🧪 Testowanie i Zapewnienie Jakości
+
+Wszystkie wydania przechodzą kompleksowe testowanie według udokumentowanych procedur:
+- Walidacja techniczna przez `make test`
+- Testowanie Akceptacji Użytkownika (UAT) według [Listy Kontrolnej Testów](docs/TESTING_CHECKLIST.md)
+- Bramy jakości wymagające minimum 4.0/5.0 oceny użytkowników
+
+Kontrybutorzy powinni przejrzeć procedury testowania przed składaniem zmian.
+
 ## 🔧 Rozwiązywanie problemów
 
 ### Jeśli aplikacja nie uruchamia się:

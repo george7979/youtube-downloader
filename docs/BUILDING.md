@@ -218,6 +218,8 @@ build/
 
 ## 🧪 Testowanie
 
+> **Uwaga**: Ta sekcja obejmuje testowanie techniczne pakietów. Dla kompleksowych procedur Testowania Akceptacji Użytkownika (UAT), bram jakości i przepływów zatwierdzania, zobacz [TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md).
+
 ### Testy pakietu
 ```bash
 # Sprawdź metadane pakietu

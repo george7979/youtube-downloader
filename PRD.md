@@ -83,7 +83,7 @@ YouTube Downloader is a Python-based desktop application with Tkinter GUI that p
 ### 3.4 Technical Infrastructure ✅
 - **Build System**: Comprehensive Makefile with automated packaging
 - **Version Management**: Automated version propagation across multiple files
-- **Testing Framework**: Integrated validation pipeline with linting and type checking
+- **Testing Framework**: Integrated validation pipeline with formal UAT procedures (see [docs/TESTING_CHECKLIST.md](docs/TESTING_CHECKLIST.md))
 - **Documentation**: Complete technical documentation and user guides
 - **Distribution**: Professional .deb packaging with dependency management
 
@@ -691,7 +691,7 @@ gantt
 - [ ] <5x real-time local processing on reference hardware
 - [ ] <30s API processing for 10-minute video
 - [ ] Zero critical bugs in 100-hour testing period
-- [ ] User acceptance testing: 4.0/5.0 minimum rating
+- [ ] User acceptance testing: 4.0/5.0 minimum rating (see [docs/TESTING_CHECKLIST.md](docs/TESTING_CHECKLIST.md) for procedures)
 
 **Enhanced Release Gate (v1.2.1)**:
 - [ ] 50% feature adoption rate within 60 days
