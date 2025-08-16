@@ -102,6 +102,8 @@ PRIVATE_SCRIPTS=(
     "scripts/push-to-private.sh"
     "scripts/force-sync-public.sh"
     "scripts/setup-dual-repo.sh"
+    "scripts/sync-to-public-github.sh"
+    "scripts/sync-to-public.sh"
 )
 
 for script in "${PRIVATE_SCRIPTS[@]}"; do
