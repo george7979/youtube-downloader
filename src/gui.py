@@ -189,7 +189,7 @@ class YouTubeDownloaderGUI:
         
         # Opis
         desc_label = ttk.Label(header_frame, 
-                              text="Pobieraj filmy z YouTube w wysokiej jakości", 
+                              text=t("Pobieraj filmy z YouTube w wysokiej jakości"), 
                               style='Subtitle.TLabel')
         desc_label.grid(row=1, column=0, columnspan=2, sticky=tk.W)
         
@@ -215,7 +215,7 @@ class YouTubeDownloaderGUI:
         url_frame.columnconfigure(1, weight=1)
         
         # Nagłówek sekcji
-        ttk.Label(url_frame, text="Link YouTube", style='Subtitle.TLabel').grid(
+        ttk.Label(url_frame, text=t("Link YouTube"), style='Subtitle.TLabel').grid(
             row=0, column=0, columnspan=3, sticky=tk.W, pady=(0, 8))
         
         # Pole URL
@@ -234,7 +234,7 @@ class YouTubeDownloaderGUI:
         info_frame.columnconfigure(0, weight=1)
         
         # Nagłówek sekcji
-        ttk.Label(info_frame, text="Informacje o filmie", style='Subtitle.TLabel').grid(
+        ttk.Label(info_frame, text=t("Informacje o filmie"), style='Subtitle.TLabel').grid(
             row=0, column=0, sticky=tk.W, pady=(0, 8))
         
         # Pole informacji
@@ -259,7 +259,7 @@ class YouTubeDownloaderGUI:
         options_frame.columnconfigure(1, weight=1)
         
         # Nagłówek sekcji
-        ttk.Label(options_frame, text="Opcje pobierania", style='Subtitle.TLabel').grid(
+        ttk.Label(options_frame, text=t("Opcje pobierania"), style='Subtitle.TLabel').grid(
             row=0, column=0, columnspan=2, sticky=tk.W, pady=(0, 8))
         
         # Checkbox audio
@@ -282,7 +282,7 @@ class YouTubeDownloaderGUI:
         self.resolution_combo.grid(row=2, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=(0, 5))
         
         # Folder docelowy
-        ttk.Label(options_frame, text="Folder docelowy:", style='Subtitle.TLabel').grid(
+        ttk.Label(options_frame, text=t("Folder docelowy:"), style='Subtitle.TLabel').grid(
             row=3, column=0, sticky=tk.W, pady=(8, 5))
         
         folder_container = ttk.Frame(options_frame)
@@ -329,7 +329,7 @@ class YouTubeDownloaderGUI:
         progress_frame.columnconfigure(0, weight=1)
         
         # Nagłówek sekcji
-        ttk.Label(progress_frame, text="Postęp", style='Subtitle.TLabel').grid(
+        ttk.Label(progress_frame, text=t("Postęp"), style='Subtitle.TLabel').grid(
             row=0, column=0, sticky=tk.W, pady=(0, 8))
         
         # Progress bar
@@ -338,7 +338,7 @@ class YouTubeDownloaderGUI:
         
         # Status
         self.status_var = tk.StringVar()
-        self.status_var.set("Gotowy do pobierania")
+        self.status_var.set(t("Gotowy do pobierania"))
         self.status_bar = ttk.Label(progress_frame, textvariable=self.status_var, 
                                    style='Subtitle.TLabel', foreground='#27ae60')
         self.status_bar.grid(row=2, column=0, sticky=tk.W)
@@ -350,7 +350,7 @@ class YouTubeDownloaderGUI:
         error_frame.columnconfigure(0, weight=1)
         
         # Nagłówek sekcji
-        ttk.Label(error_frame, text="Błędy i komunikaty", style='Subtitle.TLabel').grid(
+        ttk.Label(error_frame, text=t("Błędy i komunikaty"), style='Subtitle.TLabel').grid(
             row=0, column=0, sticky=tk.W, pady=(0, 8))
         
         # Pole błędów
@@ -383,14 +383,14 @@ class YouTubeDownloaderGUI:
         """Sprawdzenie informacji o filmie"""
         url = self.url_entry.get().strip()
         if not url:
-            self.show_error("Wprowadź link YouTube")
+            self.show_error(t("Wprowadź link YouTube"))
             return
             
         if not validate_youtube_url(url):
-            self.show_error("Nieprawidłowy link YouTube")
+            self.show_error(t("Nieprawidłowy link YouTube"))
             return
             
-        self.status_var.set("Sprawdzanie filmu...")
+        self.status_var.set(t("Sprawdzanie filmu..."))
         self.status_bar.configure(foreground='#f39c12')
         self.check_button.config(state="disabled")
         

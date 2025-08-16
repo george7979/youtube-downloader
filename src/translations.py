@@ -62,6 +62,21 @@ TRANSLATIONS = {
     # Utils messages
     "Nie udało się wyczyścić logów": "Failed to clean logs",
     
+    # UI Section Headers and Labels
+    "Pobieraj filmy z YouTube w wysokiej jakości": "Download YouTube videos in high quality",
+    "Link YouTube": "YouTube Link",
+    "Informacje o filmie": "Video Information",
+    "Opcje pobierania": "Download Options",
+    "Folder docelowy:": "Destination Folder:",
+    "Postęp": "Progress",
+    "Błędy i komunikaty": "Errors and Messages",
+    
+    # Status and Input Messages
+    "Gotowy do pobierania": "Ready to download",
+    "Wprowadź link YouTube": "Enter YouTube link",
+    "Nieprawidłowy link YouTube": "Invalid YouTube link",
+    "Sprawdzanie filmu...": "Checking video...",
+    
     # Comments in code (for documentation purposes)
     "Inicjalizacja downloadera": "Downloader initialization",
     "Pobieranie informacji o filmie": "Getting video information", 
