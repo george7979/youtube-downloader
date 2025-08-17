@@ -53,7 +53,7 @@ log_info "Wersja: $VERSION"
 log_info "Katalog roboczy: $PROJECT_ROOT"
 log_info "Katalog build (tymczasowy): $BUILD_DIR"
 
-# Sprawdź wymagane pliki dla nowej struktury v2.0.0
+# Sprawdź wymagane pliki dla nowej struktury v1.2.0
 check_required_files() {
     local required_files=(
         "launcher.py"
@@ -110,7 +110,7 @@ create_directory_structure() {
     log_success "Struktura katalogów utworzona"
 }
 
-# Kopiuj pliki aplikacji dla nowej struktury v2.0.0
+# Kopiuj pliki aplikacji dla nowej struktury v1.2.0
 copy_application_files() {
     log_info "Kopiowanie plików aplikacji..."
     
@@ -160,7 +160,7 @@ copy_application_files() {
     chmod +x "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/ui/gui.py"
     chmod +x "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/ui/cli.py"
     
-    log_success "Pliki aplikacji skopiowane (struktura v2.0.0)"
+    log_success "Pliki aplikacji skopiowane (struktura v1.2.0)"
 }
 
 # Stwórz plik wykonawczy

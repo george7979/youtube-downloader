@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-YouTube Downloader v2.0.0 - Intelligent Launcher
+YouTube Downloader v1.2.0 - Intelligent Launcher
 Smart launcher that automatically detects GUI availability and chooses appropriate interface
 """
 
