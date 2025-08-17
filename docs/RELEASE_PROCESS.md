@@ -1,242 +1,373 @@
-# 🚀 Release Process - Develop → Main 
+# 🚀 Release Process - Dual-Repository Workflow
 
-## Bezpieczny proces przejścia develop → main dla single-repository
+## 📋 Przegląd 3-Stage Release Pipeline
 
-### 🎯 Cel procesu
-Zapewnienie że na main branch trafiają tylko:
-- ✅ Stabilne, przetestowane funkcje
-- ✅ Czyste pliki źródłowe bez wrażliwych danych
-- ✅ Finalne release builds (.deb tylko dla stable versions)
-- ❌ **NIE:** development builds, cursorrules, prywatne skrypty
+YouTube Downloader używa **dual-repository architecture** z trzema głównymi etapami release:
 
-## 📋 Fazy Release Process
+```
+🏠 LOCAL DEVELOPMENT
+    ↓ (make sync-develop)
+🔒 PRIVATE/develop (development & testing)
+    ↓ (make promote)
+🔒 PRIVATE/main (staging & validation)
+    ↓ (make release-public)
+🌍 PUBLIC/main (production & releases)
+```
 
-### Phase 1: Pre-Release Validation
+## 🎯 Repozytoria i Role
+
+### 🔒 Private Repository (`george7979/youtube-downloader-private`)
+- **Development Environment** - codzienne kodowanie
+- **Testing & Staging** - weryfikacja funkcji przed publikacją
+- **Security Screening** - kontrola wrażliwych plików
+- **Release Preparation** - przygotowanie clean builds
+
+### 🌍 Public Repository (`george7979/youtube-downloader`)
+- **Production Environment** - tylko stabilny, przetestowany kod
+- **Official Releases** - pakiety .deb i GitHub releases
+- **Public Issues & Documentation** - wsparcie użytkowników
+- **Clean Distribution** - brak development files
+
+## 📋 Stage 1: Development → Private/develop
+
+### 🎯 Cel
+Synchronizacja lokalnych zmian z private repository dla codziennej pracy zespołu.
+
+### 📝 Procedura
 ```bash
-# 1. Sprawdź że develop jest gotowe do merge
+# 1. Sprawdź status lokalnego kodu
+git status
+git log --oneline -5
+
+# 2. Zsynchronizuj zmiany
+make sync-develop
+# Lub z dodatkowymi opcjami:
+make sync-develop-force  # Force push (nadpisuje konflikty)
+
+# 3. Weryfikuj synchronizację
+make workflow-status
+```
+
+### ✅ Co jest dozwolone na tym etapie:
+- 🔧 Development builds (`*_dev.deb`)
+- 📝 `cursorrules`, `.cursorrules`
+- 🗂️ `backup/` directories
+- 🛠️ Development tools i scripts
+- 📊 Debug logs i test files
+- 🔧 Version format: `"X.Y.Z-dev"`
+
+### 🚨 Automatyczne sprawdzenia:
+- Branch sync status
+- Local changes detection
+- Remote conflict resolution
+
+---
+
+## 📋 Stage 2: Private/develop → Private/main
+
+### 🎯 Cel
+Promocja stabilnych funkcji do staging environment z security validation.
+
+### 📝 Procedura
+```bash
+# 1. Pre-promotion validation
+make promote-check        # Dry run - sprawdź czy promocja możliwa
 git checkout develop
-git status  # must be clean
-git pull origin develop
+make test                 # Uruchom testy techniczne
+# Manual UAT według docs/TESTING_CHECKLIST.md
 
-# 2. Uruchom pełne testy
-make test               # Technical validation
-make ci-check          # Full CI pipeline
-# Manual UAT testing according to docs/TESTING_CHECKLIST.md
+# 2. Security scan
+./scripts/security-check-main.sh develop
 
-# 3. Security scan develop branch
-./scripts/security-check.sh develop
+# 3. Promocja
+make promote              # Standard promotion
+# Lub:
+make promote-squash      # Squash commits dla czystszej historii
+
+# 4. Weryfikacja
+make workflow-status
 ```
 
-### Phase 2: Security Filter Setup
+### 🔒 Security Features na tym etapie:
 ```bash
-# Sprawdź które pliki NIE powinny iść na main
-echo "🔍 Checking for sensitive files..."
-
-# Files that MUST NOT go to main:
-find . -name "cursorrules" -o -name ".cursorrules"
-find . -name "*.local" -o -name ".env*" 
-find . -name "*secret*" -o -name "*private*"
-find . -name "*dev*.deb"  # Development .deb builds
-ls -la backup/           # Backup directories
-ls -la scripts/          # Private scripts
-
-# Create exclusion list
-cat > .release-exclude << 'EOF'
-cursorrules
-.cursorrules
-backup/
-scripts/push-to-private.sh
-scripts/force-sync-public.sh
-youtube-downloader_*_dev*.deb
-*.local
-.env*
-*secret*
-*private*
-EOF
+# Automatyczne sprawdzenie wrażliwych plików:
+- cursorrules, .cursorrules
+- *.env, *.local, *secret*, *private*
+- *.key, *.pem, *.p12
+- backup/, dev-tools/
+- Development .deb builds
 ```
 
-### Phase 3: Clean Merge Strategy
+### ✅ Co przechodzi do Private/main:
+- ✅ Clean source code
+- ✅ Updated documentation
+- ✅ Production-ready build scripts
+- ✅ CI/CD configurations
+- ✅ Version updated to stable format: `"X.Y.Z"`
 
-#### Option A: Selective File Merge (Recommended)
+### ❌ Co jest blokowane:
+- ❌ `cursorrules` files
+- ❌ Environment configs (`.env*`)
+- ❌ Development builds
+- ❌ Private backup directories
+- ❌ Debug i development tools
+
+---
+
+## 📋 Stage 3: Private/main → Public/main
+
+### 🎯 Cel
+Publikacja stabilnego kodu i releases do production environment.
+
+### 📝 Procedura
 ```bash
-# 1. Checkout main and ensure it's clean
+# 1. Pre-release validation
+make release-public-verify    # Comprehensive security check
+
+# 2. Final testing
 git checkout main
-git pull origin main
+make test
+make build                   # Create production .deb
 
-# 2. Create release branch for safe merge
-git checkout -b release/v1.x.x
+# 3. Create release (w private repo)
+./build-tools/version-manager.sh bump patch  # lub minor/major
+git commit -am "Release v$(./build-tools/version-manager.sh show)"
+git tag v$(./build-tools/version-manager.sh show)
 
-# 3. Selective merge - only production-ready files
-git checkout develop -- src/
-git checkout develop -- docs/TESTING_CHECKLIST.md
-git checkout develop -- docs/MIGRATION_PLAN.md
-git checkout develop -- .github/workflows/ci.yml
-git checkout develop -- .gitignore
-git checkout develop -- README.md
-git checkout develop -- requirements.txt
-git checkout develop -- main.py
-git checkout develop -- tests/
+# 4. Publikacja do public repo
+make release-public
 
-# 4. Update version to release version (NOT development)
-echo '__version__ = "1.x.x"' > version.py  # STABLE VERSION
-
-# 5. Add only stable .deb (if exists)
-if [ -f "youtube-downloader_1.x.x_all.deb" ]; then
-    git add -f youtube-downloader_1.x.x_all.deb
-fi
+# 5. Weryfikacja
+gh release list --repo george7979/youtube-downloader
 ```
 
-#### Option B: Full Merge with Cleanup (Alternative)
-```bash
-# 1. Merge develop to release branch
-git checkout main
-git checkout -b release/v1.x.x
-git merge develop --no-commit
+### 🔒 Enhanced Security (Strict Mode):
+- **Double validation** - sprawdzenie w private i public
+- **User confirmation** - wymagane potwierdzenie przed publikacją
+- **Content analysis** - analiza różnic między repos
+- **Sensitive file detection** - podwójna kontrola wrażliwych danych
 
-# 2. Remove sensitive files before commit
-git reset HEAD cursorrules .cursorrules
-git reset HEAD backup/
-git reset HEAD scripts/push-to-private.sh
-git reset HEAD youtube-downloader_*_dev*.deb
-rm -f cursorrules .cursorrules
-rm -rf backup/
+### ✅ Co jest publikowane:
+- ✅ **Core application** (`core/`, `ui/`)
+- ✅ **Public documentation** (`docs/`)
+- ✅ **Build system** (`build-tools/`, cleaned)
+- ✅ **Essential scripts** (workflow, cleaned)
+- ✅ **CI/CD configs** (`.github/workflows/`)
+- ✅ **Project files** (`README.md`, `requirements.txt`, `LICENSE`)
+- ✅ **Production releases** (stable `.deb` packages)
 
-# 3. Clean up .gitignore for main (less restrictive)
-# Edit .gitignore to allow stable .deb files but block dev builds
-```
+### ❌ Co nigdy nie jest publikowane:
+- ❌ `cursorrules` - development rules
+- ❌ `.venv/` - virtual environments
+- ❌ `backup/` - private backups
+- ❌ `dev-tools/` - development utilities
+- ❌ `*dev*.deb` - development builds
+- ❌ `.env*` - environment configs
 
-### Phase 4: Release Finalization
-```bash
-# 1. Commit release
-git add .
-git commit -m "release: v1.x.x - [Brief description of major changes]
+---
 
-- Feature 1: description
-- Feature 2: description  
-- Security: improvements
-- Migration: architecture changes
+## 🤖 GitHub Actions Automation
 
-🔒 Security verified: No sensitive data included
-✅ Tests passed: CI/CD pipeline successful
-📦 Stable build: Ready for production release"
+### Auto-Sync Workflow (`.github/workflows/auto-sync.yml`)
 
-# 2. Final security check
-./scripts/security-check.sh HEAD
+#### Triggers:
+1. **Release Publication** - automatyczna pełna synchronizacja
+2. **Manual Dispatch** - wybór typu synchronizacji
+3. **Scheduled** - regularne sprawdzenia
 
-# 3. Merge to main
-git checkout main
-git merge --no-ff release/v1.x.x
+#### Dostępne tryby:
+- `full` - kod + releases (default)
+- `code-only` - tylko synchronizacja kodu
+- `releases-only` - tylko synchronizacja releases
 
-# 4. Tag release
-git tag -a v1.x.x -m "Release v1.x.x - [Brief description]"
+#### Security Features:
+- Automatyczny security scan przed publikacją
+- Failure notifications via GitHub Issues
+- Rollback capability w przypadku problemów
 
-# 5. Push to remote
-git push origin main
-git push origin v1.x.x
-
-# 6. Create GitHub Release
-gh release create v1.x.x \
-    --title "YouTube Downloader v1.x.x" \
-    --notes "## Release Notes..." \
-    youtube-downloader_1.x.x_all.deb
-```
-
-### Phase 5: Post-Release Cleanup
-```bash
-# 1. Update develop branch
-git checkout develop
-git merge main  # Keep develop in sync
-
-# 2. Increment develop version for next cycle
-echo '__version__ = "1.x+1.0-dev"' > version.py
-git add version.py
-git commit -m "chore: Bump version to next development cycle"
-git push origin develop
-
-# 3. Clean up release branch
-git branch -d release/v1.x.x
-```
-
-## 🛡️ Security Guards
-
-### Automated Pre-Commit Hooks
-```bash
-#!/bin/bash
-# .git/hooks/pre-commit
-echo "🔍 Security check before commit..."
-
-if [ "$BRANCH" = "main" ]; then
-    # Extra strict checks for main branch
-    if find . -name "cursorrules" | grep -q .; then
-        echo "❌ BLOCKED: cursorrules found in main branch"
-        exit 1
-    fi
-    
-    if find . -name "*dev*.deb" | grep -q .; then
-        echo "❌ BLOCKED: Development .deb found in main branch"
-        exit 1
-    fi
-fi
-```
-
-### GitHub Actions Protection
 ```yaml
-# .github/workflows/main-protection.yml
-name: Main Branch Protection
-on:
-  push:
-    branches: [main]
-
-jobs:
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Block sensitive files
-      run: |
-        if find . -name "cursorrules" | grep -q .; then
-          echo "❌ Sensitive files detected in main branch"
-          exit 1
-        fi
-```
-
-## 📝 Branch Strategy Summary
-
-### develop branch:
-- ✅ Development builds (.deb)
-- ✅ cursorrules, private scripts
-- ✅ backup/ directories
-- ✅ All development tools
-- ✅ version.py = "X.Y.Z-dev"
-
-### main branch:
-- ✅ Only stable releases (.deb)
-- ✅ Clean source code only
-- ❌ NO development tools
-- ❌ NO cursorrules or private files
-- ✅ version.py = "X.Y.Z" (stable)
-
-### release branches:
-- 🔄 Temporary branches for safe merge
-- 🧹 Security filtering applied
-- 🚀 Bridge between develop and main
-
-## 🎯 Quick Reference Commands
-
-```bash
-# Start release process
-git checkout develop && git pull
-make test && make ci-check
-git checkout -b release/v1.x.x
-
-# Selective merge (recommended)
-git checkout develop -- src/ docs/ .github/ README.md requirements.txt
-
-# Finish release
-git checkout main && git merge --no-ff release/v1.x.x
-git tag v1.x.x && git push origin main v1.x.x
-gh release create v1.x.x youtube-downloader_1.x.x_all.deb
+# Przykład manual trigger:
+workflow_dispatch:
+  inputs:
+    sync_type:
+      description: 'Sync type'
+      required: true
+      default: 'full'
+      type: choice
+      options:
+        - full
+        - code-only
+        - releases-only
 ```
 
 ---
-*Last updated: August 2025 - Single Repository Architecture*
+
+## 📊 Quick Reference Commands
+
+### Daily Workflow
+```bash
+# Codzienna praca
+git add . && git commit -m "Feature implementation"
+make sync-develop              # Stage 1: Local → Private/develop
+
+# Status monitoring
+make workflow-status           # Sprawdź status wszystkich etapów
+make w                        # Alias dla workflow-status
+```
+
+### Release Preparation
+```bash
+# Stage 2: Develop → Main (private)
+make promote-check            # Sprawdź czy promocja możliwa
+make promote                  # Wykonaj promocję z security check
+make p                       # Alias dla promote
+```
+
+### Production Release
+```bash
+# Stage 3: Main → Public
+make release-public-verify    # Sprawdź czy publikacja bezpieczna
+make release-public          # Publikuj do production
+make r                      # Alias dla release-public
+```
+
+### Full Pipeline
+```bash
+# Wszystkie etapy w jednej komendzie (z potwierdzeniami)
+make sync-all                # Local → develop → main → public
+```
+
+### Monitoring & Maintenance
+```bash
+make watch-releases          # Continuous monitoring releases
+./scripts/sync-releases.sh   # Manual release synchronization
+```
+
+---
+
+## 🚨 Emergency Procedures
+
+### Force Operations (Ostateczność)
+```bash
+# Force sync (nadpisuje remote conflicts)
+make sync-develop-force
+
+# Force promotion (pomija niektóre sprawdzenia)
+./scripts/promote-to-main.sh --skip-security --force
+
+# Force publication (emergency release)
+./scripts/release-to-public.sh --force
+```
+
+### Dry Run Testing (Bezpieczne)
+```bash
+# Test wszystkich operacji bez wykonania
+./scripts/sync-to-private.sh --dry-run --verbose
+./scripts/promote-to-main.sh --dry-run --verbose
+./scripts/release-to-public.sh --dry-run --verbose
+```
+
+### Rollback Procedures
+```bash
+# Rollback niepowodzenie promotion
+git checkout develop
+git branch -D staging/promotion
+git reset --hard origin/develop
+
+# Rollback publication (manual)
+# 1. Delete problematic release z public repo
+gh release delete v1.x.x --repo george7979/youtube-downloader
+# 2. Re-run corrected publication
+make release-public
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### Problem: Promotion blocked by security
+```bash
+# Sprawdź co blokuje
+./scripts/security-check-main.sh develop
+
+# Usuń problematyczne pliki
+git rm cursorrules .env.local
+git commit -m "Remove sensitive files for promotion"
+
+# Spróbuj ponownie
+make promote
+```
+
+### Problem: Publication failed
+```bash
+# Diagnostyka
+make release-public-verify
+make workflow-status
+
+# Sprawdź GitHub Actions
+# https://github.com/george7979/youtube-downloader-private/actions
+
+# Manual recovery
+./scripts/release-to-public.sh --force --verbose
+```
+
+### Problem: Release sync nie działa
+```bash
+# Manual sync konkretnego release
+./scripts/sync-releases.sh \
+  --from george7979/youtube-downloader-private \
+  --to george7979/youtube-downloader \
+  --tag v1.0.3
+
+# Force sync wszystkich releases
+./scripts/sync-releases.sh \
+  --from george7979/youtube-downloader-private \
+  --to george7979/youtube-downloader \
+  --force
+```
+
+---
+
+## 📈 Best Practices
+
+### 1. Development
+- **Daily sync**: `make sync-develop` po każdej sesji kodowania
+- **Feature branches**: używaj feature branches dla większych zmian
+- **Testing**: zawsze testuj lokalnie przed sync
+
+### 2. Staging (Private/main)
+- **Security first**: zawsze `make promote-check` przed promocją
+- **Clean history**: używaj `make promote-squash` dla czystszej historii
+- **Documentation**: aktualizuj changelog przy każdej promocji
+
+### 3. Production (Public/main)
+- **Verification**: zawsze `make release-public-verify`
+- **Semantic versioning**: używaj proper version numbering
+- **Release notes**: dołączaj meaningful release notes
+
+### 4. Monitoring
+- **Regular checks**: `make workflow-status` codziennie
+- **Auto-monitoring**: używaj `make watch-releases` dla continuous monitoring
+- **GitHub Actions**: monitoruj automated workflows
+
+---
+
+## 📞 Support & Links
+
+### Repositories
+- **Private**: https://github.com/george7979/youtube-downloader-private
+- **Public**: https://github.com/george7979/youtube-downloader
+
+### Monitoring
+- **Actions (Private)**: https://github.com/george7979/youtube-downloader-private/actions
+- **Releases (Public)**: https://github.com/george7979/youtube-downloader/releases
+
+### Documentation
+- **Workflow Details**: [docs/WORKFLOW.md](WORKFLOW.md)
+- **Build Instructions**: [docs/BUILDING.md](BUILDING.md)
+- **Project Structure**: [docs/README-STRUCTURE.md](README-STRUCTURE.md)
+
+---
+
+*Release Process Documentation - Last updated: 2025-08-17*
+*Dual-Repository Workflow v1.2.0*

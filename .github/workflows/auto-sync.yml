@@ -1,0 +1,254 @@
+name: Auto Sync to Public Repository
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      sync_type:
+        description: 'Type of synchronization'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+        - 'full'
+        - 'code-only'
+        - 'releases-only'
+      force_sync:
+        description: 'Force synchronization'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PRIVATE_REPO: ${{ github.repository }}
+  PUBLIC_REPO: "george7979/youtube-downloader"
+
+jobs:
+  security-check:
+    name: Security Check
+    runs-on: ubuntu-latest
+    outputs:
+      security_passed: ${{ steps.security.outputs.passed }}
+    
+    steps:
+    - name: Checkout private repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Run security check
+      id: security
+      run: |
+        echo "🔒 Running security check for public release..."
+        
+        # Sprawdź czy skrypt bezpieczeństwa istnieje
+        if [ ! -f "./scripts/security-check-main.sh" ]; then
+          echo "❌ Security script not found"
+          echo "passed=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+        
+        # Uruchom sprawdzenie bezpieczeństwa w strict mode
+        if ./scripts/security-check-main.sh main true; then
+          echo "✅ Security check passed"
+          echo "passed=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Security check failed - cannot sync to public"
+          echo "passed=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+  sync-to-public:
+    name: Sync to Public Repository
+    runs-on: ubuntu-latest
+    needs: security-check
+    if: needs.security-check.outputs.security_passed == 'true'
+    environment: production
+    
+    steps:
+    - name: Checkout private repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Configure Git
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        
+    - name: Setup GitHub CLI
+      run: |
+        gh --version
+        echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+        
+    - name: Add public remote
+      run: |
+        # Usuń remote jeśli już istnieje
+        git remote remove public 2>/dev/null || true
+        
+        # Dodaj public remote
+        git remote add public https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ env.PUBLIC_REPO }}.git
+        
+        # Weryfikuj remotes
+        echo "🔗 Configured remotes:"
+        git remote -v
+        
+    - name: Fetch repositories
+      run: |
+        echo "📥 Fetching latest changes..."
+        git fetch origin
+        git fetch public
+        
+    - name: Determine sync type
+      id: sync_type
+      run: |
+        if [ "${{ github.event_name }}" = "release" ]; then
+          echo "sync_type=full" >> $GITHUB_OUTPUT
+          echo "🚀 Release triggered - full sync"
+        elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "sync_type=${{ github.event.inputs.sync_type }}" >> $GITHUB_OUTPUT
+          echo "🔧 Manual trigger - ${{ github.event.inputs.sync_type }} sync"
+        else
+          echo "sync_type=code-only" >> $GITHUB_OUTPUT
+          echo "📝 Push triggered - code-only sync"
+        fi
+        
+    - name: Sync code to public
+      if: steps.sync_type.outputs.sync_type == 'full' || steps.sync_type.outputs.sync_type == 'code-only'
+      run: |
+        echo "📦 Syncing code to public repository..."
+        
+        # Przygotuj opcje
+        SYNC_OPTIONS=""
+        if [ "${{ github.event.inputs.force_sync }}" = "true" ]; then
+          SYNC_OPTIONS="$SYNC_OPTIONS --force"
+        fi
+        
+        if [ "${{ steps.sync_type.outputs.sync_type }}" = "code-only" ]; then
+          SYNC_OPTIONS="$SYNC_OPTIONS --no-releases"
+        fi
+        
+        # Sprawdź czy skrypt istnieje
+        if [ ! -f "./scripts/release-to-public.sh" ]; then
+          echo "❌ Release script not found"
+          exit 1
+        fi
+        
+        # Wykonaj synchronizację
+        ./scripts/release-to-public.sh --auto-approve $SYNC_OPTIONS
+        
+    - name: Sync releases to public
+      if: steps.sync_type.outputs.sync_type == 'full' || steps.sync_type.outputs.sync_type == 'releases-only'
+      run: |
+        echo "🏷️ Syncing releases to public repository..."
+        
+        # Sprawdź czy skrypt istnieje
+        if [ ! -f "./scripts/sync-releases.sh" ]; then
+          echo "❌ Sync releases script not found"
+          exit 1
+        fi
+        
+        # Pobierz nazwy repozytoriów
+        PRIVATE_REPO_NAME=$(echo "${{ env.PRIVATE_REPO }}" | cut -d'/' -f2)
+        PUBLIC_REPO_NAME=$(echo "${{ env.PUBLIC_REPO }}" | cut -d'/' -f2)
+        
+        echo "Private: ${{ env.PRIVATE_REPO }}"
+        echo "Public: ${{ env.PUBLIC_REPO }}"
+        
+        # Opcje synchronizacji
+        SYNC_OPTIONS=""
+        if [ "${{ github.event.inputs.force_sync }}" = "true" ]; then
+          SYNC_OPTIONS="$SYNC_OPTIONS --force"
+        fi
+        
+        # Wykonaj synchronizację releases
+        ./scripts/sync-releases.sh --from "${{ env.PRIVATE_REPO }}" --to "${{ env.PUBLIC_REPO }}" $SYNC_OPTIONS
+        
+    - name: Verify synchronization
+      run: |
+        echo "✅ Verification of synchronization..."
+        
+        # Sprawdź czy public repo został zaktualizowany
+        PRIVATE_COMMIT=$(git rev-parse origin/main)
+        PUBLIC_COMMIT=$(git rev-parse public/main 2>/dev/null || echo "")
+        
+        echo "Private main commit: ${PRIVATE_COMMIT:0:8}"
+        echo "Public main commit:  ${PUBLIC_COMMIT:0:8}"
+        
+        if [ "$PRIVATE_COMMIT" = "$PUBLIC_COMMIT" ]; then
+          echo "✅ Repositories are in sync"
+        else
+          echo "⚠️ Repositories may have differences"
+        fi
+        
+        # Sprawdź releases
+        echo ""
+        echo "📊 Release status:"
+        gh release list --repo "${{ env.PRIVATE_REPO }}" --limit 3 | head -1 || echo "No releases in private"
+        gh release list --repo "${{ env.PUBLIC_REPO }}" --limit 3 | head -1 || echo "No releases in public"
+        
+    - name: Post-sync notification
+      if: always()
+      run: |
+        echo ""
+        echo "🎉 Synchronization completed!"
+        echo "Private repo: https://github.com/${{ env.PRIVATE_REPO }}"
+        echo "Public repo:  https://github.com/${{ env.PUBLIC_REPO }}"
+        echo ""
+        
+        if [ "${{ job.status }}" = "success" ]; then
+          echo "✅ Status: SUCCESS"
+        else
+          echo "❌ Status: FAILED"
+        fi
+
+  notify-on-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [security-check, sync-to-public]
+    if: failure()
+    
+    steps:
+    - name: Create issue on failure
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const title = `Auto-sync to public failed - ${context.sha.slice(0, 8)}`;
+          const body = `
+          ## ❌ Auto-synchronization Failed
+          
+          **Commit:** ${context.sha}
+          **Workflow:** ${context.workflow}
+          **Run:** ${context.runNumber}
+          **Triggered by:** ${context.eventName}
+          
+          ### Failure Details
+          - **Security Check:** ${{ needs.security-check.result }}
+          - **Sync to Public:** ${{ needs.sync-to-public.result }}
+          
+          ### Actions Needed
+          1. Check the [workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details
+          2. Review security issues if security check failed
+          3. Manually run sync scripts if needed:
+             \`\`\`bash
+             ./scripts/release-to-public.sh --verify
+             ./scripts/sync-releases.sh --from ${context.repo.owner}/${context.repo.repo} --to george7979/youtube-downloader
+             \`\`\`
+          
+          ### Repository Links
+          - **Private:** ${context.payload.repository.html_url}
+          - **Public:** https://github.com/george7979/youtube-downloader
+          
+          ---
+          *This issue was automatically created by GitHub Actions*
+          `;
+          
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: title,
+            body: body,
+            labels: ['auto-sync', 'bug']
+          });

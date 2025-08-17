@@ -1,157 +1,205 @@
 # 📁 Struktura Projektu YouTube Downloader
 
-## 🎯 Przegląd Struktury
+## 🎯 Przegląd Dual-Repository Architecture
+
+Projekt używa **dual-repository workflow** z rozdzieleniem development/production:
 
 ```
-youtube-downloader-dev/              # 🔒 PRIVATE REPOSITORY
-├── 📁 public-src/                   # 🌍 SOURCE FOR PUBLIC REPO
-│   ├── main.py                      # → Kod aplikacji
-│   ├── gui.py                       # → Interface użytkownika
-│   ├── downloader.py                # → Logika pobierania
-│   ├── utils.py                     # → Narzędzia pomocnicze
-│   ├── requirements.txt             # → Zależności Python
-│   ├── README.md                    # → Dokumentacja użytkownika
-│   ├── LICENSE                      # → Licencja MIT
-│   ├── debian-src/                  # → Debian packaging
-│   ├── icons/                       # → Ikony aplikacji
-│   ├── pics/                        # → Screenshots
-│   └── .github/                     # → GitHub Actions
-│
+📂 PRIVATE REPO (george7979/youtube-downloader-private)
+├── Development, testing, staging
+├── Pełny kod z narzędziami deweloperskimi
+└── Wrażliwe pliki (cursorrules, dev configs)
+
+📂 PUBLIC REPO (george7979/youtube-downloader)  
+├── Clean production code
+├── Official releases i assets
+└── Public issues & documentation
+```
+
+## 🏗️ Struktura Private Repository
+
+```
+youtube-downloader-private/
 ├── 📁 build-tools/                  # 🔧 BUILD SYSTEM
 │   ├── build-deb.sh                # → Główny skrypt budowania
 │   └── version-manager.sh           # → Zarządzanie wersjami
 │
-├── 📁 scripts/                      # 🔄 DUAL-REPO TOOLS
-│   ├── sync-to-public-github.sh     # → Sync do PUBLIC repo
-│   ├── force-sync-public.sh         # → Force sync z czyszczeniem
-│   ├── security-check.sh            # → Skanowanie bezpieczeństwa
-│   ├── install-hooks.sh             # → Instalacja Git hooks
-│   ├── setup-dual-repo.sh           # → Pierwszy setup
-│   └── pull-from-public.sh          # → Import z PUBLIC repo
+├── 📁 scripts/                      # 🔄 DUAL-REPO WORKFLOW
+│   ├── sync-to-private.sh           # → Local → Private/develop
+│   ├── promote-to-main.sh           # → Develop → Main (private)
+│   ├── release-to-public.sh         # → Main Private → Main Public
+│   ├── sync-releases.sh             # → Sync releases między repos
+│   ├── security-check-main.sh       # → Security validation
+│   └── demo-safe-merge.sh           # → Safe merge demonstrations
 │
 ├── 📁 docs/                         # 📚 DOCUMENTATION
 │   ├── BUILDING.md                  # → Instrukcja budowania
-│   ├── DUAL-REPO.md                 # → Strategia dual-repo
-│   ├── ZASADY-DUAL-REPO.md          # → Zasady workflow
-│   └── README-STRUCTURE.md          # → Ten plik
+│   ├── WORKFLOW.md                  # → Dual-repo workflow guide
+│   ├── RELEASE_PROCESS.md           # → Release management
+│   ├── TESTING_CHECKLIST.md         # → QA procedures
+│   ├── README-STRUCTURE.md          # → Ten plik
+│   └── WORKFLOW-SYNC-PLAN.md        # → Plan implementacji workflow
 │
-├── 📁 dev-tools/                    # 🛠️ DEVELOPMENT UTILITIES
-│   └── (reserved for future tools)
+├── 📁 .github/                      # 🤖 GITHUB ACTIONS
+│   └── workflows/
+│       ├── ci.yml                   # → Continuous Integration
+│       ├── build.yml                # → Build & Test
+│       └── auto-sync.yml            # → Auto sync to public repo
 │
-├── (no symlinks) – pliki źródłowe trzymamy w root; `public-src/` jest snapshotem publikacyjnym
+├── 📁 core/                         # 🎯 APPLICATION CORE
+│   ├── downloader.py               # → Download logic
+│   └── utils.py                    # → Utility functions
+│
+├── 📁 ui/                           # 🎨 USER INTERFACE
+│   └── gui.py                      # → GUI implementation
+│
+├── 📁 pics/                         # 🖼️ SCREENSHOTS & ASSETS
+│   ├── youtube-downloader-120.png  # → App screenshots
+│   └── youtube-downloader-2.png    # → Interface previews
 │
 ├── 📋 PROJECT MANAGEMENT:
+│   ├── launcher.py                  # → Main application entry point
+│   ├── version.py                   # → Version configuration
+│   ├── requirements.txt             # → Python dependencies
 │   ├── Makefile                     # → Build automation
 │   ├── README.md                    # → Main project README
-│   ├── plan.md                      # → Development plan
-│   ├── cursorrules                  # → 🔒 DEV RULES (private!)
+│   ├── CONTRIBUTING.md              # → Contribution guidelines
+│   ├── LICENSE                      # → MIT License
 │   ├── .gitignore                   # → Git ignore rules
-│   └── LICENSE                      # → MIT License
+│   ├── cursorrules                  # → 🔒 DEV RULES (private only!)
+│   └── .github/                     # → GitHub configuration
 │
-└── 📦 ARTIFACTS:
-    └── *.deb                        # → Built packages
+└── 📁 IGNORED IN PUBLIC:
+    ├── .venv/                       # → Python virtual environments
+    ├── build/                       # → Build artifacts
+    ├── *.deb                        # → Package files
+    ├── backup/                      # → Backup directories
+    └── dev-tools/                   # → Development utilities
 ```
 
-## 🔄 Workflow Katalogów
+## 🏗️ Struktura Public Repository
 
-### **1. Development Workflow**
-- **Pracuj w**: root (main.py, gui.py, downloader.py, utils.py)
-- **Source of truth**: root
-- **Public snapshot**: `make sync-public` przygotowuje `public-src/`
-- **Build tools**: `build-tools/`, **Documentation**: `docs/`
+```
+youtube-downloader/
+├── 📁 build-tools/                  # ✅ Clean build system
+│   ├── build-deb.sh                # → Production build script
+│   └── version-manager.sh           # → Version management
+│
+├── 📁 scripts/                      # ✅ Essential scripts only
+│   ├── sync-to-private.sh           # → Development sync
+│   ├── promote-to-main.sh           # → Staging promotion
+│   ├── release-to-public.sh         # → Production release
+│   └── sync-releases.sh             # → Release synchronization
+│
+├── 📁 docs/                         # ✅ Public documentation
+│   ├── BUILDING.md                  # → Build instructions
+│   ├── WORKFLOW.md                  # → Development workflow
+│   └── README-STRUCTURE.md          # → This file
+│
+├── 📁 .github/workflows/            # ✅ Public CI/CD
+│   ├── ci.yml                       # → Quality checks
+│   └── auto-sync.yml                # → Auto synchronization
+│
+├── 📁 core/                         # ✅ Clean application code
+├── 📁 ui/                           # ✅ User interface
+├── 📁 pics/                         # ✅ Public screenshots
+│
+├── launcher.py                      # ✅ Application entry point
+├── version.py                       # ✅ Version info
+├── requirements.txt                 # ✅ Dependencies
+├── Makefile                         # ✅ Build system
+├── README.md                        # ✅ User documentation
+├── CONTRIBUTING.md                  # ✅ Contribution guide
+├── LICENSE                          # ✅ MIT License
+└── .gitignore                       # ✅ Clean ignore rules
 
-### **2. Dual-Repo Sync**
-- **Krok 1**: `make sync-public` (root → public-src)
-- **Krok 2**: `make push-public` (public-src → public GitHub, z security check i potwierdzeniem)
+❌ NEVER IN PUBLIC:
+├── cursorrules                      # 🔒 Development rules
+├── .venv/                           # 🔒 Virtual environments
+├── backup/                          # 🔒 Private backups
+├── dev-tools/                       # 🔒 Development utilities
+└── *dev*.deb                        # 🔒 Development builds
+```
 
-### **3. Build Process**
-- **Main script**: `build-tools/build-deb.sh`
-- **Version management**: `build-tools/version-manager.sh`
-- **Automation**: `make build`
+## 🔄 Workflow Synchronization
 
-## 🎯 Zalety Tej Struktury
-
-### ✅ **Korzyści:**
-1. **Clear separation**: Dev tools vs source code vs documentation
-2. **No duplication**: Symlinks eliminują duplikację plików
-3. **Easy sync**: `public-src/` jest ready-to-sync
-4. **Organized**: Każdy typ plików ma swoje miejsce
-5. **Scalable**: Łatwo dodać nowe narzędzia
-
-### 🔒 **Security Benefits:**
-- Private files nie są przypadkowo w `public-src/`
-- Build tools pozostają tylko w private repo
-- Documentation wrażliwa w `docs/` nie sync się
-- Security scripts w dedykowanym `scripts/`
-
-## 📖 Jak Używać
-
-### **Daily Development:**
+### 1. Development Flow
 ```bash
-# Praca w repo prywatnym
-vim main.py gui.py downloader.py utils.py
-
-# Build
-make build
-
-# Wersja
-./build-tools/version-manager.sh bump patch  # lub set X.Y.Z
-
-# Publikacja (gdy gotowe)
-make sync-public
-make push-public
+# Private repo - codzienna praca
+LOCAL → PRIVATE/develop
+  ↓ make sync-develop
+PRIVATE/develop (all files, including sensitive)
 ```
 
-### **New Team Member Setup:**
+### 2. Staging Flow  
 ```bash
-git clone <private-repo>
-cd youtube-downloader-dev
-
-# Setup hooks
-./scripts/install-hooks.sh
-
-# Verify structure
-ls -la *.py                    # Should see symlinks
-ls -la public-src/             # Should see actual files
-ls -la build-tools/            # Should see build scripts
+# Promotion z security check
+PRIVATE/develop → PRIVATE/main
+  ↓ make promote (+ security scan)
+PRIVATE/main (cleaned, staged)
 ```
 
-### **Add New Tool:**
+### 3. Production Flow
 ```bash
-# Development tool
-cp new-dev-tool.sh dev-tools/
-
-# Build tool
-cp new-build-script.sh build-tools/
-
-# Documentation
-cp new-doc.md docs/
-
-# Sync script
-cp new-sync-tool.sh scripts/
+# Final release do public
+PRIVATE/main → PUBLIC/main
+  ↓ make release-public (+ final validation)
+PUBLIC/main (clean, production-ready)
 ```
 
-## 🔍 Troubleshooting
+## 🔒 Security & Privacy
 
-### **Publikacja nie zawiera zmian:**
-```bash
-# Upewnij się, że odświeżyłeś snapshot
-make sync-public
-```
+### 🚫 Files NEVER synced to public:
+- `cursorrules` - Development rules
+- `.env*`, `*.local` - Environment configs
+- `backup/` - Private backups  
+- `dev-tools/` - Development utilities
+- `*dev*.deb` - Development builds
+- `.venv/` - Virtual environments
+- Private scripts i configurations
 
-### **Build tools not found:**
-```bash
-# Check paths in Makefile
-make debug-version
-make debug-build
-```
+### ✅ Files always synced:
+- Core application code
+- Public documentation
+- Build system (cleaned)
+- Tests and CI configuration
+- Official releases and assets
 
-### **Documentation outdated:**
-```bash
-# Update paths in documentation
-find docs/ -name "*.md" -exec sed -i 's|./version-manager.sh|./build-tools/version-manager.sh|g' {} \;
-```
+## 📊 File Flow Matrix
+
+| File Type | Private → Public | Comments |
+|-----------|------------------|----------|
+| `core/`, `ui/` | ✅ Always | Application code |
+| `docs/` | ✅ Always | Documentation |
+| `build-tools/` | ✅ Always | Build system |
+| `scripts/workflow` | ✅ Always | Essential scripts |
+| `requirements.txt` | ✅ Always | Dependencies |
+| `launcher.py` | ✅ Always | Entry point |
+| `cursorrules` | ❌ Never | Development rules |
+| `.venv/` | ❌ Never | Virtual env |
+| `backup/` | ❌ Never | Private backups |
+| `*.deb` (dev) | ❌ Never | Dev builds |
+| `.env*` | ❌ Never | Environment configs |
+
+## 🛠️ Development Guidelines
+
+### 📂 Dodawanie nowych plików:
+1. **Kod aplikacji** → umieść w `core/` lub `ui/`
+2. **Build tools** → dodaj do `build-tools/`  
+3. **Dokumentacja** → wrzuć do `docs/`
+4. **Dev utilities** → umieść w `dev-tools/` (nie sync do public)
+
+### 🔧 Narzędzia workflow:
+- `make workflow-status` - sprawdź status synchronizacji
+- `make sync-develop` - wyślij zmiany do private/develop
+- `make promote` - przenieś develop → main (private)
+- `make release-public` - publikuj main → public repo
+
+### 🎯 Best Practices:
+- Testuj zawsze w private/develop przed promocją
+- Używaj security checks przed każdą publikacją
+- Dokumentuj zmiany w changelog
+- Sprawdzaj co zostanie zsynchronizowane z public
 
 ---
-
-**This structure provides maximum organization while maintaining the dual-repo workflow efficiency.**
+*Struktura zaktualizowana dla dual-repository workflow v1.2.0*

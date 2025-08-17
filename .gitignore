@@ -1,10 +1,10 @@
 # ===============================================
-# YouTube Downloader - Single Repository
-# Git Ignore Rules for Trunk-Based Development
+# YouTube Downloader - Dual Repository Architecture  
+# Git Ignore Rules for Private Development Repository
 # ===============================================
 
-# === SENSITIVE FILES ===
-# NIGDY nie commituj tych plików!
+# === SENSITIVE FILES - NEVER COMMIT ===
+# These files MUST stay in private repo only!
 cursorrules
 .cursorrules
 *.local
@@ -23,6 +23,7 @@ secrets.json
 .env.secrets
 .git-credentials
 .netrc
+config.private.json
 
 # === DEVELOPMENT ENVIRONMENT ===
 .vscode/
@@ -50,6 +51,9 @@ ENV/
 .virtualenv/
 pip-log.txt
 pip-delete-this-directory.txt
+*.pyc
+*.pyo
+*.pyd
 
 # === BUILD ARTIFACTS ===
 dist/
@@ -70,8 +74,12 @@ wheels/
 MANIFEST
 
 # === DEBIAN PACKAGING ===
-debian/
+# Allow stable releases, block development builds
 *.deb
+!youtube-downloader_*_all.deb
+*dev*.deb
+*-dev.deb
+*_dev_*.deb
 *.buildinfo 
 *.changes
 *.dsc
@@ -88,6 +96,7 @@ test-output/
 debug-output/
 *.debug
 .nose2-*
+.mypy_cache/
 
 # === LOGS ===
 *.log
@@ -95,8 +104,10 @@ logs/
 youtube_downloader.log
 debug.log
 *.pid
+workflow.log
+sync.log
 
-# === TEMPORARY ===
+# === TEMPORARY FILES ===
 tmp/
 temp/
 .tmp/
@@ -121,29 +132,98 @@ temp/
 *.m4a
 *.wav
 *.ogg
+*.aac
+*.m4v
+*.3gp
 
-# === GENERATED FILES ===
-*-timestamps.md
+# === NODE.JS (if any frontend tools) ===
 node_modules/
-.sass-cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
 
-# === LEGACY DUAL-REPO FILES ===
-# Files from old dual-repo architecture (cleanup)
-public-src/
-scripts/sync-to-public*.sh
-scripts/push-to-public.sh
-scripts/pull-from-public.sh
-scripts/force-sync-public.sh
-DUAL-REPO.md
-ZASADY-DUAL-REPO.md
+# === DUAL-REPO WORKFLOW FILES ===
+# Temporary files created by workflow scripts
+.sync-state
+.promotion-state
+.release-state
+sync-temp/
+promotion-temp/
+release-temp/
 
-# === DEVELOPMENT NOTES ===
+# === DEVELOPMENT BACKUPS ===
+backup/
+*.bundle
+backup-*/
+.backup/
+
+# === DOCUMENTATION DRAFTS ===
 TODO-dev.md
 NOTES-dev.md
 DEBUG-*.md
 internal-docs/
-dev-tools/
+dev-notes/
 
-# === BACKUPS ===
-backup/
-*.bundle
+# === CI/CD ARTIFACTS ===
+.github-artifacts/
+.ci-cache/
+test-results/
+coverage-reports/
+
+# === DATABASE/CONFIG TESTING ===
+*.sqlite
+*.sqlite3
+*.db
+test.db
+config.test.json
+
+# === MONITORING/PROFILING ===
+*.prof
+*.profile
+.coverage.*
+.benchmarks/
+
+# === DOCKER (if used) ===
+.dockerignore
+docker-compose.override.yml
+
+# === SECURITY SCANNING ===
+.snyk
+.semgrep.yml
+security-scan-results/
+
+# === EDITOR CONFIG ===
+.editorconfig.local
+.vimrc.local
+
+# === OS SPECIFIC ===
+# Windows
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+
+# Linux
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk

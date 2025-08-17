@@ -29,7 +29,7 @@ define log_warning
 	@echo -e "$(YELLOW)⚠️  $(1)$(NC)"
 endef
 
-.PHONY: help build clean test install version check deps ci test-dual-repo ci-check push-private push-private-all sync-public push-public
+.PHONY: help build clean test install version check deps ci ci-check sync-develop promote release-public sync-releases sync-all workflow-status
 
 help: ## Pokaż tę pomoc
 	@printf "$(BLUE)YouTube Downloader Build System$(NC)\n"
@@ -71,18 +71,6 @@ install: test ## Zainstaluj pakiet lokalnie
 	@sudo apt-get install -f || true
 	$(call log_success,Pakiet zainstalowany)
 
-push-private: ## Wypchnij całe lokalne repo do private (łącznie z ignorowanymi); interaktywne potwierdzenia
-	@./scripts/push-to-private.sh
-
-push-private-all: ## Wypchnij pełny stan (w tym ignorowane i *.deb) do private bez potwierdzeń
-	@ASSUME_YES=1 SKIP_VERIFY=1 ./scripts/push-to-private.sh
-
-sync-public: ## Przygotuj okrojony kod do publikacji w katalogu public-src/
-	@./scripts/sync-to-public.sh
-
-push-public: ## Opublikuj zawartość public-src/ do publicznego repo na GitHub
-	@echo "ℹ️  Upewnij się, że masz tag w formacie vX.Y.Z (np. v$$(python3 -c 'ns={};exec(open("version.py").read(),ns);print(ns.get("__version__","0.0.0"))'))"
-	@./scripts/sync-to-public-github.sh
 
 uninstall: ## Usuń pakiet
 	$(call log_info,Usuwanie pakietu...)
@@ -112,10 +100,10 @@ check: ## Sprawdź wymagania systemowe
 	@command -v dpkg-deb >/dev/null || { echo "❌ Brak dpkg-deb. Zainstaluj: apt-get install dpkg-dev"; exit 1; }
 	@command -v fakeroot >/dev/null || { echo "❌ Brak fakeroot. Zainstaluj: apt-get install fakeroot"; exit 1; }
 	@command -v python3 >/dev/null || { echo "❌ Brak python3"; exit 1; }
-	@test -f main.py || { echo "❌ Brak main.py"; exit 1; }
-	@test -f gui.py || { echo "❌ Brak gui.py"; exit 1; }
-	@test -f downloader.py || { echo "❌ Brak downloader.py"; exit 1; }
-	@test -f utils.py || { echo "❌ Brak utils.py"; exit 1; }
+	@test -f launcher.py || { echo "❌ Brak launcher.py"; exit 1; }
+	@test -f version.py || { echo "❌ Brak version.py"; exit 1; }
+	@test -f core/downloader.py || { echo "❌ Brak core/downloader.py"; exit 1; }
+	@test -f ui/gui.py || { echo "❌ Brak ui/gui.py"; exit 1; }
 	@test -x build-tools/build-deb.sh || { echo "❌ build-tools/build-deb.sh nie jest wykonywalny"; exit 1; }
 	@test -x build-tools/version-manager.sh || { echo "❌ build-tools/version-manager.sh nie jest wykonywalny"; exit 1; }
 	$(call log_success,Wszystkie wymagania spełnione)
@@ -155,10 +143,6 @@ ci: clean check build test ## Continuous Integration pipeline
 	@md5sum $(DEB_FILE) > $(DEB_FILE).md5
 	$(call log_success,CI Pipeline zakończone pomyślnie)
 
-test-dual-repo: ## Test dual-repository workflow
-	$(call log_info,Testowanie dual-repo workflow...)
-	@./scripts/test-dual-repo.sh
-	$(call log_success,Dual-repo workflow tests passed)
 
 ci-check: ## Comprehensive CI checks
 	$(call log_info,Uruchamianie comprehensive CI checks...)
@@ -170,7 +154,7 @@ info: ## Pokaż informacje o projekcie
 	@echo "================================"
 	@echo "Wersja:          $(VERSION)"
 	@echo "Pakiet:          $(DEB_FILE)"
-	@echo "Build script:    ./build-deb.sh"
+	@echo "Build script:    ./build-tools/build-deb.sh"
 	@echo "Version manager: ./build-tools/version-manager.sh"
 	@echo "Dokumentacja:    BUILDING.md"
 	@echo ""
@@ -192,12 +176,111 @@ debug-version: ## Debug version manager
 
 debug-build: ## Debug build script
 	@echo "=== Debug Build Script ==="
-	@DEBUG=1 ./build-deb.sh
+	@DEBUG=1 ./build-tools/build-deb.sh
 
 # Sprawdź czy wszystkie pliki istnieją przed budowaniem
 
-$(DEB_FILE): main.py gui.py downloader.py utils.py requirements.txt build-tools/build-deb.sh
+$(DEB_FILE): launcher.py version.py requirements.txt build-tools/build-deb.sh
 	@$(MAKE) build
+
+# === DUAL-REPO WORKFLOW ===
+
+sync-develop: ## Synchronizuj lokalne zmiany do private/develop
+	$(call log_info,Synchronizacja local → private/develop...)
+	@./scripts/sync-to-private.sh
+
+sync-develop-force: ## Force sync do private/develop (nadpisuje konflikty)
+	$(call log_info,Force sync local → private/develop...)
+	@./scripts/sync-to-private.sh --force
+
+promote: ## Promuj develop → main (private) z weryfikacją bezpieczeństwa
+	$(call log_info,Promocja develop → main (private)...)
+	@./scripts/promote-to-main.sh
+
+promote-check: ## Sprawdź czy promocja jest możliwa (dry run)
+	$(call log_info,Sprawdzanie możliwości promocji...)
+	@./scripts/promote-to-main.sh --check-only
+
+promote-squash: ## Promuj z squash commits
+	$(call log_info,Promocja develop → main (squash)...)
+	@./scripts/promote-to-main.sh --squash
+
+release-public: ## Publikuj main private → main public
+	$(call log_info,Publikacja main private → main public...)
+	@./scripts/release-to-public.sh
+
+release-public-verify: ## Sprawdź możliwość publikacji (dry run)
+	$(call log_info,Weryfikacja publikacji...)
+	@./scripts/release-to-public.sh --verify
+
+sync-releases: ## Synchronizuj releases między repozytoriami
+	$(call log_info,Synchronizacja releases...)
+	@./scripts/sync-releases.sh --from george7979/youtube-downloader-private --to george7979/youtube-downloader
+
+watch-releases: ## Monitoruj i auto-sync releases
+	$(call log_info,Monitoring releases dla auto-sync...)
+	@./scripts/sync-releases.sh --from george7979/youtube-downloader-private --to george7979/youtube-downloader --watch
+
+sync-all: ## Pełny workflow: local → develop → main → public
+	$(call log_info,🚀 PEŁNY WORKFLOW SYNCHRONIZACJI)
+	@echo "=================================="
+	@echo "1. Local → Private/develop"
+	@$(MAKE) sync-develop
+	@echo ""
+	@echo "2. Develop → Main (private)"
+	@$(MAKE) promote-check
+	@read -p "Kontynuować promocję? (y/N): " -n 1 -r && echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		$(MAKE) promote; \
+	else \
+		echo "Promocja anulowana"; exit 0; \
+	fi
+	@echo ""
+	@echo "3. Main Private → Main Public"
+	@$(MAKE) release-public-verify
+	@read -p "Kontynuować publikację? (y/N): " -n 1 -r && echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		$(MAKE) release-public; \
+	else \
+		echo "Publikacja anulowana"; exit 0; \
+	fi
+	$(call log_success,Pełny workflow zakończony!)
+
+workflow-status: ## Sprawdź status wszystkich etapów workflow
+	$(call log_info,Status Dual-Repo Workflow)
+	@echo "=========================="
+	@echo ""
+	@echo "📍 Current branch: $$(git branch --show-current)"
+	@echo "📍 Current commit: $$(git log --oneline -1)"
+	@echo ""
+	@echo "🔄 Repository Status:"
+	@echo "   Local changes: $$(git status --porcelain | wc -l) files"
+	@if git rev-parse --verify origin/develop >/dev/null 2>&1; then \
+		echo "   Behind develop: $$(git rev-list --count HEAD..origin/develop 2>/dev/null || echo '0') commits"; \
+		echo "   Ahead of develop: $$(git rev-list --count origin/develop..HEAD 2>/dev/null || echo '0') commits"; \
+	else \
+		echo "   Develop: not available"; \
+	fi
+	@if git rev-parse --verify origin/main >/dev/null 2>&1; then \
+		echo "   Behind main: $$(git rev-list --count HEAD..origin/main 2>/dev/null || echo '0') commits"; \
+		echo "   Ahead of main: $$(git rev-list --count origin/main..HEAD 2>/dev/null || echo '0') commits"; \
+	else \
+		echo "   Main: not available"; \
+	fi
+	@echo ""
+	@echo "🏷️  Latest releases:"
+	@if command -v gh >/dev/null 2>&1; then \
+		echo "   Private: $$(gh release list --repo george7979/youtube-downloader-private --limit 1 2>/dev/null | cut -f3 || echo 'none')"; \
+		echo "   Public:  $$(gh release list --repo george7979/youtube-downloader --limit 1 2>/dev/null | cut -f3 || echo 'none')"; \
+	else \
+		echo "   GitHub CLI not available"; \
+	fi
+	@echo ""
+	@echo "🛠️  Available commands:"
+	@echo "   make sync-develop      # Local → Private/develop"
+	@echo "   make promote          # Develop → Main (private)"
+	@echo "   make release-public   # Main → Public"
+	@echo "   make sync-all         # Full workflow"
 
 # Aliasy dla wygody
 b: build
@@ -205,3 +288,7 @@ c: clean
 t: test
 i: install
 v: version
+s: sync-develop
+p: promote
+r: release-public
+w: workflow-status

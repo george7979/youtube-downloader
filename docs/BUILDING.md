@@ -3,11 +3,12 @@
 ## 📋 Spis treści
 - [Wymagania systemowe](#wymagania-systemowe)
 - [Szybki start](#szybki-start)
+- [Dual-Repository Workflow](#dual-repository-workflow)
 - [Struktura projektu](#struktura-projektu)
 - [Zarządzanie wersjami](#zarządzanie-wersjami)
 - [Proces budowania](#proces-budowania)
 - [Testowanie](#testowanie)
-- [Publikacja](#publikacja)
+- [Release Management](#release-management)
 - [Rozwiązywanie problemów](#rozwiązywanie-problemów)
 - [CI/CD](#cicd)
 
@@ -55,30 +56,82 @@ fakeroot --version
 
 ## 🚀 Szybki start
 
-### 1. Sklonuj lub pobierz repozytorium
+### Dla użytkowników (instalacja)
 ```bash
-git clone https://github.com/george7979/youtube-downloader.git
-cd youtube-downloader
-```
+# 1. Pobierz najnowszy release
+wget https://github.com/george7979/youtube-downloader/releases/latest/download/youtube-downloader_*.deb
 
-### 2. Zbuduj pakiet DEB
-```bash
-# Zbuduj z aktualną wersją
-./build-deb.sh
-
-# Lub zbuduj z konkretną wersją
-./build-deb.sh 1.0.4
-```
-
-### 3. Przetestuj pakiet
-```bash
-# Sprawdź pakiet
-dpkg --info youtube-downloader_*.deb
-dpkg --contents youtube-downloader_*.deb
-
-# Zainstaluj lokalnie (opcjonalnie)
+# 2. Zainstaluj pakiet
 sudo dpkg -i youtube-downloader_*.deb
+
+# 3. Napraw zależności (jeśli potrzeba)
+sudo apt-get install -f
+
+# 4. Uruchom aplikację
+youtube-downloader
 ```
+
+### Dla deweloperów (development)
+```bash
+# 1. Uzyskaj dostęp do private repo (contact przez issues)
+# https://github.com/george7979/youtube-downloader/issues
+
+# 2. Sklonuj private repository
+git clone https://github.com/george7979/youtube-downloader-private.git
+cd youtube-downloader-private
+
+# 3. Zainstaluj zależności budowania
+make deps
+
+# 4. Sprawdź status workflow
+make workflow-status
+
+# 5. Zbuduj i przetestuj
+make build && make test
+```
+
+## 🔄 Dual-Repository Workflow
+
+Projekt używa **dual-repository architecture** z trzema środowiskami:
+
+### 📂 Repozytoria
+- **Private** (`youtube-downloader-private`) - development, testing, staging
+- **Public** (`youtube-downloader`) - production, releases, public access
+
+### 🔀 Workflow Stages
+```
+LOCAL DEVELOPMENT
+    ↓ make sync-develop
+PRIVATE/develop (development)
+    ↓ make promote  
+PRIVATE/main (staging)
+    ↓ make release-public
+PUBLIC/main (production)
+```
+
+### 🛠️ Development Commands
+```bash
+# Codzienna praca
+git add . && git commit -m "Feature"
+make sync-develop              # Local → Private/develop
+
+# Przygotowanie release
+make promote-check             # Sprawdź czy możliwe
+make promote                   # Develop → Main (private)
+
+# Publikacja
+make release-public-verify     # Sprawdź bezpieczeństwo  
+make release-public           # Main → Public repo
+
+# Status i monitoring
+make workflow-status          # Sprawdź wszystkie etapy
+make watch-releases           # Monitoruj releases
+```
+
+### 🔒 Security Features
+- **Automatic scanning** - sensitive files detection
+- **Two-stage validation** - private staging → public production
+- **Clean releases** - tylko production-ready kod w public repo
 
 ## 📁 Struktura projektu
 
@@ -690,7 +743,60 @@ fi
 
 ---
 
-## 📤 Publikacja
+## 🚀 Release Management
+
+### Dual-Repository Release Process
+
+#### 1. Development Release (Private Repo)
+```bash
+# Przygotuj release w private repo
+git checkout develop
+make build && make test
+
+# Utwórz release commit
+make bump-minor  # lub bump-patch / bump-major
+git commit -am "Release v$(./build-tools/version-manager.sh show)"
+git tag v$(./build-tools/version-manager.sh show)
+
+# Promuj do main
+make promote
+
+# Utwórz release w private repo
+gh release create v1.2.0 --title "YouTube Downloader v1.2.0" \
+  --notes "Release notes here" \
+  youtube-downloader_1.2.0_all.deb
+```
+
+#### 2. Production Release (Public Repo)
+```bash
+# Publikuj do public repo (automatyczna synchronizacja)
+make release-public
+
+# Lub manual sync
+./scripts/sync-releases.sh \
+  --from george7979/youtube-downloader-private \
+  --to george7979/youtube-downloader
+```
+
+#### 3. GitHub Actions Automation
+Workflow `.github/workflows/auto-sync.yml` automatycznie:
+- Skanuje security przy każdym release
+- Synchronizuje code i releases do public repo
+- Tworzy issue przy błędach
+
+### Manual Release Commands
+```bash
+# Sprawdź status przed release
+make workflow-status
+
+# Pełny release workflow z potwierdzeniami
+make sync-all
+
+# Monitoring releases
+make watch-releases
+```
+
+## 📤 Publikacja (Legacy)
 
 ### GitHub Releases
 1. **Utwórz release na GitHub**:
