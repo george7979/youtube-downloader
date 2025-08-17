@@ -90,7 +90,7 @@ bump-minor: ## Zwiększ wersję minor (1.0.3 -> 1.1.0)
 	@./build-tools/version-manager.sh bump minor
 	$(call log_success,Wersja minor zwiększona)
 
-bump-major: ## Zwiększ wersję major (1.0.3 -> 2.0.0)
+bump-major: ## Zwiększ wersję major (np. 1.0.3 -> 1.1.0)
 	$(call log_info,Zwiększanie wersji major...)
 	@./build-tools/version-manager.sh bump major
 	$(call log_success,Wersja major zwiększona)

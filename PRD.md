@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD)
 ## YouTube Downloader v1.2.0
 
-**Document Version:** 2.0  
+**Document Version:** 1.2  
 **Product Version:** 1.2.0  
 **Last Updated:** August 2025  
 **Document Owner:** Product Team  

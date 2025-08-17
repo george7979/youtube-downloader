@@ -197,7 +197,7 @@ version[2] = '0'
 print('.'.join(version))")
                 ;;
             "major")
-                # 1.2.3 -> 2.0.0
+                # 1.2.3 -> 1.3.0
                 new_version=$(python3 -c "
 version = '$current_version'.split('.')
 version[0] = str(int(version[0]) + 1)
@@ -235,7 +235,7 @@ print('.'.join(version))")
         echo "  $0 set 1.3.0     # Ustaw nową wersję"
         echo "  $0 bump patch    # 1.2.0 → 1.2.1"
         echo "  $0 bump minor    # 1.2.0 → 1.3.0"
-        echo "  $0 bump major    # 1.2.0 → 2.0.0"
+        echo "  $0 bump major    # 1.2.0 → 1.3.0"
         ;;
     *)
         log_error "Nieznana komenda: $1"

@@ -194,7 +194,7 @@ youtube-downloader/
 # Zwiększ wersję minor (1.0.3 -> 1.1.0)
 ./version-manager.sh bump minor
 
-# Zwiększ wersję major (1.0.3 -> 2.0.0)
+# Zwiększ wersję major (np. 1.0.3 -> 1.1.0)
 ./version-manager.sh bump major
 ```
 
