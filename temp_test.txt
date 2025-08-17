@@ -1,1 +1,0 @@
-# Clean Git hooks - no more dual-repo messages
