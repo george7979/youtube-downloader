@@ -53,15 +53,18 @@ log_info "Wersja: $VERSION"
 log_info "Katalog roboczy: $PROJECT_ROOT"
 log_info "Katalog build (tymczasowy): $BUILD_DIR"
 
-# Sprawdź wymagane pliki
+# Sprawdź wymagane pliki dla nowej struktury v2.0.0
 check_required_files() {
     local required_files=(
-        "main.py"
-        "gui.py" 
-        "downloader.py"
-        "utils.py"
+        "launcher.py"
+        "version.py"
         "requirements.txt"
         "README.md"
+        "core/downloader.py"
+        "core/utils.py"
+        "core/translations.py"
+        "ui/gui.py"
+        "ui/cli.py"
     )
     
     for file in "${required_files[@]}"; do
@@ -107,22 +110,33 @@ create_directory_structure() {
     log_success "Struktura katalogów utworzona"
 }
 
-# Kopiuj pliki aplikacji
+# Kopiuj pliki aplikacji dla nowej struktury v2.0.0
 copy_application_files() {
     log_info "Kopiowanie plików aplikacji..."
     
-    # Główne pliki Python
-    cp "$PROJECT_ROOT/main.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
-    cp "$PROJECT_ROOT/gui.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
-    cp "$PROJECT_ROOT/downloader.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
-    cp "$PROJECT_ROOT/utils.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
-    cp "$PROJECT_ROOT/translations.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
+    # Główny launcher
+    cp "$PROJECT_ROOT/launcher.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     cp "$PROJECT_ROOT/version.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     cp "$PROJECT_ROOT/requirements.txt" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
     
+    # Struktura modułów - core/
+    mkdir -p "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/core"
+    cp "$PROJECT_ROOT/core/__init__.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/core/"
+    cp "$PROJECT_ROOT/core/downloader.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/core/"
+    cp "$PROJECT_ROOT/core/utils.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/core/"
+    cp "$PROJECT_ROOT/core/translations.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/core/"
+    
+    # Struktura modułów - ui/
+    mkdir -p "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/ui"
+    cp "$PROJECT_ROOT/ui/__init__.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/ui/"
+    cp "$PROJECT_ROOT/ui/gui.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/ui/"
+    cp "$PROJECT_ROOT/ui/cli.py" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/ui/"
+    
     # Dokumentacja
     cp "$PROJECT_ROOT/README.md" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
-    cp "$PROJECT_ROOT/PRD.md" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
+    if [[ -f "$PROJECT_ROOT/PRD.md" ]]; then
+        cp "$PROJECT_ROOT/PRD.md" "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/"
+    fi
     
     # Obrazki jeśli istnieją
     if [[ -d "$PROJECT_ROOT/pics" ]]; then
@@ -140,12 +154,13 @@ copy_application_files() {
     fi
     
     # Ustaw uprawnienia
-    chmod +x "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/main.py"
-    chmod +x "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/gui.py"
-    chmod +x "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/downloader.py"
-    chmod +x "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/utils.py"
+    chmod +x "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/launcher.py"
+    chmod +x "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/core/downloader.py"
+    chmod +x "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/core/utils.py"
+    chmod +x "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/ui/gui.py"
+    chmod +x "$PACKAGE_DIR/usr/share/$PACKAGE_NAME/ui/cli.py"
     
-    log_success "Pliki aplikacji skopiowane"
+    log_success "Pliki aplikacji skopiowane (struktura v2.0.0)"
 }
 
 # Stwórz plik wykonawczy
@@ -163,16 +178,16 @@ if [ ! -d "/usr/share/youtube-downloader/venv" ]; then
 fi
 
 # Sprawdź czy główny plik aplikacji istnieje
-if [ ! -f "/usr/share/youtube-downloader/main.py" ]; then
+if [ ! -f "/usr/share/youtube-downloader/launcher.py" ]; then
     echo "❌ Błąd: Plik aplikacji nie istnieje"
     echo "Spróbuj przeinstalować aplikację: sudo apt reinstall youtube-downloader"
     exit 1
 fi
 
-# Aktywuj środowisko wirtualne i uruchom aplikację
-source /usr/share/youtube-downloader/venv/bin/activate
-cd /usr/share/youtube-downloader
-python main.py
+# Uruchom aplikację przez launcher (prostsze, bez source)
+export PYTHONPATH="/usr/share/youtube-downloader"
+exec /usr/share/youtube-downloader/venv/bin/python \
+     /usr/share/youtube-downloader/launcher.py "$@"
 EOF
     
     chmod +x "$PACKAGE_DIR/usr/bin/$PACKAGE_NAME"
@@ -215,7 +230,7 @@ Version: $VERSION
 Architecture: all
 Maintainer: Jerzy Maczewski <jerzymaczewski@gmail.com>
 Installed-Size: $INSTALLED_SIZE
-Depends: python3, python3-tk, python3-venv, python3-pip
+Depends: python3, python3-tk, python3-venv
 Recommends: ffmpeg
 Suggests: vlc
 Section: utils
@@ -223,24 +238,24 @@ Priority: optional
 Homepage: https://github.com/george7979/youtube-downloader
 Vcs-Git: https://github.com/george7979/youtube-downloader.git
 Vcs-Browser: https://github.com/george7979/youtube-downloader
-Description: YouTube Downloader - Aplikacja do pobierania filmów z YouTube
- Prosta aplikacja w Python do pobierania filmów z YouTube z interfejsem graficznym.
+Description: YouTube Downloader - Download videos from YouTube
+ Simple Python application for downloading YouTube videos with GUI.
  .
- Funkcje:
-  - Pobieranie filmów z YouTube z wklejanego linku
-  - Pobieranie z dźwiękiem w formacie MP4
-  - Wybór rozdzielczości przed pobieraniem
-  - Wybór katalogu docelowego dla pobieranych plików
-  - Walidacja linku YouTube przed pobieraniem
-  - Progress bar pokazujący postęp pobierania
-  - Obsługa błędów (film nie istnieje, brak połączenia)
-  - Informacje o filmie (tytuł, czas trwania, dostępne formaty)
-  - Przycisk "Anuluj" podczas pobierania
-  - Możliwość pobierania tylko audio (MP3)
-  - Automatyczne sanityzowanie nazw plików
+ Features:
+  - Download YouTube videos from pasted URL
+  - Download with audio in MP4 format
+  - Select resolution before downloading
+  - Choose destination folder for downloads
+  - YouTube URL validation before download
+  - Progress bar showing download status
+  - Error handling (video not found, no connection)
+  - Video information (title, duration, available formats)
+  - Cancel button during download
+  - Audio-only download (MP3)
+  - Automatic filename sanitization
  .
- ⚠️ UWAGA PRAWNA: Ta aplikacja jest narzędziem technicznym.
- Użytkownik odpowiada za legalność pobierania treści.
+ ⚠️ LEGAL NOTICE: This application is a technical tool.
+ User is responsible for legality of downloaded content.
 EOF
     
     log_success "Plik control utworzony"

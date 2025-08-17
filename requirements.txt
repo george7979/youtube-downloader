@@ -1,1 +1,1 @@
-public-src/requirements.txt
+yt-dlp>=2024.10,<2026.0
