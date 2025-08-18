@@ -27,36 +27,19 @@ class YouTubeDownloader:
         self.cancel_flag = False
         self.current_download = None
         
-    def get_video_info(self, url):
-        """Pobieranie informacji o filmie"""
-        # Lista konfiguracji do przetestowania - od najbardziej stabilnej do najmniej
-        configs = [
+    def _get_client_configs(self):
+        """
+        Zwraca ustandaryzowane konfiguracje klientów YouTube.
+        Używane konsekwentnie przez get_video_info i download_video.
+        """
+        return [
             {
                 'name': 'Android TV Client',
                 'opts': {
-                    'quiet': True,
-                    'no_warnings': True,
-                    'extract_flat': False,
                     'user_agent': 'com.google.android.youtube.tv/1.3.15 (Linux; U; Android 9.0) gzip',
                     'extractor_args': {
                         'youtube': {
                             'player_client': ['tv'],
-                            # Zachowaj webpage dla pełnych metadanych
-                        }
-                    },
-                }
-            },
-            {
-                'name': 'Android Client',
-                'opts': {
-                    'quiet': True,
-                    'no_warnings': True,
-                    'extract_flat': False,
-                    'user_agent': 'com.google.android.youtube/17.31.35',
-                    'extractor_args': {
-                        'youtube': {
-                            'player_client': ['android'],
-                            'player_skip': ['configs'],
                         }
                     },
                 }
@@ -64,9 +47,6 @@ class YouTubeDownloader:
             {
                 'name': 'iOS Client',
                 'opts': {
-                    'quiet': True,
-                    'no_warnings': True,
-                    'extract_flat': False,
                     'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
                     'extractor_args': {
                         'youtube': {
@@ -75,8 +55,39 @@ class YouTubeDownloader:
                         }
                     },
                 }
+            },
+            {
+                'name': 'Android Client',
+                'opts': {
+                    'user_agent': 'com.google.android.youtube/17.31.35',
+                    'extractor_args': {
+                        'youtube': {
+                            'player_client': ['android'],
+                            'player_skip': ['configs'],
+                        }
+                    },
+                }
             }
         ]
+        
+    def get_video_info(self, url):
+        """Pobieranie informacji o filmie"""
+        # Użyj standardowych konfiguracji klientów
+        base_configs = self._get_client_configs()
+        
+        # Dodaj specyficzne opcje dla pobierania informacji
+        configs = []
+        for config in base_configs:
+            info_config = {
+                'name': config['name'],
+                'opts': {
+                    'quiet': True,
+                    'no_warnings': True,
+                    'extract_flat': False,
+                    **config['opts']  # Dodaj opcje z base config
+                }
+            }
+            configs.append(info_config)
         
         # Próbuj każdą konfigurację
         for config in configs:
@@ -110,44 +121,8 @@ class YouTubeDownloader:
     def download_video(self, url, output_dir, resolution=None, audio_only=False, progress_callback=None):
         """Pobieranie filmu"""
         
-        # Lista konfiguracji do przetestowania dla pobierania
-        download_configs = [
-            {
-                'name': 'Android TV Client',
-                'opts': {
-                    'user_agent': 'com.google.android.youtube.tv/1.3.15 (Linux; U; Android 9.0) gzip',
-                    'extractor_args': {
-                        'youtube': {
-                            'player_client': ['tv'],
-                        }
-                    },
-                }
-            },
-            {
-                'name': 'iOS Client',
-                'opts': {
-                    'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-                    'extractor_args': {
-                        'youtube': {
-                            'player_client': ['ios'],
-                            'player_skip': ['configs'],
-                        }
-                    },
-                }
-            },
-            {
-                'name': 'Android Client',
-                'opts': {
-                    'user_agent': 'com.google.android.youtube/17.31.35',
-                    'extractor_args': {
-                        'youtube': {
-                            'player_client': ['android'],
-                            'player_skip': ['configs'],
-                        }
-                    },
-                }
-            }
-        ]
+        # Użyj standardowych konfiguracji klientów dla pobierania
+        download_configs = self._get_client_configs()
         
         # Bazowe opcje dla wszystkich klientów
         base_opts = {
@@ -180,10 +155,8 @@ class YouTubeDownloader:
                     if not os.system('which ffmpeg >/dev/null 2>&1') == 0:
                         raise Exception(t("FFmpeg nie jest zainstalowany. Konwersja MP3 wymaga FFmpeg."))
                 else:
-                    if resolution:
-                        ydl_opts['format'] = f'best[height<={resolution.split("x")[1]}]/best'
-                    else:
-                        ydl_opts['format'] = 'best[ext=mp4]/best'
+                    # Ulepszona logika wyboru formatu dla wideo
+                    ydl_opts['format'] = self._get_video_format_selector(resolution)
                         
                 # Pobieranie
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -212,15 +185,43 @@ class YouTubeDownloader:
                 if self.cancel_flag:
                     raise Exception(t("Pobieranie zostało anulowane"))
                 
-                # Jeśli to błędy YouTube, spróbuj następny klient
-                if any(keyword in error_msg.lower() for keyword in [
+                # Sprawdź czy to błędy YouTube lub formatów - spróbuj następny klient
+                format_errors = [
                     'sign in to confirm', 'not available on this app', 
-                    'requested format is not available', 'this video is not available'
-                ]):
+                    'requested format is not available', 'this video is not available',
+                    'no suitable formats found', 'format not available',
+                    'unable to extract', 'video unavailable',
+                    'format selector', 'no video formats found'
+                ]
+                
+                if any(keyword in error_msg.lower() for keyword in format_errors):
+                    logging.info(f"🔄 Format/client error with {config['name']}, trying next client...")
                     continue
                 else:
-                    # Inny błąd - przerwij
-                    raise Exception(f"{t('Błąd podczas pobierania')}: {e}")
+                    # Inny błąd - spróbuj jeszcze jeden fallback z podstawowym formatem
+                    if resolution:
+                        try:
+                            logging.info(f"🔄 Trying fallback format for {config['name']}...")
+                            fallback_opts = {**ydl_opts}
+                            fallback_opts['format'] = 'best'  # Najprostszy możliwy format
+                            
+                            with yt_dlp.YoutubeDL(fallback_opts) as ydl_fallback:
+                                self.current_download = ydl_fallback
+                                info = ydl_fallback.extract_info(url, download=True)
+                                
+                                filename = ydl_fallback.prepare_filename(info)
+                                logging.info(f"✅ {config['name']} - fallback format worked!")
+                                return {
+                                    'filename': os.path.basename(filename),
+                                    'full_path': filename,
+                                    'title': info.get('title', t('Nieznany tytuł')),
+                                    'duration': info.get('duration', 0),
+                                    'filesize': os.path.getsize(filename) if os.path.exists(filename) else 0,
+                                }
+                        except Exception:
+                            pass  # Fallback też nie zadziałał, spróbuj następny klient
+                    
+                    continue  # Przejdź do następnego klienta zamiast przerywać
                 
         # Jeśli żaden klient nie zadziałał
         self.current_download = None
@@ -358,3 +359,43 @@ class YouTubeDownloader:
                 
         except Exception:
             return False
+            
+    def _get_video_format_selector(self, resolution):
+        """
+        Generuje optymalny selektor formatu dla żądanej rozdzielczości.
+        
+        Implementuje hierarchię selektorów dla maksymalnej kompatybilności
+        z różnymi klientami YouTube (Android TV, iOS, Android).
+        """
+        if not resolution:
+            # Brak konkretnej rozdzielczości - użyj najlepszego dostępnego formatu
+            return 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[ext=mp4]/best'
+        
+        try:
+            # Wyciągnij wysokość z rozdzielczości (np. "1920x1080" -> 1080)
+            target_height = int(resolution.split('x')[1])
+            
+            # Buduj hierarchię selektorów od najbardziej precyzyjnego do fallback
+            format_selectors = [
+                # 1. Najlepszy format wideo + audio dla dokładnej wysokości
+                f'bestvideo[height={target_height}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height={target_height}]+bestaudio',
+                
+                # 2. Najlepszy format dla wysokości <= target (preferowane)
+                f'bestvideo[height<={target_height}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<={target_height}]+bestaudio',
+                
+                # 3. Najlepszy format ogólnie z ograniczeniem wysokości
+                f'best[height<={target_height}][ext=mp4]/best[height<={target_height}]',
+                
+                # 4. Fallback - jakikolwiek format z ograniczeniem wysokości
+                f'worst[height>={max(360, target_height//2)}][height<={target_height}]/best[height<={target_height}]',
+                
+                # 5. Ostateczny fallback - najlepszy dostępny
+                'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[ext=mp4]/best'
+            ]
+            
+            # Połącz wszystkie selektory w jeden ciąg fallback
+            return '/'.join(format_selectors)
+            
+        except (ValueError, IndexError):
+            logging.warning(f"Nieprawidłowy format rozdzielczości: {resolution}. Używam domyślnego.")
+            return 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[ext=mp4]/best'
