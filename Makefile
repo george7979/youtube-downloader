@@ -55,7 +55,8 @@ test: build ## Przetestuj pakiet
 	$(call log_info,Testowanie pakietu...)
 	@dpkg --info $(DEB_FILE)
 	@echo ""
-	@dpkg --contents $(DEB_FILE) | head -15
+	$(call log_info,Sprawdzanie zawartości pakietu...)
+	@echo "Pakiet zawiera $(shell dpkg --contents $(DEB_FILE) 2>/dev/null | wc -l) plików"
 	@echo ""
 	@if command -v lintian >/dev/null 2>&1; then \
 		$(call log_info,Sprawdzanie lintian...); \
