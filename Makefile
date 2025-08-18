@@ -57,10 +57,10 @@ test: build ## Przetestuj pakiet
 	$(call log_info,Sprawdzanie zawartości pakietu...)
 	@FILE_COUNT=$$(dpkg --contents $(DEB_FILE) 2>/dev/null | wc -l); echo "Pakiet zawiera $$FILE_COUNT plikow"
 	@if command -v lintian >/dev/null 2>&1; then \
-		$(call log_info,Sprawdzanie lintian...); \
+		echo -e "$(BLUE)ℹ️  Sprawdzanie lintian...$(NC)"; \
 		lintian $(DEB_FILE) || true; \
 	else \
-		$(call log_warning,lintian nie jest dostępny - pomijam sprawdzenie); \
+		echo -e "$(YELLOW)⚠️  lintian nie jest dostępny - pomijam sprawdzenie$(NC)"; \
 	fi
 	$(call log_success,Testy zakończone)
 
