@@ -352,11 +352,24 @@ create_filtered_branch() {
             [[ "$pattern" =~ ^[[:space:]]*# ]] && continue
             [[ -z "${pattern// }" ]] && continue
             
-            # Find matching files
-            local matching_files=$(git ls-files | grep -E "^$pattern$" || true)
+            # Convert gitignore pattern to proper matching
+            local search_pattern=""
+            if [[ "$pattern" =~ \*$ ]]; then
+                # Pattern ends with * - use prefix matching (e.g., "TODO*.md")
+                search_pattern="^${pattern//\*/.*}$"
+            elif [[ "$pattern" =~ /$ ]]; then
+                # Pattern ends with / - match directories (e.g., "security-checks/")  
+                search_pattern="^${pattern%/}/.*"
+            else
+                # Exact file match (e.g., "CLAUDE.md", "PRD.md")
+                search_pattern="^${pattern}$"
+            fi
+            
+            # Find matching files using corrected pattern
+            local matching_files=$(git ls-files | grep -E "$search_pattern" || true)
             if [ -n "$matching_files" ]; then
                 files_to_remove="$files_to_remove $matching_files"
-                log_info "Usuwanie: $matching_files"
+                log_info "Pattern '$pattern' -> Usuwanie: $matching_files"
             fi
         done < .gitignore-public
         
