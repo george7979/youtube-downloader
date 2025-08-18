@@ -1,7 +1,18 @@
 #!/usr/bin/env python3
 """
-YouTube Downloader - Interfejs graficzny
-GUI aplikacji do pobierania filmów z YouTube
+YouTube Downloader v1.2.0 - Graphical User Interface
+
+Complete Tkinter-based GUI with threading support and progress tracking.
+Part of the modular architecture introduced in v1.2.0.
+
+Features:
+- Real-time download progress with cancel functionality
+- Configuration persistence (directory, settings)
+- Dynamic format selection and quality sorting
+- Cross-platform file path handling
+- Enhanced WSL window handling and visibility forcing
+
+Architecture: Dual-Repository Workflow v1.2.0
 """
 
 import tkinter as tk

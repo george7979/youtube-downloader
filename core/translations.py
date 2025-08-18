@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 """
-YouTube Downloader - Internationalization
-Translation dictionary for English UI
+YouTube Downloader v1.2.0 - Internationalization Support
+
+Complete translation system for multi-language UI support.
+Part of the modular architecture introduced in v1.2.0.
+
+Features:
+- Polish to English translation dictionary
+- Dynamic language switching support
+- Comprehensive UI text coverage
+- Cross-platform text rendering compatibility
+
+Architecture: Dual-Repository Workflow v1.2.0
 """
 
 # Complete Polish → English translation dictionary

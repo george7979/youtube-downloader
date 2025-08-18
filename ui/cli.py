@@ -1,7 +1,18 @@
 #!/usr/bin/env python3
 """
-YouTube Downloader - Interfejs CLI
-Prosty interfejs tekstowy do pobierania filmów z YouTube
+YouTube Downloader v1.2.0 - Command Line Interface
+
+Comprehensive CLI for YouTube video downloading with WSL compatibility.
+Part of the modular architecture introduced in v1.2.0.
+
+Features:
+- Interactive command-line interface with safe input handling
+- EOF and KeyboardInterrupt error handling for WSL environments
+- Dynamic format selection and directory management
+- Progress tracking with real-time download status
+- Fallback mode when GUI is unavailable
+
+Architecture: Dual-Repository Workflow v1.2.0
 """
 
 import os

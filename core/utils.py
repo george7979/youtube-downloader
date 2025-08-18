@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 """
-YouTube Downloader - Funkcje pomocnicze
-Wspólne funkcje używane w aplikacji
+YouTube Downloader v1.2.0 - Utility Functions
+
+Shared utilities for filename sanitization, URL validation, and file operations.
+Part of the modular architecture introduced in v1.2.0.
+
+Functions:
+- sanitize_filename(): Cross-platform filename sanitization
+- validate_youtube_url(): URL validation with pattern matching
+- extract_video_id(): Video ID extraction from various URL formats
+- get_safe_path(): Path handling with proper escaping
+
+Architecture: Dual-Repository Workflow v1.2.0
 """
 
 import re

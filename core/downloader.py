@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 """
-YouTube Downloader - Logika pobierania
-Główna logika pobierania filmów z YouTube
+YouTube Downloader v1.2.0 - Download Engine
+
+YouTube download engine with robust fallback client configurations.
+Part of the modular architecture introduced in v1.2.0.
+
+Features:
+- Multiple client fallback strategies (Android TV, Android, iOS, Web)
+- Anti-bot bypass measures with optimized user agents
+- Format selection with dynamic quality sorting
+- Comprehensive error handling and logging
+
+Architecture: Dual-Repository Workflow v1.2.0
 """
 
 import os
