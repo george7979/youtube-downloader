@@ -91,10 +91,10 @@ jobs:
           exit 1
         fi
         
-        # Check for private scripts
-        if find . -name "*private*" -o -name "*secret*" | grep -v ".github" | grep -q .; then
+        # Check for private scripts (exclude legitimate workflow scripts)
+        if find . -name "*private*" -o -name "*secret*" | grep -v ".github" | grep -v "scripts/sync-to-private.sh" | grep -v "scripts/promote-to-main.sh" | grep -q .; then
           echo "❌ WARNING: Potential private files found!"
-          find . -name "*private*" -o -name "*secret*" | grep -v ".github"
+          find . -name "*private*" -o -name "*secret*" | grep -v ".github" | grep -v "scripts/sync-to-private.sh" | grep -v "scripts/promote-to-main.sh"
           exit 1
         fi
         
@@ -176,9 +176,9 @@ jobs:
           exit 1
         fi
         
-        # Check that dual-repo documentation exists
-        if [ ! -f "docs/README-STRUCTURE.md" ]; then
-          echo "❌ DUAL-REPO ERROR: Structure documentation missing!"
+        # Check that essential documentation exists
+        if [ ! -f "README.md" ] || [ ! -f "CLAUDE.md" ]; then
+          echo "❌ DUAL-REPO ERROR: Essential documentation missing!"
           exit 1
         fi
         

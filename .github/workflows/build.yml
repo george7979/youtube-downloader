@@ -42,8 +42,8 @@ jobs:
     
     - name: Make scripts executable
       run: |
-        chmod +x build-deb.sh
-        chmod +x version-manager.sh
+        chmod +x build-tools/build-deb.sh
+        chmod +x build-tools/version-manager.sh
         chmod +x debian-src/rules
     
     - name: Check build requirements
