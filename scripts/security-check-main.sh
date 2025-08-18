@@ -6,11 +6,13 @@ set -e
 
 BRANCH=${1:-HEAD}
 STRICT_MODE=${2:-false}
+CONTEXT=${3:-public-release}
 
 echo "🔍 SECURITY CHECK - Main Branch Protection"
 echo "=========================================="
 echo "Checking branch: $BRANCH"
 echo "Strict mode: $STRICT_MODE"
+echo "Context: $CONTEXT"
 echo ""
 
 # Colors for output
@@ -59,8 +61,13 @@ fi
 
 # Check for developer documentation files
 if git ls-tree -r --name-only $BRANCH | grep -E "^(CLAUDE\.md|PRD\.md|TODO.*\.md|NOTES.*\.md)$" > /dev/null; then
-    report_error "Developer documentation found - MUST NOT be in main branch"
-    git ls-tree -r --name-only $BRANCH | grep -E "^(CLAUDE\.md|PRD\.md|TODO.*\.md|NOTES.*\.md)$"
+    if [ "$CONTEXT" = "public-release" ]; then
+        report_error "Developer documentation found - MUST NOT be in public branch"
+        git ls-tree -r --name-only $BRANCH | grep -E "^(CLAUDE\.md|PRD\.md|TODO.*\.md|NOTES.*\.md)$"
+    else
+        report_success "Developer documentation found (allowed in $CONTEXT context)"
+        git ls-tree -r --name-only $BRANCH | grep -E "^(CLAUDE\.md|PRD\.md|TODO.*\.md|NOTES.*\.md)$" | sed 's/^/   ✓ /'
+    fi
 else
     report_success "No developer documentation files found"
 fi

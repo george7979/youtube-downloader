@@ -1,0 +1,61 @@
+# Files to exclude when syncing to public repository
+# This file defines what should NOT appear in the public repo
+
+# Developer documentation
+CLAUDE.md
+PRD.md
+TODO*.md
+NOTES*.md
+
+# IDE configuration
+cursorrules
+.cursorrules
+
+# Development directories
+backup/
+dev/
+private/
+internal/
+
+# Security and analysis
+security-checks/
+docs/security/
+
+# Build artifacts (development versions)
+*_dev*.deb
+*_alpha*.deb
+*_beta*.deb
+
+# Environment and config files
+.env
+.env.*
+*.local
+config.local.*
+
+# Temporary files
+*.version-backup
+.DS_Store
+Thumbs.db
+
+# Private scripts (these manage the dual-repo workflow)
+scripts/push-to-private.sh
+scripts/force-sync-public.sh
+scripts/setup-dual-repo.sh
+scripts/sync-to-public-github.sh
+scripts/sync-to-private.sh
+scripts/promote-to-main.sh
+scripts/release-to-public.sh
+
+# Version control
+.git-crypt/
+.gitattributes.local
+
+# Logs and debugging
+debug.log
+*.debug
+crash-reports/
+
+# Personal notes and workspace files
+workspace.code-workspace
+.vscode/settings.json.local
+*.personal.*

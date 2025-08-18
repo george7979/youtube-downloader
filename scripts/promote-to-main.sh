@@ -106,8 +106,8 @@ run_security_check() {
         return 0
     fi
     
-    if "$SECURITY_SCRIPT" "$branch"; then
-        log_success "Sprawdzenie bezpieczeństwa: PASSED"
+    if "$SECURITY_SCRIPT" "$branch" "false" "private-promotion"; then
+        log_success "Sprawdzenie bezpieczeństwa: PASSED (private-promotion context)"
         return 0
     else
         log_error "Sprawdzenie bezpieczeństwa: FAILED"

@@ -119,8 +119,8 @@ run_security_check() {
     fi
     
     # Uruchom w strict mode dla public release
-    if "$SECURITY_SCRIPT" "$SOURCE_BRANCH" "true"; then
-        log_success "Sprawdzenie bezpieczeństwa: PASSED (strict mode)"
+    if "$SECURITY_SCRIPT" "$SOURCE_BRANCH" "true" "public-release"; then
+        log_success "Sprawdzenie bezpieczeństwa: PASSED (public-release context)"
         return 0
     else
         log_error "Sprawdzenie bezpieczeństwa: FAILED"
@@ -321,6 +321,76 @@ sync_releases() {
     return 0
 }
 
+create_filtered_branch() {
+    local filtered_branch="public-filtered-$(date +%s)"
+    
+    log_info "Tworzenie przefiltrowanego branch: $filtered_branch"
+    
+    # Checkout source branch
+    if [ "$DRY_RUN" = false ]; then
+        git checkout "$SOURCE_BRANCH"
+        git pull "$PRIVATE_REMOTE" "$SOURCE_BRANCH"
+    else
+        echo "DRY RUN: git checkout $SOURCE_BRANCH"
+        echo "DRY RUN: git pull $PRIVATE_REMOTE $SOURCE_BRANCH"
+    fi
+    
+    # Create filtered branch
+    if [ "$DRY_RUN" = false ]; then
+        git checkout -b "$filtered_branch"
+    else
+        echo "DRY RUN: git checkout -b $filtered_branch"
+    fi
+    
+    # Remove files based on .gitignore-public
+    if [ -f ".gitignore-public" ]; then
+        log_info "Stosowanie filtrów z .gitignore-public..."
+        
+        local files_to_remove=""
+        while IFS= read -r pattern; do
+            # Skip comments and empty lines
+            [[ "$pattern" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${pattern// }" ]] && continue
+            
+            # Find matching files
+            local matching_files=$(git ls-files | grep -E "^$pattern$" || true)
+            if [ -n "$matching_files" ]; then
+                files_to_remove="$files_to_remove $matching_files"
+                log_info "Usuwanie: $matching_files"
+            fi
+        done < .gitignore-public
+        
+        if [ -n "$files_to_remove" ] && [ "$DRY_RUN" = false ]; then
+            git rm -f $files_to_remove 2>/dev/null || true
+            git commit -m "Filter files for public release
+
+🚀 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>" || true
+        elif [ -n "$files_to_remove" ]; then
+            echo "DRY RUN: git rm -f $files_to_remove"
+            echo "DRY RUN: git commit (filter commit)"
+        fi
+    else
+        log_warning "Plik .gitignore-public nie znaleziony - publikacja bez filtrowania"
+    fi
+    
+    echo "$filtered_branch"
+    return 0
+}
+
+cleanup_filtered_branch() {
+    local branch_to_delete="$1"
+    
+    if [ -n "$branch_to_delete" ] && [ "$DRY_RUN" = false ]; then
+        log_info "Usuwanie tymczasowego branch: $branch_to_delete"
+        git checkout "$SOURCE_BRANCH"
+        git branch -D "$branch_to_delete" 2>/dev/null || true
+    elif [ -n "$branch_to_delete" ]; then
+        echo "DRY RUN: cleanup branch $branch_to_delete"
+    fi
+}
+
 confirm_publication() {
     if [ "$AUTO_APPROVE" = true ]; then
         log_info "Auto-approve włączony - kontynuuję bez pytania"
@@ -337,6 +407,7 @@ confirm_publication() {
     log_info "✓ Brak wrażliwych danych (hasła, klucze, tokeny)"
     log_info "✓ Brak prywatnych informacji biznesowych"
     log_info "✓ Kod jest gotowy do publicznej dystrybucji"
+    log_info "✓ Pliki zostały przefiltrowane zgodnie z .gitignore-public"
     echo ""
     
     read -p "CZY JESTEŚ PEWIEN, ŻE CHCESZ OPUBLIKOWAĆ? (type 'YES'): " -r
@@ -352,39 +423,48 @@ perform_publication() {
     log_info "🚀 ROZPOCZYNAM PUBLIKACJĘ"
     log_info "========================"
     
-    # Checkout source branch
-    if [ "$DRY_RUN" = false ]; then
-        git checkout "$SOURCE_BRANCH"
-        git pull "$PRIVATE_REMOTE" "$SOURCE_BRANCH"
-    else
-        echo "DRY RUN: git checkout $SOURCE_BRANCH"
-        echo "DRY RUN: git pull $PRIVATE_REMOTE $SOURCE_BRANCH"
+    # Create filtered branch for public release
+    local filtered_branch
+    filtered_branch=$(create_filtered_branch)
+    
+    if [ $? -ne 0 ]; then
+        log_error "Nie udało się utworzyć przefiltrowanego branch"
+        return 1
     fi
     
-    # Przygotuj push command
-    local push_cmd="git push $PUBLIC_REMOTE $SOURCE_BRANCH:$TARGET_BRANCH"
+    # Przygotuj push command z filtered branch
+    local push_cmd="git push $PUBLIC_REMOTE $filtered_branch:$TARGET_BRANCH"
     if [ "$FORCE_PUSH" = true ]; then
         push_cmd="$push_cmd --force-with-lease"
     fi
     
     # Wykonaj push
-    log_info "Publikuję kod..."
+    log_info "Publikuję przefiltrowany kod..."
+    local push_success=false
     if [ "$DRY_RUN" = false ]; then
         if eval "$push_cmd"; then
             log_success "Kod opublikowany pomyślnie!"
+            push_success=true
         else
             log_error "Publikacja kodu nie powiodła się!"
+            cleanup_filtered_branch "$filtered_branch"
             return 1
         fi
     else
         echo "DRY RUN: $push_cmd"
+        push_success=true
     fi
     
-    # Synchronizuj tagi
-    sync_tags
+    # Cleanup filtered branch
+    cleanup_filtered_branch "$filtered_branch"
     
-    # Synchronizuj releases
-    sync_releases
+    if [ "$push_success" = true ]; then
+        # Synchronizuj tagi
+        sync_tags
+        
+        # Synchronizuj releases
+        sync_releases
+    fi
     
     return 0
 }
