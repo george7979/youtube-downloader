@@ -24,8 +24,10 @@ This is a Python-based YouTube downloader application with intelligent launcher,
 ### Dual-Repository Architecture (v1.2.0)
 This project uses a dual-repository approach with staged deployment workflow:
 
+⚠️ **IMPORTANT**: Always start sessions on `develop` branch and return to `develop` after any main branch operations.
+
 - **Private Repository** - Complete development environment with all source code
-  - **Develop branch** - Active development and testing (current v1.2.0 work)
+  - **Develop branch** - Active development and testing (PRIMARY working branch)
   - **Main branch** - Stable releases ready for public distribution
   - **Feature branches** - Individual feature development
 - **Public Repository** - Clean distribution version for end users
@@ -66,6 +68,9 @@ For detailed WSL troubleshooting, see [`docs/WSL_TROUBLESHOOTING.md`](docs/WSL_T
 
 ### Setup and Verification
 ```bash
+# ALWAYS start new session on develop branch
+git checkout develop    # Primary development branch for daily work
+
 # First time setup - verify environment and install build dependencies
 make check              # Verify all required tools and files exist
 make deps               # Install build dependencies (dpkg-dev, fakeroot, etc.)
@@ -73,6 +78,7 @@ make info               # Show project status and current version
 
 # Quick project verification
 pwd && ls -la           # Always verify you're in the correct project directory
+git branch              # Confirm you're on develop branch
 ```
 
 ### Build and Test Workflow (v1.2.0)
@@ -180,10 +186,28 @@ The dual-repository approach follows a staged deployment pattern:
 - `scripts/release-to-public.sh` - Release main to public repository
 - `scripts/sync-releases.sh` - Synchronize GitHub releases between repositories
 
+#### Essential Git Workflow
+```bash
+# Start of every session - ensure you're on develop
+git checkout develop
+
+# Daily development work
+git add . && git commit -m "Feature implementation"
+./scripts/sync-to-private.sh           # Push to private/develop
+
+# When ready for release
+./scripts/promote-to-main.sh           # develop → main (private)
+./scripts/release-to-public.sh         # main private → main public
+
+# ALWAYS return to develop after operations on main
+git checkout develop
+```
+
 #### Deployment Pipeline
 1. **Local → Private/develop** - Daily development synchronization
 2. **Private/develop → Private/main** - Promotion after testing and validation
 3. **Private/main → Public/main** - Clean release distribution with automatic filtering
+4. **Always return to develop** - After any operations on main branch (`git checkout develop`)
 
 #### Context-Aware Security Filtering (v1.2.0)
 System automatycznie filtruje pliki podczas publikacji używając `.gitignore-public`:
