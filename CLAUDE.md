@@ -183,7 +183,21 @@ The dual-repository approach follows a staged deployment pattern:
 #### Deployment Pipeline
 1. **Local → Private/develop** - Daily development synchronization
 2. **Private/develop → Private/main** - Promotion after testing and validation
-3. **Private/main → Public/main** - Clean release distribution
+3. **Private/main → Public/main** - Clean release distribution with automatic filtering
+
+#### Context-Aware Security Filtering (v1.2.0)
+System automatycznie filtruje pliki podczas publikacji używając `.gitignore-public`:
+- **Pliki deweloperskie** (CLAUDE.md, PRD.md) pozostają w private repo
+- **Public repo** otrzymuje tylko clean code dla użytkowników końcowych
+- **Filtrowanie** dzieje się automatycznie bez ręcznej interwencji
+- **Kontekstowe sprawdzenia** - różne reguły dla private-promotion vs public-release
+- **Tymczasowy filtered branch** - bezpieczna publikacja bez wrażliwych plików
+
+Pliki automatycznie wykluczane z public repo:
+- Dokumentacja deweloperska: `CLAUDE.md`, `PRD.md`, `TODO*.md`
+- Konfiguracje IDE: `cursorrules`, `.cursorrules`
+- Katalogi: `backup/`, `dev/`, `private/`, `security-checks/`
+- Skrypty workflow: `scripts/sync-to-private.sh`, `scripts/promote-to-main.sh`
 
 ## Documentation Principles
 

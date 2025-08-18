@@ -141,11 +141,29 @@ make release-public
 gh release list --repo george7979/youtube-downloader
 ```
 
+### 🔐 Automatyczne filtrowanie plików (v1.2.0)
+
+Podczas publikacji do public repo system automatycznie:
+
+1. **Tworzy tymczasowy branch** `public-filtered-{timestamp}`
+2. **Usuwa pliki zgodnie z `.gitignore-public`**:
+   - Dokumentacja deweloperska (CLAUDE.md, PRD.md, TODO*.md)
+   - Konfiguracje IDE (cursorrules, .cursorrules)
+   - Katalogi deweloperskie (backup/, dev/, private/, security-checks/)
+   - Development builds (*_dev*.deb, *_alpha*.deb, *_beta*.deb)
+   - Skrypty workflow (scripts/sync-to-private.sh, etc.)
+3. **Commituje zmiany** z opisem "Filter files for public release"
+4. **Pushuje przefiltrowany branch** do public repo
+5. **Usuwa tymczasowy branch** po publikacji
+
+To zapewnia, że wrażliwe pliki deweloperskie **NIGDY** nie trafią do publicznego repo.
+
 ### 🔒 Enhanced Security (Strict Mode):
 - **Double validation** - sprawdzenie w private i public
 - **User confirmation** - wymagane potwierdzenie przed publikacją
 - **Content analysis** - analiza różnic między repos
 - **Sensitive file detection** - podwójna kontrola wrażliwych danych
+- **Automatic filtering** - automatyczne usuwanie plików z .gitignore-public
 
 ### ✅ Co jest publikowane:
 - ✅ **Core application** (`core/`, `ui/`)

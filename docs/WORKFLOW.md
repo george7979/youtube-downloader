@@ -131,6 +131,28 @@ make sync-all
 - `secrets/`, `private/`
 - Pliki z hasłami/tokenami w nazwie
 
+### 🔐 Context-Aware Security Filtering (v1.2.0)
+
+System automatycznie filtruje pliki wrażliwe podczas publikacji do public repo:
+
+- **`.gitignore-public`** - definiuje pliki do wykluczenia z public repo
+- **Tymczasowy filtered branch** - tworzony automatycznie podczas publikacji
+- **Kontekstowe sprawdzenia** - różne reguły dla private-promotion vs public-release
+
+#### Pliki automatycznie usuwane podczas publikacji:
+- `CLAUDE.md`, `PRD.md`, `TODO*.md`, `NOTES*.md` - dokumentacja deweloperska
+- `cursorrules`, `.cursorrules` - reguły IDE
+- Katalogi: `backup/`, `dev/`, `private/`, `security-checks/` - dane deweloperskie
+- Development builds: `*_dev*.deb`, `*_alpha*.deb`, `*_beta*.deb`
+- Skrypty workflow: `scripts/sync-to-private.sh`, `scripts/promote-to-main.sh`, etc.
+- Pliki konfiguracyjne: `.env*`, `*.local`, `config.local.*`
+
+#### Mechanizm działania:
+1. **Private-promotion context** - pozwala na dokumentację deweloperską w private/main
+2. **Public-release context** - blokuje dokumentację deweloperską w public repo
+3. **Automatyczne filtrowanie** - tworzy clean branch bez wrażliwych plików
+4. **Bezpieczna publikacja** - push do public repo z przefiltrowanego brancha
+
 ## 🚨 Tryby Awaryjne
 
 ### Force Operations

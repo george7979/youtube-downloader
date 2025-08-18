@@ -205,8 +205,8 @@ promote-squash: ## Promuj z squash commits
 	$(call log_info,Promocja develop → main (squash)...)
 	@./scripts/promote-to-main.sh --squash
 
-release-public: ## Publikuj main private → main public
-	$(call log_info,Publikacja main private → main public...)
+release-public: ## Publikuj main private → main public (z automatycznym filtrowaniem .gitignore-public)
+	$(call log_info,Publikacja main private → main public z filtrowaniem plików wrażliwych...)
 	@./scripts/release-to-public.sh
 
 release-public-verify: ## Sprawdź możliwość publikacji (dry run)
