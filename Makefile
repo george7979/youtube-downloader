@@ -54,10 +54,8 @@ clean: ## Wyczyść pliki build (bez usuwania lokalnych .deb)
 test: build ## Przetestuj pakiet
 	$(call log_info,Testowanie pakietu...)
 	@dpkg --info $(DEB_FILE)
-	@echo ""
 	$(call log_info,Sprawdzanie zawartości pakietu...)
-	@echo "Pakiet zawiera $(shell dpkg --contents $(DEB_FILE) 2>/dev/null | wc -l) plików"
-	@echo ""
+	@FILE_COUNT=$$(dpkg --contents $(DEB_FILE) 2>/dev/null | wc -l); echo "Pakiet zawiera $$FILE_COUNT plikow"
 	@if command -v lintian >/dev/null 2>&1; then \
 		$(call log_info,Sprawdzanie lintian...); \
 		lintian $(DEB_FILE) || true; \

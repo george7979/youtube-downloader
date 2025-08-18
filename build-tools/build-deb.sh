@@ -342,7 +342,8 @@ verify_package() {
         dpkg --info "$package_file"
         
         log_info "Zawartość pakietu:"
-        dpkg --contents "$package_file" | head -10
+        FILE_COUNT=$(dpkg --contents "$package_file" 2>/dev/null | wc -l)
+        echo "Pakiet zawiera $FILE_COUNT plikow"
         
         log_success "Pakiet zweryfikowany: $(ls -lh "$package_file" | awk '{print $5}')"
     else
