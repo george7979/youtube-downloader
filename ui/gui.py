@@ -89,14 +89,14 @@ class YouTubeDownloaderGUI:
     def setup_window(self):
         """Konfiguracja głównego okna"""
         self.root.title(f"YouTube Downloader v{__version__}")
-        self.root.geometry("770x700")
-        self.root.minsize(700, 630)
+        self.root.geometry("770x800")
+        self.root.minsize(700, 700)
 
         # Centrowanie okna
         self.root.update_idletasks()
         x = (self.root.winfo_screenwidth() // 2) - (770 // 2)
-        y = (self.root.winfo_screenheight() // 2) - (700 // 2)
-        self.root.geometry(f"770x700+{x}+{y}")
+        y = (self.root.winfo_screenheight() // 2) - (800 // 2)
+        self.root.geometry(f"770x800+{x}+{y}")
         
         # Centrowanie okna bez agresywnego wymuszania widoczności
         
