@@ -33,7 +33,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install yt-dlp customtkinter "pyinstaller>=6.0"
+        run: pip install yt-dlp customtkinter "pyinstaller>=6.0" pillow
 
       - name: Get version
         id: version
