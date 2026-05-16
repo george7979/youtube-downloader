@@ -109,15 +109,11 @@ jobs:
       contents: write
 
     steps:
-      - name: Download Linux artifact
+      - name: Download all artifacts flat
         uses: actions/download-artifact@v4
         with:
-          name: linux-deb
-
-      - name: Download Windows artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-installer
+          merge-multiple: true
+          path: release-assets
 
       - name: Get version from tag
         id: version
@@ -128,9 +124,7 @@ jobs:
         with:
           name: YouTube Downloader v${{ steps.version.outputs.VERSION }}
           generate_release_notes: true
-          files: |
-            *.deb
-            installer/windows/youtube-downloader-*-setup.exe
+          files: release-assets/**
           body: |
             ## YouTube Downloader v${{ steps.version.outputs.VERSION }}
 
