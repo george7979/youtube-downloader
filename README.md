@@ -31,34 +31,49 @@ Simple Python application for downloading videos from YouTube with a graphical i
 
 ## 🛠️ Installation
 
-### System requirements:
-- Linux (Ubuntu, Debian, other distributions)
-- Python 3.8+ (installed automatically)
-- Internet access
+### System requirements
+- **Linux:** Ubuntu 22.04+ / Debian 12+
+- **Windows:** Windows 10 / 11
 
-### Installation from .deb package (recommended)
+### Linux — .deb package
 
-1. **Download the latest package:**
-   ```bash
-   # Go to: https://github.com/george7979/youtube-downloader/releases
-   # Download youtube-downloader_X.X.X_all.deb
-   ```
+1. Download `youtube-downloader_X.X.X_amd64.deb` from [Releases](https://github.com/george7979/youtube-downloader/releases)
 
-2. **Install the package:**
+2. Install:
    ```bash
    sudo dpkg -i youtube-downloader_*.deb
-   sudo apt-get install -f  # fix dependencies if needed
    ```
 
-**Note:** The package automatically installs all required dependencies in an isolated environment, without affecting other applications.
+3. Run:
+   ```bash
+   youtube-downloader
+   ```
+
+### Windows — installer (.exe)
+
+1. Download `youtube-downloader-X.X.X-setup.exe` from [Releases](https://github.com/george7979/youtube-downloader/releases)
+
+2. Run the installer — it will create a Start Menu shortcut and a desktop icon.
+
+> **⚠️ Windows SmartScreen warning**
+>
+> The installer is **not digitally signed** (code signing certificates cost ~$300/year).
+> Windows may show a "Windows protected your PC" warning.
+>
+> To install anyway:
+> 1. Click **"More info"**
+> 2. Click **"Run anyway"**
+>
+> The application is open source — you can review the full source code in this repository.
 
 ## 🚀 Running
 
+**Linux:**
 ```bash
 youtube-downloader
 ```
 
-Or find the application in the system menu.
+**Windows:** Use the Start Menu shortcut or desktop icon.
 
 ## 🎮 How to use
 
