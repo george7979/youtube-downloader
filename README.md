@@ -2,7 +2,7 @@
 
 Simple Python application for downloading videos from YouTube with a graphical interface.
 
-![YouTube Downloader Interface](pics/youtube-downloader-120.png)
+![YouTube Downloader Interface](pics/youtube-downloader-3.png)
 
 ## ✨ Features
 
