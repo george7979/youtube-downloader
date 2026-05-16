@@ -2,6 +2,9 @@
 ; Usage: makensis /DAPP_VERSION=1.2.0 installer\windows\installer.nsi
 ; Run from project root after PyInstaller build
 
+; Change compiler working directory to repo root (script lives in installer\windows\)
+!cd "..\.."
+
 !ifndef APP_VERSION
   !define APP_VERSION "1.2.0"
 !endif
