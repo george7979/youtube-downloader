@@ -16,9 +16,13 @@ Architecture: Dual-Repository Workflow v1.2.0
 """
 
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import filedialog, messagebox
+import customtkinter as ctk
 import threading
 import logging
+
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
 import os
 import json
 from core.downloader import YouTubeDownloader
@@ -79,42 +83,8 @@ class YouTubeDownloaderGUI:
             pass  # Ignoruj błędy z ikoną
             
     def setup_styles(self):
-        """Konfiguracja stylów aplikacji"""
-        style = ttk.Style()
-        
-        # Konfiguracja motywu
-        style.theme_use('clam')
-        
-        # Styl dla głównych ramek
-        style.configure('Main.TFrame', background='#f0f0f0')
-        style.configure('Card.TFrame', background='white', relief='solid', borderwidth=1)
-        
-        # Styl dla nagłówków
-        style.configure('Title.TLabel', 
-                      font=('Segoe UI', 14, 'bold'), 
-                      foreground='#2c3e50',
-                      background='white')
-        
-        style.configure('Subtitle.TLabel', 
-                      font=('Segoe UI', 10, 'bold'), 
-                      foreground='#34495e',
-                      background='white')
-        
-        # Styl dla przycisków
-        style.configure('Primary.TButton', 
-                      font=('Segoe UI', 9, 'bold'),
-                      padding=(15, 8))
-        
-        style.configure('Secondary.TButton', 
-                      font=('Segoe UI', 9),
-                      padding=(12, 6))
-        
-        # Styl dla pól tekstowych
-        style.configure('Entry.TEntry', 
-                      padding=(8, 6),
-                      fieldbackground='white')
-        
-        # Usuwam niestandardowy styl dla progress bar - używam domyślnego
+        """Konfiguracja stylów — obsługiwane przez CustomTkinter"""
+        pass
             
     def setup_window(self):
         """Konfiguracja głównego okna"""
@@ -171,11 +141,9 @@ class YouTubeDownloaderGUI:
         
     def setup_ui(self):
         """Konfiguracja interfejsu użytkownika"""
-        # Główny kontener z paddingiem
-        main_container = ttk.Frame(self.root, style='Main.TFrame', padding="15")
-        main_container.pack(fill=tk.BOTH, expand=True)
-        
-        # Konfiguracja siatki głównego kontenera
+        main_container = ctk.CTkFrame(self.root, fg_color="transparent")
+        main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
         main_container.columnconfigure(0, weight=1)
         main_container.rowconfigure(1, weight=1)
         
@@ -190,26 +158,21 @@ class YouTubeDownloaderGUI:
         
     def create_header(self, parent):
         """Tworzenie nagłówka aplikacji"""
-        header_frame = ttk.Frame(parent, style='Card.TFrame', padding="12")
-        header_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
-        header_frame.columnconfigure(1, weight=1)
-        
-        # Tytuł aplikacji
-        title_label = ttk.Label(header_frame, 
-                               text="YouTube Downloader", 
-                               style='Title.TLabel')
-        title_label.grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=(0, 3))
-        
-        # Opis
-        desc_label = ttk.Label(header_frame, 
-                              text=t("Pobieraj filmy z YouTube w wysokiej jakości"), 
-                              style='Subtitle.TLabel')
-        desc_label.grid(row=1, column=0, columnspan=2, sticky=tk.W)
+        header_frame = ctk.CTkFrame(parent)
+        header_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10), padx=5)
+        header_frame.columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(header_frame, text="YouTube Downloader",
+                     font=ctk.CTkFont(size=16, weight="bold")).grid(
+            row=0, column=0, sticky=tk.W, padx=12, pady=(10, 2))
+
+        ctk.CTkLabel(header_frame, text=t("Pobieraj filmy z YouTube w wysokiej jakości"),
+                     font=ctk.CTkFont(size=11)).grid(
+            row=1, column=0, sticky=tk.W, padx=12, pady=(0, 10))
         
     def create_main_content(self, parent):
         """Tworzenie głównej zawartości"""
-        # Kontener bez scrollbara - wszystko widoczne
-        content_frame = ttk.Frame(parent, style='Main.TFrame')
+        content_frame = ctk.CTkFrame(parent, fg_color="transparent")
         content_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
         content_frame.columnconfigure(0, weight=1)
         
@@ -223,174 +186,168 @@ class YouTubeDownloaderGUI:
         
     def create_url_section(self, parent):
         """Sekcja wprowadzania URL"""
-        url_frame = ttk.Frame(parent, style='Card.TFrame', padding="12")
-        url_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 8))
+        url_frame = ctk.CTkFrame(parent)
+        url_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=5)
         url_frame.columnconfigure(1, weight=1)
-        
-        # Nagłówek sekcji
-        ttk.Label(url_frame, text=t("Link YouTube"), style='Subtitle.TLabel').grid(
-            row=0, column=0, columnspan=3, sticky=tk.W, pady=(0, 8))
-        
-        # Pole URL
-        self.url_entry = ttk.Entry(url_frame, font=('Segoe UI', 10), style='Entry.TEntry')
-        self.url_entry.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), padx=(0, 10))
-        
-        # Przycisk sprawdzania
-        self.check_button = ttk.Button(url_frame, text=t("Sprawdź"), 
-                                      command=self.check_video, style='Primary.TButton')
-        self.check_button.grid(row=1, column=2)
+
+        ctk.CTkLabel(url_frame, text=t("Link YouTube"),
+                     font=ctk.CTkFont(size=12, weight="bold")).grid(
+            row=0, column=0, columnspan=3, sticky=tk.W, padx=12, pady=(10, 6))
+
+        self.url_entry = ctk.CTkEntry(url_frame, font=ctk.CTkFont(size=11),
+                                      placeholder_text="https://youtube.com/watch?v=...")
+        self.url_entry.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E),
+                            padx=(12, 8), pady=(0, 10))
+
+        self.check_button = ctk.CTkButton(url_frame, text=t("Sprawdź"),
+                                          command=self.check_video)
+        self.check_button.grid(row=1, column=2, padx=(0, 12), pady=(0, 10))
         
     def create_video_info_section(self, parent):
         """Sekcja informacji o filmie"""
-        info_frame = ttk.Frame(parent, style='Card.TFrame', padding="12")
-        info_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 8))
+        info_frame = ctk.CTkFrame(parent)
+        info_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=5)
         info_frame.columnconfigure(0, weight=1)
-        
-        # Nagłówek sekcji
-        ttk.Label(info_frame, text=t("Informacje o filmie"), style='Subtitle.TLabel').grid(
-            row=0, column=0, sticky=tk.W, pady=(0, 8))
-        
-        # Pole informacji
-        info_container = ttk.Frame(info_frame)
-        info_container.grid(row=1, column=0, sticky=(tk.W, tk.E))
+
+        ctk.CTkLabel(info_frame, text=t("Informacje o filmie"),
+                     font=ctk.CTkFont(size=12, weight="bold")).grid(
+            row=0, column=0, sticky=tk.W, padx=12, pady=(10, 6))
+
+        info_container = ctk.CTkFrame(info_frame, fg_color="transparent")
+        info_container.grid(row=1, column=0, sticky=(tk.W, tk.E), padx=12, pady=(0, 10))
         info_container.columnconfigure(0, weight=1)
-        
-        self.info_text = tk.Text(info_container, height=3, wrap=tk.WORD, 
-                                font=('Segoe UI', 9), bg='#f8f9fa', 
-                                relief='solid', borderwidth=1)
+
+        self.info_text = tk.Text(info_container, height=3, wrap=tk.WORD,
+                                 font=('Segoe UI', 9), bg='#2b2b2b', fg='#dce4ee',
+                                 relief='flat', borderwidth=0)
         self.info_text.grid(row=0, column=0, sticky=(tk.W, tk.E))
-        
-        # Scrollbar dla tekstu
-        info_scrollbar = ttk.Scrollbar(info_container, orient="vertical", command=self.info_text.yview)
+
+        info_scrollbar = tk.Scrollbar(info_container, orient="vertical",
+                                       command=self.info_text.yview)
         info_scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
         self.info_text.configure(yscrollcommand=info_scrollbar.set)
         
     def create_download_options_section(self, parent):
         """Sekcja opcji pobierania"""
-        options_frame = ttk.Frame(parent, style='Card.TFrame', padding="12")
-        options_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 8))
+        options_frame = ctk.CTkFrame(parent)
+        options_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=5)
         options_frame.columnconfigure(1, weight=1)
-        
-        # Nagłówek sekcji
-        ttk.Label(options_frame, text=t("Opcje pobierania"), style='Subtitle.TLabel').grid(
-            row=0, column=0, columnspan=2, sticky=tk.W, pady=(0, 8))
-        
-        # Checkbox audio
+
+        ctk.CTkLabel(options_frame, text=t("Opcje pobierania"),
+                     font=ctk.CTkFont(size=12, weight="bold")).grid(
+            row=0, column=0, columnspan=2, sticky=tk.W, padx=12, pady=(10, 6))
+
         self.audio_only_var = tk.BooleanVar()
-        self.audio_checkbox = ttk.Checkbutton(options_frame, 
-                                            text=t("Tylko audio (MP3)"), 
-                                            variable=self.audio_only_var, 
-                                            command=self.on_audio_change)
-        self.audio_checkbox.grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(0, 8))
-        
-        # Rozdzielczość
-        ttk.Label(options_frame, text=t("Rozdzielczość:"), style='Subtitle.TLabel').grid(
-            row=2, column=0, sticky=tk.W, pady=(0, 5))
-        
+        self.audio_checkbox = ctk.CTkCheckBox(options_frame, text=t("Tylko audio (MP3)"),
+                                               variable=self.audio_only_var,
+                                               command=self.on_audio_change)
+        self.audio_checkbox.grid(row=1, column=0, columnspan=2, sticky=tk.W,
+                                  padx=12, pady=(0, 8))
+
+        ctk.CTkLabel(options_frame, text=t("Rozdzielczość:"),
+                     font=ctk.CTkFont(size=11)).grid(row=2, column=0, sticky=tk.W,
+                                                      padx=12, pady=(0, 5))
+
         self.resolution_var = tk.StringVar()
-        self.resolution_combo = ttk.Combobox(options_frame, 
-                                           textvariable=self.resolution_var, 
-                                           state="readonly",
-                                           font=('Segoe UI', 9))
-        self.resolution_combo.grid(row=2, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=(0, 5))
-        
-        # Folder docelowy
-        ttk.Label(options_frame, text=t("Folder docelowy:"), style='Subtitle.TLabel').grid(
-            row=3, column=0, sticky=tk.W, pady=(8, 5))
-        
-        folder_container = ttk.Frame(options_frame)
-        folder_container.grid(row=3, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=(8, 5))
+        self.resolution_combo = ctk.CTkComboBox(options_frame, variable=self.resolution_var,
+                                                 state="readonly",
+                                                 font=ctk.CTkFont(size=11), values=[])
+        self.resolution_combo.grid(row=2, column=1, sticky=(tk.W, tk.E),
+                                    padx=(8, 12), pady=(0, 5))
+
+        ctk.CTkLabel(options_frame, text=t("Folder docelowy:"),
+                     font=ctk.CTkFont(size=11)).grid(row=3, column=0, sticky=tk.W,
+                                                      padx=12, pady=(8, 5))
+
+        folder_container = ctk.CTkFrame(options_frame, fg_color="transparent")
+        folder_container.grid(row=3, column=1, sticky=(tk.W, tk.E), padx=(8, 12), pady=(8, 10))
         folder_container.columnconfigure(0, weight=1)
-        
-        self.folder_button = ttk.Button(folder_container, text=t("Wybierz folder"), 
-                                       command=self.select_directory, style='Secondary.TButton')
-        self.folder_button.grid(row=0, column=1, padx=(10, 0))
-        
-        self.path_label = ttk.Label(folder_container, text=t("Nie wybrano folderu"), 
-                                   style='Subtitle.TLabel', foreground='#7f8c8d')
+
+        self.path_label = ctk.CTkLabel(folder_container, text=t("Nie wybrano folderu"),
+                                        text_color="gray", font=ctk.CTkFont(size=10))
         self.path_label.grid(row=0, column=0, sticky=(tk.W, tk.E))
-        
-        # Wyświetl zapisaną lokalizację jeśli istnieje
+
+        self.folder_button = ctk.CTkButton(folder_container, text=t("Wybierz folder"),
+                                            command=self.select_directory, width=130)
+        self.folder_button.grid(row=0, column=1, padx=(10, 0))
+
         if self.selected_directory:
-            self.path_label.config(text=self.selected_directory, foreground='#2c3e50')
+            self.path_label.configure(text=self.selected_directory, text_color="white")
             
     def create_download_section(self, parent):
         """Sekcja pobierania"""
-        download_frame = ttk.Frame(parent, style='Card.TFrame', padding="12")
-        download_frame.grid(row=3, column=0, sticky=(tk.W, tk.E), pady=(0, 8))
+        download_frame = ctk.CTkFrame(parent)
+        download_frame.grid(row=3, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=5)
         download_frame.columnconfigure(1, weight=1)
-        
-        # Nagłówek sekcji
-        ttk.Label(download_frame, text=t("Pobieranie"), style='Subtitle.TLabel').grid(
-            row=0, column=0, columnspan=3, sticky=tk.W, pady=(0, 8))
-        
-        # Przycisk pobierania
-        self.download_button = ttk.Button(download_frame, text=t("Rozpocznij pobieranie"), 
-                                        command=self.start_download, style='Primary.TButton')
-        self.download_button.grid(row=1, column=0, sticky=tk.W)
-        
-        # Przycisk anulowania
-        self.cancel_button = ttk.Button(download_frame, text=t("Anuluj"), 
-                                      command=self.cancel_download, 
-                                      state="disabled", style='Secondary.TButton')
-        self.cancel_button.grid(row=1, column=2, padx=(10, 0))
+
+        ctk.CTkLabel(download_frame, text=t("Pobieranie"),
+                     font=ctk.CTkFont(size=12, weight="bold")).grid(
+            row=0, column=0, columnspan=3, sticky=tk.W, padx=12, pady=(10, 6))
+
+        self.download_button = ctk.CTkButton(download_frame, text=t("Rozpocznij pobieranie"),
+                                              command=self.start_download)
+        self.download_button.grid(row=1, column=0, sticky=tk.W, padx=12, pady=(0, 10))
+
+        self.cancel_button = ctk.CTkButton(download_frame, text=t("Anuluj"),
+                                            command=self.cancel_download,
+                                            state="disabled",
+                                            fg_color="transparent",
+                                            border_width=2)
+        self.cancel_button.grid(row=1, column=2, padx=(10, 12), pady=(0, 10))
         
     def create_progress_section(self, parent):
         """Sekcja postępu"""
-        progress_frame = ttk.Frame(parent, style='Card.TFrame', padding="12")
-        progress_frame.grid(row=4, column=0, sticky=(tk.W, tk.E), pady=(0, 8))
+        progress_frame = ctk.CTkFrame(parent)
+        progress_frame.grid(row=4, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=5)
         progress_frame.columnconfigure(0, weight=1)
-        
-        # Nagłówek sekcji
-        ttk.Label(progress_frame, text=t("Postęp"), style='Subtitle.TLabel').grid(
-            row=0, column=0, sticky=tk.W, pady=(0, 8))
-        
-        # Progress bar
-        self.progress = ttk.Progressbar(progress_frame)
-        self.progress.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 5))
-        
-        # Status
+
+        ctk.CTkLabel(progress_frame, text=t("Postęp"),
+                     font=ctk.CTkFont(size=12, weight="bold")).grid(
+            row=0, column=0, sticky=tk.W, padx=12, pady=(10, 6))
+
+        self.progress = ctk.CTkProgressBar(progress_frame)
+        self.progress.set(0)
+        self.progress.grid(row=1, column=0, sticky=(tk.W, tk.E), padx=12, pady=(0, 5))
+
         self.status_var = tk.StringVar()
         self.status_var.set(t("Gotowy do pobierania"))
-        self.status_bar = ttk.Label(progress_frame, textvariable=self.status_var, 
-                                   style='Subtitle.TLabel', foreground='#27ae60')
-        self.status_bar.grid(row=2, column=0, sticky=tk.W)
+        self.status_bar = ctk.CTkLabel(progress_frame, textvariable=self.status_var,
+                                        text_color="#27ae60",
+                                        font=ctk.CTkFont(size=11))
+        self.status_bar.grid(row=2, column=0, sticky=tk.W, padx=12, pady=(0, 10))
         
     def create_error_section(self, parent):
         """Sekcja błędów"""
-        error_frame = ttk.Frame(parent, style='Card.TFrame', padding="12")
-        error_frame.grid(row=5, column=0, sticky=(tk.W, tk.E), pady=(0, 8))
+        error_frame = ctk.CTkFrame(parent)
+        error_frame.grid(row=5, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=5)
         error_frame.columnconfigure(0, weight=1)
-        
-        # Nagłówek sekcji
-        ttk.Label(error_frame, text=t("Błędy i komunikaty"), style='Subtitle.TLabel').grid(
-            row=0, column=0, sticky=tk.W, pady=(0, 8))
-        
-        # Pole błędów
-        error_container = ttk.Frame(error_frame)
-        error_container.grid(row=1, column=0, sticky=(tk.W, tk.E))
+
+        ctk.CTkLabel(error_frame, text=t("Błędy i komunikaty"),
+                     font=ctk.CTkFont(size=12, weight="bold")).grid(
+            row=0, column=0, sticky=tk.W, padx=12, pady=(10, 6))
+
+        error_container = ctk.CTkFrame(error_frame, fg_color="transparent")
+        error_container.grid(row=1, column=0, sticky=(tk.W, tk.E), padx=12, pady=(0, 10))
         error_container.columnconfigure(0, weight=1)
-        
-        self.error_text = tk.Text(error_container, height=2, wrap=tk.WORD, 
-                                 font=('Segoe UI', 9), fg="#e74c3c", 
-                                 bg='#fdf2f2', relief='solid', borderwidth=1)
+
+        self.error_text = tk.Text(error_container, height=2, wrap=tk.WORD,
+                                   font=('Segoe UI', 9), fg="#e74c3c",
+                                   bg='#2b2b2b', relief='flat', borderwidth=0)
         self.error_text.grid(row=0, column=0, sticky=(tk.W, tk.E))
-        
-        # Scrollbar dla błędów
-        error_scrollbar = ttk.Scrollbar(error_container, orient="vertical", command=self.error_text.yview)
+
+        error_scrollbar = tk.Scrollbar(error_container, orient="vertical",
+                                        command=self.error_text.yview)
         error_scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
         self.error_text.configure(yscrollcommand=error_scrollbar.set)
         
     def create_status_bar(self, parent):
         """Tworzenie status bara"""
-        status_frame = ttk.Frame(parent, relief=tk.SUNKEN, borderwidth=1)
-        status_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(10, 0))
-        status_frame.columnconfigure(0, weight=1)
-        
-        # Status aplikacji
-        app_status = ttk.Label(status_frame, text=f"YouTube Downloader v{__version__}", 
-                              font=('Segoe UI', 8), foreground='#7f8c8d')
-        app_status.grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
+        status_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        status_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(5, 0))
+
+        ctk.CTkLabel(status_frame, text=f"YouTube Downloader v{__version__}",
+                     font=ctk.CTkFont(size=9), text_color="gray").grid(
+            row=0, column=0, sticky=tk.W, padx=8, pady=2)
         
     def check_video(self):
         """Sprawdzenie informacji o filmie"""
@@ -404,8 +361,8 @@ class YouTubeDownloaderGUI:
             return
             
         self.status_var.set(t("Sprawdzanie filmu..."))
-        self.status_bar.configure(foreground='#f39c12')
-        self.check_button.config(state="disabled")
+        self.status_bar.configure(text_color='#f39c12')
+        self.check_button.configure(state="disabled")
         
         # Sprawdzenie w osobnym wątku
         thread = threading.Thread(target=self._check_video_thread, args=(url,))
@@ -421,7 +378,7 @@ class YouTubeDownloaderGUI:
             error_msg = f"{t('Błąd podczas sprawdzania')}: {e}"
             self.root.after(0, lambda: self.show_error(error_msg))
         finally:
-            self.root.after(0, lambda: self.check_button.config(state="normal"))
+            self.root.after(0, lambda: self.check_button.configure(state="normal"))
             
     def _update_video_info(self):
         """Aktualizacja informacji o filmie"""
@@ -454,21 +411,19 @@ class YouTubeDownloaderGUI:
                                      key=parse_resolution, 
                                      reverse=True)
             
-            self.resolution_combo['values'] = sorted_resolutions
+            self.resolution_combo.configure(values=sorted_resolutions)
             if sorted_resolutions:
-                self.resolution_combo.set(sorted_resolutions[0])  # Ustawiamy najwyższą rozdzielczość
+                self.resolution_combo.set(sorted_resolutions[0])
                 
             self.status_var.set(t("Film sprawdzony"))
-            self.status_bar.configure(foreground='#27ae60')
+            self.status_bar.configure(text_color='#27ae60')
         else:
             self.show_error(t("Nie udało się pobrać informacji o filmie"))
             
     def on_audio_change(self):
         """Obsługa zmiany opcji audio"""
-        if self.audio_only_var.get():
-            self.resolution_combo.config(state="disabled")
-        else:
-            self.resolution_combo.config(state="readonly")
+        state = "disabled" if self.audio_only_var.get() else "normal"
+        self.resolution_combo.configure(state=state)
             
     def select_directory(self):
         """Wybór katalogu docelowego z domyślną lokalizacją"""
@@ -482,7 +437,7 @@ class YouTubeDownloaderGUI:
         directory = filedialog.askdirectory(initialdir=default_dir)
         if directory:
             self.selected_directory = directory
-            self.path_label.config(text=directory, foreground='#2c3e50')
+            self.path_label.configure(text=directory, text_color="white")
             # Zapisz nową lokalizację
             self.save_last_directory(directory)
             
@@ -500,11 +455,11 @@ class YouTubeDownloaderGUI:
         resolution = self.resolution_var.get()
         audio_only = self.audio_only_var.get()
         
-        self.download_button.config(state="disabled")
-        self.cancel_button.config(state="normal")
-        self.progress['value'] = 0
+        self.download_button.configure(state="disabled")
+        self.cancel_button.configure(state="normal")
+        self.progress.set(0)
         self.status_var.set(t("Rozpoczynanie pobierania..."))
-        self.status_bar.configure(foreground='#f39c12')
+        self.status_bar.configure(text_color='#f39c12')
         
         # Pobieranie w osobnym wątku
         self.download_thread = threading.Thread(
@@ -541,7 +496,7 @@ class YouTubeDownloaderGUI:
             
     def _update_progress(self, percentage):
         """Aktualizacja postępu pobierania"""
-        self.root.after(0, lambda: self.progress.config(value=percentage))
+        self.root.after(0, lambda: self.progress.set(percentage / 100))
         self.root.after(0, lambda: self.status_var.set(f"{t('Pobieranie...')} {percentage}%"))
         
     def _download_complete(self, result):
@@ -552,7 +507,7 @@ class YouTubeDownloaderGUI:
                 self.save_last_directory(self.selected_directory)
             messagebox.showinfo(t("Sukces"), f"{t('Film został pobrany')}:\n{result['filename']}")
             self.status_var.set(t("Pobieranie zakończone"))
-            self.status_bar.configure(foreground='#27ae60')
+            self.status_bar.configure(text_color='#27ae60')
         else:
             self.show_error(t("Nie udało się pobrać filmu"))
             
@@ -562,16 +517,16 @@ class YouTubeDownloaderGUI:
             self.downloader.cancel_download()
             self.status_var.set(t("Anulowanie..."))
             self.cancel_button.config(state="disabled")
-            self.status_bar.configure(foreground='#e74c3c')
+            self.status_bar.configure(text_color='#e74c3c')
             
     def _reset_ui(self):
         """Reset interfejsu po pobieraniu"""
-        self.download_button.config(state="normal")
-        self.cancel_button.config(state="disabled")
+        self.download_button.configure(state="normal")
+        self.cancel_button.configure(state="disabled")
         
     def show_error(self, message):
         """Wyświetlenie błędu"""
         self.error_text.delete(1.0, tk.END)
         self.error_text.insert(1.0, message)
         self.status_var.set(t("Błąd"))
-        self.status_bar.configure(foreground='#e74c3c')
+        self.status_bar.configure(text_color='#e74c3c')
