@@ -61,10 +61,12 @@ jobs:
 
       - name: Build NSIS installer (Windows)
         if: runner.os == 'Windows'
-        shell: cmd
+        shell: pwsh
         env:
           APP_VERSION: ${{ steps.version.outputs.VERSION }}
-        run: makensis /DAPP_VERSION=%APP_VERSION% installer\windows\installer.nsi
+        run: |
+          $makensis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          & $makensis /DAPP_VERSION=$env:APP_VERSION installer\windows\installer.nsi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
