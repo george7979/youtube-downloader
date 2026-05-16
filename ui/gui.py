@@ -532,8 +532,10 @@ class YouTubeDownloaderGUI:
             self.root.after(0, lambda: self._download_complete(result))
             
         except Exception as e:
-            error_msg = f"{t('Błąd podczas pobierania')}: {e}"
-            self.root.after(0, lambda: self.show_error(error_msg))
+            error_msg = str(e)
+            if t("Pobieranie zostało anulowane") not in error_msg and "anulowane" not in error_msg.lower() and "cancelled" not in error_msg.lower():
+                display_msg = f"{t('Błąd podczas pobierania')}: {e}"
+                self.root.after(0, lambda msg=display_msg: self.show_error(msg))
         finally:
             self.root.after(0, self._reset_ui)
             
@@ -558,7 +560,8 @@ class YouTubeDownloaderGUI:
         """Anulowanie pobierania"""
         if self.download_thread and self.download_thread.is_alive():
             self.downloader.cancel_download()
-            self.status_var.set(t("Pobieranie anulowane"))
+            self.status_var.set(t("Anulowanie..."))
+            self.cancel_button.config(state="disabled")
             self.status_bar.configure(foreground='#e74c3c')
             
     def _reset_ui(self):
