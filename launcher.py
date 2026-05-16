@@ -88,27 +88,27 @@ class YouTubeDownloaderLauncher:
     
     def can_use_gui(self):
         """Determine if GUI can be used"""
-        # Check basic requirements
-        if not self.diagnostics.check_display():
-            logging.info("No DISPLAY environment variable")
-            return False
-            
+        # On Windows, DISPLAY is not used — skip that check
+        if sys.platform != 'win32':
+            if not self.diagnostics.check_display():
+                logging.info("No DISPLAY environment variable")
+                return False
+
         if not self.diagnostics.check_tkinter():
             logging.info("Tkinter not available or failed import")
             return False
-            
+
         return True
     
     def launch_gui(self):
         """Launch GUI interface"""
         try:
             from ui.gui import YouTubeDownloaderGUI
-            import tkinter as tk
-            
+            import customtkinter as ctk
+
             print(f"🚀 Starting YouTube Downloader v{__version__} (GUI Mode)")
-            
-            # Create main window with minimal, WSL-friendly approach
-            root = tk.Tk()
+
+            root = ctk.CTk()
             root.title(f"YouTube Downloader v{__version__}")
             root.geometry("1100x1000")
             root.minsize(1000, 900)
@@ -125,8 +125,13 @@ class YouTubeDownloaderLauncher:
             root.mainloop()
             
         except Exception as e:
+            import traceback
+            log_path = os.path.join(os.environ.get('TEMP', '/tmp'), 'youtube-downloader-error.log')
+            with open(log_path, 'w') as f:
+                f.write(f"GUI error: {e}\n\n")
+                traceback.print_exc(file=f)
             print(f"❌ GUI failed to start: {e}")
-            print("🔄 Falling back to CLI mode...")
+            print(f"📄 Error log: {log_path}")
             self.launch_cli()
     
     def launch_cli(self):

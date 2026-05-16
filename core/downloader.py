@@ -15,6 +15,7 @@ Architecture: Dual-Repository Workflow v1.2.0
 """
 
 import os
+import threading
 import logging
 import yt_dlp
 from pathlib import Path
@@ -24,7 +25,7 @@ from .translations import t
 class YouTubeDownloader:
     def __init__(self):
         """Inicjalizacja downloadera"""
-        self.cancel_flag = False
+        self._cancel_event = threading.Event()
         self.current_download = None
         
     def _get_client_configs(self):
@@ -127,7 +128,7 @@ class YouTubeDownloader:
         # Bazowe opcje dla wszystkich klientów
         base_opts = {
             'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
-            'progress_hooks': [lambda d: self._progress_hook(d, progress_callback)] if progress_callback else None,
+            'progress_hooks': [lambda d: self._progress_hook(d, progress_callback)],
             'extractor_retries': 1,  # Tylko 1 retry per client
             'retry_sleep_functions': {'http': lambda n: 2},
             'skip_unavailable_fragments': True,
@@ -182,7 +183,7 @@ class YouTubeDownloader:
                 logging.warning(f"❌ {config['name']} nie zadziałał: {error_msg[:100]}...")
                 
                 # Sprawdź czy to błąd anulowania
-                if self.cancel_flag:
+                if self._cancel_event.is_set():
                     raise Exception(t("Pobieranie zostało anulowane"))
                 
                 # Sprawdź czy to błędy YouTube lub formatów - spróbuj następny klient
@@ -225,11 +226,13 @@ class YouTubeDownloader:
                 
         # Jeśli żaden klient nie zadziałał
         self.current_download = None
-        self.cancel_flag = False
+        self._cancel_event.clear()
         raise Exception(t("Nie udało się pobrać filmu żadnym z dostępnych klientów. YouTube może blokować dostęp lub film może być niedostępny."))
             
     def _progress_hook(self, d, callback):
         """Hook do śledzenia postępu pobierania"""
+        if self._cancel_event.is_set():
+            raise Exception(t("Pobieranie zostało anulowane"))
         if d['status'] == 'downloading':
             if 'total_bytes' in d and d['total_bytes']:
                 percentage = (d['downloaded_bytes'] / d['total_bytes']) * 100
@@ -255,9 +258,7 @@ class YouTubeDownloader:
             
     def cancel_download(self):
         """Anulowanie pobierania"""
-        self.cancel_flag = True
-        if self.current_download:
-            self.current_download.break_on_existing = True
+        self._cancel_event.set()
             
     def save_timestamps(self, timestamps, video_filename):
         """Zapisywanie timestampów do pliku .md"""
