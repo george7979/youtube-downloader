@@ -103,12 +103,11 @@ class YouTubeDownloaderLauncher:
         """Launch GUI interface"""
         try:
             from ui.gui import YouTubeDownloaderGUI
-            import tkinter as tk
-            
+            import customtkinter as ctk
+
             print(f"🚀 Starting YouTube Downloader v{__version__} (GUI Mode)")
-            
-            # Create main window with minimal, WSL-friendly approach
-            root = tk.Tk()
+
+            root = ctk.CTk()
             root.title(f"YouTube Downloader v{__version__}")
             root.geometry("1100x1000")
             root.minsize(1000, 900)
