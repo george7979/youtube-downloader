@@ -124,8 +124,13 @@ class YouTubeDownloaderLauncher:
             root.mainloop()
             
         except Exception as e:
+            import traceback
+            log_path = os.path.join(os.environ.get('TEMP', '/tmp'), 'youtube-downloader-error.log')
+            with open(log_path, 'w') as f:
+                f.write(f"GUI error: {e}\n\n")
+                traceback.print_exc(file=f)
             print(f"❌ GUI failed to start: {e}")
-            print("🔄 Falling back to CLI mode...")
+            print(f"📄 Error log: {log_path}")
             self.launch_cli()
     
     def launch_cli(self):
