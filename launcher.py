@@ -110,8 +110,8 @@ class YouTubeDownloaderLauncher:
 
             root = ctk.CTk()
             root.title(f"YouTube Downloader v{__version__}")
-            root.geometry("770x700")
-            root.minsize(700, 630)
+            root.geometry("770x800")
+            root.minsize(700, 700)
             root.resizable(True, True)
             
             # Initialize GUI
