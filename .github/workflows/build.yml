@@ -59,6 +59,11 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install nsis --yes
 
+      - name: Debug dist directory (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Get-ChildItem -Recurse dist/
+
       - name: Build NSIS installer (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
