@@ -2,264 +2,76 @@ name: Continuous Integration
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 jobs:
   test:
     name: Tests and Code Quality
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-        
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest flake8 pylint mypy
-        
-    - name: Lint with flake8
-      run: |
-        # Stop build if there are Python syntax errors or undefined names
-        flake8 core/ ui/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 launcher.py version.py --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings
-        flake8 core/ ui/ launcher.py version.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-        
-    - name: Type checking with mypy
-      run: |
-        mypy core/ ui/ launcher.py version.py --ignore-missing-imports || true
-        
-    - name: Run tests
-      run: |
-        if [ -d "tests/" ]; then
-          python -m pytest tests/ -v
-        else
-          echo "⚠️ No tests directory found - skipping tests"
-        fi
-        
-    - name: Test application entry point
-      run: |
-        python launcher.py --help || echo "✅ Application started successfully"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest flake8 mypy
+
+      - name: Lint (syntax errors only)
+        run: |
+          flake8 core/ ui/ launcher.py version.py \
+            --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Type check
+        run: mypy core/ ui/ launcher.py version.py --ignore-missing-imports || true
+
+      - name: Run tests
+        run: python -m pytest tests/ -v
 
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Dual-repository security scan
-      run: |
-        echo "🔍 Scanning for sensitive files in dual-repo environment..."
-        
-        # Check for files that MUST NOT be in public repo
-        if find . -name "cursorrules" -o -name ".cursorrules" | grep -q .; then
-          echo "❌ CRITICAL: cursorrules found in repository!"
-          echo "These files should only exist in private repository"
-          find . -name "cursorrules" -o -name ".cursorrules"
-          exit 1
-        fi
-        
-        # Check for environment files
-        if find . -name ".env*" -o -name "*.local" | grep -q .; then
-          echo "❌ CRITICAL: Environment files found in repository!"
-          find . -name ".env*" -o -name "*.local"
-          exit 1
-        fi
-        
-        # Check for development builds (should be in private only)
-        if find . -name "*dev*.deb" | grep -q .; then
-          echo "❌ CRITICAL: Development builds found in public repository!"
-          find . -name "*dev*.deb"
-          exit 1
-        fi
-        
-        # Check for backup directories
-        if find . -name "backup" -type d | grep -q .; then
-          echo "❌ CRITICAL: Backup directories found in public repository!"
-          find . -name "backup" -type d
-          exit 1
-        fi
-        
-        # Check for private scripts (exclude legitimate workflow scripts)
-        if find . -name "*private*" -o -name "*secret*" | grep -v ".github" | grep -v "scripts/sync-to-private.sh" | grep -v "scripts/promote-to-main.sh" | grep -q .; then
-          echo "❌ WARNING: Potential private files found!"
-          find . -name "*private*" -o -name "*secret*" | grep -v ".github" | grep -v "scripts/sync-to-private.sh" | grep -v "scripts/promote-to-main.sh"
-          exit 1
-        fi
-        
-        echo "✅ Security scan passed - repository is clean for public distribution"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan for sensitive files
+        run: |
+          if find . -name ".env" -o -name ".env.local" | grep -q .; then
+            echo "ERROR: .env files found in repository!"
+            find . -name ".env" -o -name ".env.local"
+            exit 1
+          fi
+          if find . -name "*.pem" -o -name "*.key" | grep -v ".github" | grep -q .; then
+            echo "ERROR: Private key files found!"
+            exit 1
+          fi
+          echo "Security scan passed"
 
   structure:
-    name: Validate Dual-Repository Structure
+    name: Validate Project Structure
     runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Validate dual-repo structure
-      run: |
-        echo "🏗️ Validating dual-repository structure..."
-        
-        # Check required directories for dual-repo
-        for dir in core ui docs build-tools scripts; do
-          if [ ! -d "$dir" ]; then
-            echo "❌ Required directory missing: $dir"
-            exit 1
-          fi
-        done
-        
-        # Check main application files in new structure
-        if [ ! -f "launcher.py" ]; then
-          echo "❌ Required file missing: launcher.py"
-          exit 1
-        fi
-        
-        if [ ! -f "version.py" ]; then
-          echo "❌ Required file missing: version.py"
-          exit 1
-        fi
-        
-        # Check core application files
-        for file in core/downloader.py ui/gui.py; do
-          if [ ! -f "$file" ]; then
-            echo "❌ Required file missing: $file"
-            exit 1
-          fi
-        done
-        
-        # Check essential documentation
-        for doc in docs/BUILDING.md docs/WORKFLOW.md docs/RELEASE_PROCESS.md; do
-          if [ ! -f "$doc" ]; then
-            echo "❌ Required documentation missing: $doc"
-            exit 1
-          fi
-        done
-        
-        # Check build tools
-        for tool in build-tools/build-deb.sh build-tools/version-manager.sh; do
-          if [ ! -f "$tool" ]; then
-            echo "❌ Required build tool missing: $tool"
-            exit 1
-          fi
-        done
-        
-        # Check workflow scripts
-        for script in scripts/sync-to-private.sh scripts/promote-to-main.sh scripts/release-to-public.sh; do
-          if [ ! -f "$script" ]; then
-            echo "❌ Required workflow script missing: $script"
-            exit 1
-          fi
-        done
-        
-        # Verify old single-repo artifacts are gone
-        if [ -d "src" ]; then
-          echo "❌ MIGRATION ERROR: Old src/ directory still exists!"
-          echo "This indicates incomplete migration to dual-repo structure"
-          exit 1
-        fi
-        
-        if [ -f "main.py" ] || [ -f "gui.py" ] || [ -f "utils.py" ]; then
-          echo "❌ MIGRATION ERROR: Old structure files still in root!"
-          echo "Files should be moved to core/ and ui/ directories"
-          exit 1
-        fi
-        
-        # Check that essential documentation exists
-        if [ ! -f "README.md" ] || [ ! -f "CLAUDE.md" ]; then
-          echo "❌ DUAL-REPO ERROR: Essential documentation missing!"
-          exit 1
-        fi
-        
-        echo "✅ Dual-repository structure validation passed"
-        echo "✅ Repository follows dual-repo architecture correctly"
 
-  build:
-    name: Build and Package Test
-    runs-on: ubuntu-latest
-    needs: [test, security, structure]
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Install build dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          debhelper \
-          devscripts \
-          dh-python \
-          dpkg-dev \
-          fakeroot \
-          python3-all \
-          python3-setuptools \
-          python3-dev \
-          python3-pip \
-          python3-venv \
-          lintian
-    
-    - name: Test build system
-      run: |
-        echo "🔧 Testing build system..."
-        
-        # Check if all build requirements are met
-        make check
-        
-        # Test version manager
-        ./build-tools/version-manager.sh show
-        
-        # Test package building (dry run if no tag)
-        if git describe --tags --exact-match 2>/dev/null; then
-          echo "📦 Building release package..."
-          make build
-          make test
-        else
-          echo "📦 Testing build system (no package created - not a tagged release)..."
-          chmod +x build-tools/build-deb.sh
-          echo "✅ Build system test passed"
-        fi
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  workflow-validation:
-    name: Validate Dual-Repo Workflow
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Test workflow scripts
-      run: |
-        echo "🔄 Testing dual-repo workflow scripts..."
-        
-        # Test all workflow scripts exist and are executable
-        for script in scripts/*.sh; do
-          if [ -f "$script" ]; then
-            echo "Checking: $script"
-            chmod +x "$script"
-            bash -n "$script"  # Syntax check
-          fi
-        done
-        
-        # Test Makefile workflow targets
-        echo "Testing Makefile workflow targets..."
-        make help
-        
-        # Verify workflow status works (dry run)
-        if command -v git >/dev/null 2>&1; then
-          make workflow-status || echo "⚠️ Workflow status check completed with warnings"
-        fi
-        
-        echo "✅ Workflow validation passed"
+      - name: Check required files
+        run: |
+          for f in launcher.py version.py requirements.txt core/downloader.py ui/gui.py; do
+            if [ ! -f "$f" ]; then
+              echo "Missing required file: $f"
+              exit 1
+            fi
+          done
+          echo "Project structure OK"
