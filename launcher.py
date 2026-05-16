@@ -88,15 +88,16 @@ class YouTubeDownloaderLauncher:
     
     def can_use_gui(self):
         """Determine if GUI can be used"""
-        # Check basic requirements
-        if not self.diagnostics.check_display():
-            logging.info("No DISPLAY environment variable")
-            return False
-            
+        # On Windows, DISPLAY is not used — skip that check
+        if sys.platform != 'win32':
+            if not self.diagnostics.check_display():
+                logging.info("No DISPLAY environment variable")
+                return False
+
         if not self.diagnostics.check_tkinter():
             logging.info("Tkinter not available or failed import")
             return False
-            
+
         return True
     
     def launch_gui(self):
