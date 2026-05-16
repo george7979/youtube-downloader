@@ -521,8 +521,13 @@ class YouTubeDownloaderGUI:
             
     def _reset_ui(self):
         """Reset interfejsu po pobieraniu"""
+        self.downloader._cancel_event.clear()
         self.download_button.configure(state="normal")
         self.cancel_button.configure(state="disabled")
+        self.progress.set(0)
+        if "anulowanie" in self.status_var.get().lower():
+            self.status_var.set(t("Gotowy do pobierania"))
+            self.status_bar.configure(text_color='#27ae60')
         
     def show_error(self, message):
         """Wyświetlenie błędu"""
