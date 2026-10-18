@@ -161,6 +161,46 @@ def test_media_exists_note_missing_writes_note_only(tmp_path, lecture, vtt):
     assert not list(tmp_path.glob("*.vtt"))
 
 
+@pytest.mark.parametrize("extra", [{}, {"save_srt": True, "subs": "none"}])
+def test_media_exists_and_nothing_to_write_returns_without_running(tmp_path, lecture, extra):
+    # No note wanted and no .srt possible: running yt-dlp would produce nothing.
+    media = tmp_path / "T [VIw16SXObUQ].mp4"
+    media.write_bytes(b"video")
+
+    result, _ = download(make_service(NoRunner()), request(tmp_path, save_note=False, **extra), lecture)
+
+    assert result.already_exists is True
+    assert result.media_path == media
+    assert result.note_path is None
+    assert result.srt_path is None
+    assert result.transcript == "none"
+    assert not (tmp_path / "T.md").exists()
+
+
+def test_media_exists_srt_wanted_still_runs(tmp_path, lecture, vtt):
+    media = tmp_path / "T [VIw16SXObUQ].mp4"
+    media.write_bytes(b"video")
+    runner = FakeRunner(tmp_path, files={"T.pl-orig.vtt": vtt})
+
+    result, _ = download(
+        make_service(runner), request(tmp_path, save_note=False, save_srt=True), lecture
+    )
+
+    assert "--skip-download" in runner.calls[0]
+    assert result.already_exists is False
+    assert result.srt_path == tmp_path / "T.pl.srt"
+    assert result.note_path is None
+
+
+def test_engine_gets_the_canonical_url(tmp_path, lecture):
+    runner = FakeRunner(tmp_path, files={"T.mp4": b"video"}, lines=[f"FILE {tmp_path / 'T.mp4'}"])
+    req = DownloadRequest(
+        url="https://youtu.be/VIw16SXObUQ?si=tracking&t=42", output_dir=tmp_path, subs="none"
+    )
+    download(make_service(runner), req, lecture)
+    assert runner.calls[0][-2:] == ["--", "https://www.youtube.com/watch?v=VIw16SXObUQ"]
+
+
 def test_note_kept_media_redownloaded(tmp_path, lecture):
     note = tmp_path / "T.md"
     original = "---\nurl: https://www.youtube.com/watch?v=VIw16SXObUQ\n---\n\nMY NOTES\n"

@@ -95,11 +95,19 @@ def test_plan_finds_renamed_note_by_id(tmp_path):
     assert plan.existing_note == tmp_path / "Other name.md"
 
 
-def test_plan_existing_media_with_other_extension(tmp_path):
+def test_plan_media_with_other_extension_is_not_existing(tmp_path):
+    # MP3 after MP4 of the same video is a new download, not "already downloaded".
     make_note(tmp_path / "T.md", VID)
-    (tmp_path / "T.mp3").write_bytes(b"x")
-    plan = plan_names(tmp_path, "T", VID, "mp4")
-    assert plan.existing_media == tmp_path / "T.mp3"
+    (tmp_path / "T.mp4").write_bytes(b"x")
+    plan = plan_names(tmp_path, "T", VID, "mp3")
+    assert plan.existing_media is None
+    assert plan.media == tmp_path / "T.mp3"
+    assert plan_names(tmp_path, "T", VID, "mp4").existing_media == tmp_path / "T.mp4"
+
+
+def test_plan_id_suffixed_media_with_other_extension_is_not_existing(tmp_path):
+    (tmp_path / f"Whatever [{VID}].mp4").write_bytes(b"x")
+    assert plan_names(tmp_path, "T", VID, "mp3").existing_media is None
 
 
 def test_plan_finds_media_by_id_suffix_without_note(tmp_path):

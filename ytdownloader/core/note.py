@@ -59,9 +59,14 @@ def render_note(
         "## Description\n\n" + neutralize_markdown(info.description.strip()),
     ]
     if info.chapters:
-        lines = [f"- {ts_link(info.id, c.start, long)} {c.title}" for c in info.chapters]
+        lines = [
+            f"- {ts_link(info.id, c.start, long)} {neutralize_markdown(c.title)}"
+            for c in info.chapters
+        ]
         parts.append("## Chapters\n\n" + "\n".join(lines))
     if paragraphs:
-        body = "\n\n".join(f"{ts_link(info.id, p.start, long)} {p.text}" for p in paragraphs)
+        body = "\n\n".join(
+            f"{ts_link(info.id, p.start, long)} {neutralize_markdown(p.text)}" for p in paragraphs
+        )
         parts.append("## Transcript\n\n" + body)
     return "\n\n".join(parts).rstrip("\n") + "\n"

@@ -107,7 +107,7 @@ def add_recent(s: Settings, item: RecentItem) -> None:
 
 
 def resolve_output_dir(s: Settings) -> tuple[Path, str | None]:
-    if s.output_dir is None:
+    if not s.output_dir:  # None or "" = not chosen yet
         return paths.downloads_dir(), None
     saved = Path(s.output_dir)
     if saved.is_dir():

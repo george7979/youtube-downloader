@@ -87,6 +87,15 @@ def test_neutralize():
     )
 
 
+def test_chapters_and_transcript_are_neutralized():
+    out = render_note(
+        make_info(chapters=[Chapter(0, "#1 Intro [[link]]")]), "a.mp4", "youtube-auto-en",
+        [Paragraph(0, "we love #python and [[wiki]]")], date(2026, 10, 18),
+    )
+    assert "- [00:00](https://youtu.be/jNQXAC9IVRw?t=0) \\#1 Intro \\[\\[link]]\n" in out
+    assert "[00:00](https://youtu.be/jNQXAC9IVRw?t=0) we love \\#python and \\[\\[wiki]]\n" in out
+
+
 def test_title_with_quotes_is_valid_yaml_string():
     out = render_note(make_info(title='He said "hi"'), "a.mp4", "none", None, date(2026, 10, 18))
     assert 'title: "He said \\"hi\\""\n' in out

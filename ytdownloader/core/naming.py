@@ -9,7 +9,6 @@ from pathlib import Path
 
 from .urls import parse_video_id
 
-_MEDIA_EXTS = ("mp4", "mp3")
 _RESERVED = {"CON", "PRN", "AUX", "NUL"} | {f"COM{i}" for i in range(1, 10)} | {
     f"LPT{i}" for i in range(1, 10)
 }
@@ -84,12 +83,9 @@ def note_video_id(note: Path) -> str | None:
 
 
 def _find_media(folder: Path, stem: str, ext: str) -> Path | None:
-    exts = [ext.lower()] + [e for e in _MEDIA_EXTS if e != ext.lower()]
-    for e in exts:
-        candidate = folder / f"{stem}.{e}"
-        if candidate.is_file():
-            return candidate
-    return None
+    """Only the requested format counts: an MP4 does not make an MP3 "already downloaded"."""
+    candidate = folder / f"{stem}.{ext.lower()}"
+    return candidate if candidate.is_file() else None
 
 
 def plan_names(folder: Path, title: str, video_id: str, media_ext: str) -> NamePlan:
@@ -103,8 +99,8 @@ def plan_names(folder: Path, title: str, video_id: str, media_ext: str) -> NameP
     if existing_note is not None:
         existing_media = _find_media(folder, existing_note.stem, media_ext)
     if existing_media is None:
-        suffixes = tuple(f" [{video_id}].{e}" for e in _MEDIA_EXTS)
-        existing_media = next((p for p in entries if p.is_file() and p.name.endswith(suffixes)), None)
+        suffix = f" [{video_id}].{media_ext.lower()}"
+        existing_media = next((p for p in entries if p.is_file() and p.name.endswith(suffix)), None)
 
     if existing_note is not None:
         base = existing_note.stem

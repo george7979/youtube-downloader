@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import fnmatch
 import os
 import threading
@@ -104,10 +105,25 @@ class Service:
             track, warning = pick_track(info, req.subs, remembered_lang)
             if warning:
                 warnings.append(warning)
+        if note_only and not req.save_note and not (req.save_srt and track is not None):
+            # The media is here and neither a note nor an .srt is wanted: nothing to do.
+            return DownloadResult(
+                video_id=info.id,
+                title=info.title,
+                media_path=names.existing_media,
+                note_path=None,
+                srt_path=None,
+                transcript="none",
+                already_exists=True,
+            )
         if note_only:
             sink(Status("Video already here — writing the note only."))
 
-        media_path = self._run_engine(req, names, track, sink, cancel, media_only, note_only)
+        # The canonical watch URL, not whatever the user pasted (tracking, playlist parameters).
+        engine_req = dataclasses.replace(req, url=info.url)
+        media_path = self._run_engine(
+            engine_req, names, track, sink, cancel, media_only, note_only
+        )
 
         try:
             transcript, srt_path, note_path = self._write_outputs(

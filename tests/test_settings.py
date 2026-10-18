@@ -72,6 +72,7 @@ def test_resolve_output_dir(tmp_path, monkeypatch):
     )
 
     assert settings.resolve_output_dir(Settings()) == (dl, None)
+    assert settings.resolve_output_dir(Settings(output_dir="")) == (dl, None)
 
 
 def test_default_path_uses_config_dir(tmp_path, monkeypatch):
