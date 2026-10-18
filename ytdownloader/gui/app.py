@@ -383,6 +383,10 @@ class MainWindow(ctk.CTk):
     def _open_menu(self) -> None:
         x = self.menu_button.winfo_rootx()
         y = self.menu_button.winfo_rooty() - self.engine_menu.winfo_reqheight()
+        if self.tk.call("tk", "windowingsystem") == "x11":
+            # tk_popup returns at once on X11; the menu's own grab closes it on a click outside.
+            self.engine_menu.tk_popup(x, y)
+            return
         try:
             self.engine_menu.tk_popup(x, y)
         finally:

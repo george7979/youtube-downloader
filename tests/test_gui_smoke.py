@@ -931,6 +931,23 @@ def test_footer_menu_uses_larger_font(make_window):
     assert labels == ["Update engine", "Open log folder", "About"]
 
 
+def test_footer_menu_keeps_grab_on_x11(make_window):
+    # On X11 tk_popup returns at once and the menu's grab is what closes it on a click outside;
+    # releasing the grab there left the menu open for good. Windows/macOS block in tk_popup.
+    w = make_window()
+    if w.tk.call("tk", "windowingsystem") != "x11":
+        pytest.skip("X11 only")
+    w.deiconify()
+    w.update()
+    w._open_menu()
+    w.update()
+    try:
+        assert str(w.grab_current()) == str(w.engine_menu)
+    finally:
+        w.tk.call("tk::MenuUnpost", str(w.engine_menu))
+        w.update()
+
+
 def test_first_run_grows_to_show_error_details(monkeypatch):
     import ytdownloader.gui.first_run as first_run_mod
 
