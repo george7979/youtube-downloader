@@ -103,8 +103,26 @@ def http_fetch_text(url: str) -> str:
 
 
 def _expected_sha256(sums_text: str, asset: str) -> str | None:
+    """SHA-256 for `asset` from a sums file.
+
+    Two formats occur in the releases we use: `<hex>  <name>` lines (yt-dlp, ffmpeg, Deno on
+    Linux) and PowerShell's Get-FileHash list (`Hash : <HEX>` followed by `Path : …\\<name>`,
+    Deno on Windows).
+    """
+    pending_hash: str | None = None
     for line in sums_text.splitlines():
-        parts = line.strip().split(None, 1)
+        line = line.strip()
+        key, sep, value = line.partition(":")
+        if sep and key.strip() == "Hash":
+            pending_hash = value.strip().lower()
+            continue
+        if sep and key.strip() == "Path":
+            name = value.strip().replace("\\", "/").rsplit("/", 1)[-1]
+            if pending_hash and name == asset:
+                return pending_hash
+            pending_hash = None
+            continue
+        parts = line.split(None, 1)
         if len(parts) == 2 and parts[1].strip().lstrip("*") == asset:
             return parts[0].lower()
     return None

@@ -512,3 +512,31 @@ def test_tar_rejects_traversal_even_if_data_filter_normalizes_name(tmp_path, mon
     assert not (root / "ffmpeg").exists()
     assert _files_outside(root) == []
     assert _leftovers(root) == []
+
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+@pytest.mark.parametrize(
+    "fixture, asset, expected",
+    [
+        # Real Deno release files: Linux uses `<hex>  <name>`, Windows uses PowerShell's
+        # Get-FileHash list format (Algorithm / Hash / Path, upper-case hex, CRLF).
+        ("deno_linux.sha256sum", "deno-x86_64-unknown-linux-gnu.zip",
+         "c6527f24f4b16031d3ae4fa9f658d5f11534c8d84ce7dc8502420280919c3490"),
+        ("deno_windows.sha256sum", "deno-x86_64-pc-windows-msvc.zip",
+         "a0c3101b4158d1dfb7d6a78a7bf0f3de80c96bb423c152beec8beb22786f2238"),
+    ],
+)
+def test_expected_sha256_reads_real_deno_sums(fixture, asset, expected):
+    from ytdownloader.core.tools import _expected_sha256
+
+    text = (FIXTURES / fixture).read_text(encoding="utf-8")
+    assert _expected_sha256(text, asset) == expected
+
+
+def test_expected_sha256_getfilehash_for_other_asset_is_none():
+    from ytdownloader.core.tools import _expected_sha256
+
+    text = (FIXTURES / "deno_windows.sha256sum").read_text(encoding="utf-8")
+    assert _expected_sha256(text, "something-else.zip") is None

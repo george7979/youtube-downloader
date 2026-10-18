@@ -103,7 +103,7 @@ Okno przy `bot_check` i `engine_outdated` pokazuje w panelu błędu przycisk „
 | yt-dlp | `github.com/yt-dlp/yt-dlp` — `yt-dlp.exe` / `yt-dlp_linux` (kanał stabilny) | `SHA2-256SUMS` |
 | ffmpeg (Windows) | `yt-dlp/FFmpeg-Builds` — `ffmpeg-master-latest-win64-gpl-shared.zip` (84 MB; cały katalog `bin/`) | `checksums.sha256` |
 | ffmpeg (Linux) | `ffmpeg` i `ffprobe` z `PATH`, jeśli oba są; inaczej `ffmpeg-master-latest-linux64-gpl.tar.xz` (149 MB; `bin/ffmpeg`, `bin/ffprobe`) | `checksums.sha256` |
-| Deno | `github.com/denoland/deno` — `deno-x86_64-{pc-windows-msvc\|unknown-linux-gnu}.zip` (min. **2.3.0**) | `<plik>.sha256sum` |
+| Deno | `github.com/denoland/deno` — `deno-x86_64-{pc-windows-msvc\|unknown-linux-gnu}.zip` (min. **2.3.0**) | `<plik>.sha256sum` — Linux: `<hex>  <nazwa>`, Windows: format PowerShell `Get-FileHash` (`Hash : …` / `Path : …`) |
 
 Pliki sum to linie `<sha256>  <nazwa-zasobu>`. Deno jest potrzebny yt-dlp do rozwiązywania
 wyzwań YouTube (`--js-runtimes deno:<ścieżka>`).

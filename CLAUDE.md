@@ -42,6 +42,7 @@ nietypowej instalacji — `uv sync --reinstall-package youtube-downloader`.
 
 - Systemowy Python bez `tkinter` → zawsze uv-managed (`--managed-python`).
 - `zipfile.extractall` gubi bit wykonywalności → `chmod 0o755` po rozpakowaniu.
+- Plik `.sha256sum` Deno dla Windows ma format PowerShell `Get-FileHash`, nie `<hex>  <nazwa>` — każdy nowy plik sum sprawdzaj dla obu platform.
 - Postęp postprocesorów yt-dlp (scalanie, MP3) idzie na **stderr**, pobierania na stdout.
 - `--print` wycisza yt-dlp → zawsze `--progress`.
 - `-S res:<q>,vcodec:h264,acodec:m4a` — kolejność kluczy ma znaczenie.
