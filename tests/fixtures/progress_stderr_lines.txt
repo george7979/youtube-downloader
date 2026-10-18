@@ -1,0 +1,4 @@
+YTPP {"status": "started", "postprocessor": "Merger", "_default_template": "Merger started"}
+YTPP {"status": "finished", "postprocessor": "Merger", "_default_template": "Merger finished"}
+YTPP {"status": "started", "postprocessor": "MoveFiles", "_default_template": "MoveFiles started"}
+YTPP {"status": "finished", "postprocessor": "MoveFiles", "_default_template": "MoveFiles finished"}
