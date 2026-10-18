@@ -30,10 +30,20 @@ SetCompressor /SOLID lzma
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
+; "Run YouTube Downloader" on the finish page, ticked by default. The installer runs elevated;
+; starting the app through Explorer runs it as the signed-in user, so its settings and tools
+; land in that user's profile instead of an elevated one.
+!define MUI_FINISHPAGE_RUN
+!define MUI_FINISHPAGE_RUN_TEXT "Run ${APP_NAME}"
+!define MUI_FINISHPAGE_RUN_FUNCTION LaunchApp
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
+
+Function LaunchApp
+  Exec '"$WINDIR\explorer.exe" "$INSTDIR\${APP_EXE}"'
+FunctionEnd
 
 Section "Main" SecMain
   SetOutPath "$INSTDIR"

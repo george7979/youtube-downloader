@@ -247,7 +247,8 @@ samym tytule mogłaby dopiąć notatkę do cudzego pliku. Ponowne pobranie trafi
   trafia do logu), zasoby przez `sys._MEIPASS`.
 - **NSIS** (`installer/windows/installer.nsi`): instalacja do Program Files, skróty, wpis
   odinstalowania z `DisplayIcon` (bez niego Ustawienia → Aplikacje pokazują pustą ikonę), ikona
-  aplikacji także na instalatorze i deinstalatorze; wersja z `/DAPP_VERSION` (domyślnie zgodna z `version.py`).
+  aplikacji także na instalatorze i deinstalatorze; na ostatniej stronie zaznaczone pole „Run
+  YouTube Downloader” — start przez `explorer.exe`, czyli bez uprawnień administratora instalatora; wersja z `/DAPP_VERSION` (domyślnie zgodna z `version.py`).
 - **`.deb`** (`installer/linux/build-deb.sh`): jeden plik `/usr/bin/youtube-downloader`, ikony,
   plik `.desktop`; `Recommends: ffmpeg`; wersja z `version.py`.
 - **CI:** `ci.yml` — lint (tylko błędy składni), testy na Ubuntu (przez `xvfb-run`) i Windows;
