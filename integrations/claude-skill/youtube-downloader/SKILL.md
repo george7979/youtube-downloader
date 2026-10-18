@@ -44,7 +44,18 @@ youtube-downloader tools --update --json
 ```
 
 Quote the URL. Progress is printed on stderr; the result is one JSON object on stdout. Downloads
-can take minutes; run them to completion and do not interrupt.
+can take minutes; run them to completion and do not interrupt. Once a day `get` and `info` first
+update yt-dlp themselves ("Checking for engine updates…" on stderr); a warning that the update
+failed is not an error — the command carries on.
+
+`info --json` returns `video_id`, `title`, `channel`, `url` (canonical watch link), `duration`
+(seconds or `null`), `published` (ISO date or `null`), `heights` (available video heights,
+highest first) and `subtitles` (a list of `{"lang", "kind"}`, `kind` = `manual` or `auto`). Use
+it to pick `--quality` or `--subs`.
+
+`tools --json` returns `tools` with `yt-dlp` (`path`, `version`), `ffmpeg` (`path`: the folder
+with `ffmpeg` and `ffprobe`) and `deno` (`path`), plus `updated`: `null` without `--update`,
+otherwise `{"from", "to"}` — `"to": null` means the yt-dlp update failed.
 
 ## Reading the result
 
@@ -68,7 +79,8 @@ note.", or "No H.264 at this quality — downloading VP9/AV1 instead").
 
 `already_exists: true`: the video and its note were already in that folder and nothing was
 downloaded; `media` and `note` are the existing files (`transcript` then shows `none` because
-the note was not rebuilt - do not read it as "no transcript"). Say so and give the paths. Run
+the note was not rebuilt - do not read it as "no transcript"; with `--no-note` `note` can be
+`null`). Say so and give the paths. Run
 again with `--force` only if the user explicitly asks to download again; a note that exists is
 never overwritten.
 
@@ -83,14 +95,18 @@ bug report.
 | `invalid_url` | That is not a YouTube video link. Ask for a link like `https://www.youtube.com/watch?v=...` (playlists are not supported). |
 | `unavailable` | The video is private, removed, age-restricted, members-only or region-blocked. Logging in is not supported. |
 | `network` | No connection to YouTube. Check the internet and retry. |
-| `bot_check` | YouTube is blocking the request (often a VPN). Run `youtube-downloader tools --update`, then retry later. |
+| `bot_check` | YouTube is blocking the request (often a VPN). Update the engine and retry once (below); if it still fails, suggest trying later or without the VPN. |
+| `engine_outdated` | YouTube changed something and the download engine needs an update. Update the engine and retry once (below). |
 | `rate_limit` | Too many requests. Wait a few minutes. |
 | `write_failed` | The folder is not writable or the disk is full. Ask for another folder. |
 | `tools_missing` | Tools could not be downloaded. Run `youtube-downloader tools` while online and retry. |
 | `cancelled` | The download was cancelled (exit code 130); partial files were removed. |
 | `unknown` | Something unexpected. Show `details` and suggest a bug report. |
 
-Retry at most once after `bot_check` or `network` fixes; do not loop.
+On `engine_outdated` or `bot_check`: run `youtube-downloader tools --update --json` once, tell
+the user the yt-dlp version change (`updated.from` → `updated.to`), then run the failed command
+again exactly once. Retry at most once in total (also after a `network` fix); do not loop. If
+the retry fails the same way, report it with `message` and `hint`.
 
 Exit code 2 means a usage error (wrong or missing arguments, for example no `--out`): there is
 no JSON, the explanation is on stderr. Fix the command and run it again.

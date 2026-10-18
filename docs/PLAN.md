@@ -14,9 +14,9 @@
 - Plan wykonawczy: `docs/superpowers/plans/2026-10-18-v2.md`
 - Gotowe: rdzeń, CLI, GUI, paczki i CI, dokumentacja (`README.md`, `docs/BUILDING.md`,
   `docs/TECH.md`), skill Claude Code (`integrations/claude-skill/youtube-downloader/`)
-- Otwarte: znane problemy z `docs/TECH.md` → „Known Issues”; część do poprawienia przed
-  scaleniem (aktualizacja narzędzi bez błędu offline, CLI w zamrożonym `.exe`, kod `-1` po
-  udanym pobraniu, nieosłonięty `iconbitmap`)
+- Poprawki po przeglądzie całej gałęzi wykonane (aktualizacja silnika, błędy sieci, CLI,
+  okno, CI)
+- Otwarte: `docs/TECH.md` → „Known Issues”
 - Zamknięcie: testy akceptacyjne PO na Windows i Linux/WSL (spec §11), potem PR `dev` →
   `main` i tag `v2.0.0` (za zgodą PO)
 

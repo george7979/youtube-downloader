@@ -15,7 +15,9 @@ Program to pakiet `ytdownloader/` w trzech warstwach:
 | `cli.py` | podpolecenia `get`, `info`, `tools` z wynikiem JSON | te same wywołania co GUI |
 
 `__main__.main` kieruje: pierwszy argument `get`/`info`/`tools`/`--help` → `cli.main`, w
-przeciwnym razie `gui.run`. `launcher.py` to wejście dla PyInstallera i `python launcher.py`.
+przeciwnym razie `gui.run`. Gdy podpolecenie CLI trafi do okienkowego `.exe` (brak
+`sys.stdout`), pokazuje okno komunikatu „The command line is available on Linux/WSL…” i
+kończy kodem 2. `launcher.py` to wejście dla PyInstallera i `python launcher.py`.
 Zależności uruchomieniowe: `customtkinter`, `pillow`, `platformdirs`. **Pakietu `yt-dlp` w
 Pythonie nie ma nigdzie** — silnikiem jest zewnętrzny plik wykonywalny.
 
@@ -40,34 +42,59 @@ UI/CLI --Service.download--> engine.download_args --> Runner.run (yt-dlp, nowa s
 
 - **GUI:** praca w tle przez `UiQueue.run_bg(work, on_ok, on_err)`; wyniki wracają do pętli Tk
   przez kolejkę opróżnianą co 80 ms (`after`). Widżetów nie dotyka nic poza wątkiem Tk.
-  `Check`, pobieranie, aktualizacje i miniatura działają w wątkach demonów; stare wyniki są
-  odrzucane (numer kolejny sprawdzenia, tożsamość miniatury). Pobierające żądanie i `info`
-  są przechwycone przy starcie pobierania, więc kolejne `Check` go nie psuje. Zamknięcie okna
-  anuluje pobieranie i czeka na sprzątnięcie (`DOWNLOAD_STOP_TIMEOUT`).
+  `Check`, pobieranie, aktualizacje i miniatura (tylko `http`/`https`, najwyżej 5 MB) działają
+  w wątkach demonów; stare wyniki są odrzucane (numer kolejny sprawdzenia, tożsamość
+  miniatury). Pobierające żądanie i `info` są przechwycone przy starcie pobierania, więc
+  kolejne `Check` go nie psuje. Zamknięcie okna anuluje pobieranie i czeka na sprzątnięcie
+  (`DOWNLOAD_STOP_TIMEOUT`).
 - **Pierwsze uruchomienie** ma własny korzeń Tk (`FirstRunWindow`), niszczony przed oknem
   głównym — dwa żywe korzenie CTk rozdzielałyby stan Tk.
 - **CLI:** `get` działa w wątku roboczym, główny wątek czeka z `join(0.2)`; Ctrl+C ustawia
   `cancel`, czeka na sprzątanie i kończy kodem 130.
 - **Runner:** dwa wątki czytają stdout i stderr do jednej kolejki; `on_line` wywoływany jest
-  szeregowo w wątku wywołującym. Trzeci wątek pilnuje `cancel` i zabija drzewo procesów.
+  szeregowo w wątku wywołującym. Trzeci wątek pilnuje `cancel` i zabija drzewo procesów —
+  tylko gdy proces jeszcze działa. Kod `-1` („anulowano”) zapada wyłącznie po takim
+  zabiciu: Cancel wciśnięty, gdy yt-dlp właśnie skończył, zostawia udane pobranie.
 
 ## Moduły `core/`
 
 | Moduł | Odpowiedzialność |
 |---|---|
 | `paths.py` | **jedyne** źródło lokalizacji: konfiguracja, dane, logi, narzędzia, Pobrane, zasoby (`sys._MEIPASS` w paczce) |
-| `settings.py` | `settings.json` (folder, tryb, jakość, język napisów, notatka/srt, czas ostatniej aktualizacji) i lista 5 ostatnich pobrań; walidacja typów, zapis atomowy; `resolve_output_dir` wraca do Pobrane z komunikatem, gdy zapisany folder zniknął |
+| `settings.py` | `settings.json` (folder, tryb, jakość, język napisów, notatka/srt, czas ostatniej aktualizacji) i lista 5 ostatnich pobrań; walidacja typów, zapis atomowy; `resolve_output_dir` wraca do Pobrane z komunikatem, gdy zapisany folder zniknął (pusty `output_dir` = nie wybrano). Jakość to pułap: okno domyślnie wybiera najwyższą wysokość filmu ≤ zapisanej i zapisuje jakość tylko wtedy, gdy użytkownik wybrał inną niż ta domyślna (film z maks. 720p nie obniża ustawienia 1080) |
 | `logsetup.py` | rotujący `app.log` (1 MB × 3), a gdy jest `stderr` — także na konsolę |
 | `urls.py` | ID filmu z linku (`watch`, `youtu.be`, `shorts`, `embed`, `live`); inne → `invalid_url`; playlisty ignorowane |
-| `errors.py` | `FriendlyError(code, message, hint, details)`; tabela 9 kodów; `classify(stderr)` dopasowuje podciągi (kolejność ma znaczenie) |
+| `errors.py` | `FriendlyError(code, message, hint, details)`; tabela 10 kodów (niżej); `classify(stderr)` dopasowuje podciągi (kolejność ma znaczenie) |
 | `models.py` | typy danych wspólne dla warstw (`VideoInfo`, `DownloadRequest`, `DownloadResult`, `Status`, `Progress`) |
 | `tools.py` | `ToolManager`: pobranie, weryfikacja SHA-256, atomowa instalacja i aktualizacja yt-dlp / ffmpeg / Deno |
 | `engine.py` | argumenty yt-dlp (`base_args`, `probe_args`, `download_args`), `ProgressParser`, `Runner` (zabija całe drzewo procesów) |
 | `probe.py` | `yt-dlp -J` → `VideoInfo`; `pick_track` — wybór napisów wg reguły: wskazany język, zapamiętany, oryginalny ręczny, pierwszy ręczny, automatyczny |
 | `subtitles.py` | VTT → cue; odszumianie napisów automatycznych (powtarzane linie „przewijanego” tekstu); akapity ~45 s (twardo 90 s, koniec na kropce, granice rozdziałów); SRT |
 | `naming.py` | bezpieczna nazwa pliku (znaki Windows, nazwy zastrzeżone, do 150 znaków i 200 bajtów UTF-8); rozpoznanie istniejących plików filmu |
-| `note.py` | notatka Markdown: frontmatter, osadzone wideo, opis (hashtagi i linie od `#` zneutralizowane), rozdziały, transkrypt ze znacznikami `[mm:ss](https://youtu.be/ID?t=N)` (przy filmach ≥ 1 h `h:mm:ss`) |
-| `service.py` | scala wszystko; sprząta pliki częściowe po błędzie i anulowaniu |
+| `note.py` | notatka Markdown: frontmatter, osadzone wideo, opis, rozdziały, transkrypt ze znacznikami `[mm:ss](https://youtu.be/ID?t=N)` (przy filmach ≥ 1 h `h:mm:ss`); w opisie, tytułach rozdziałów i tekście transkryptu `#` i `[[` są zneutralizowane (Obsidian nie zrobi z nich tagów ani linków) |
+| `service.py` | scala wszystko; silnikowi podaje kanoniczny `info.url`, nie wklejony adres; sprząta pliki częściowe po błędzie i anulowaniu |
+
+### Kody błędów
+
+`classify` sprawdza wzorce (podciągi, bez wielkości liter) w tej kolejności; pierwszy trafiony
+wygrywa. Wiadomość i wskazówka idą do panelu błędu w oknie i do `error` w JSON-ie CLI, więc
+nie odwołują się do elementów okna.
+
+| Kod | Kiedy |
+|---|---|
+| `write_failed` | `permission denied`, `no space left on device`, `[errno 28]`, `[errno 13]`, `read-only file system`; także błąd zapisu notatki/`.srt` i niezapisywalny folder |
+| `bot_check` | `not a bot` |
+| `rate_limit` | `this content isn't available, try again later`, `http error 429` |
+| `engine_outdated` | `nsig extraction failed`, `signature extraction failed`, `unable to extract`, `requested format is not available` — typowe objawy zmiany po stronie YouTube |
+| `unavailable` | prywatny, usunięty, blokada regionu, wiek, tylko dla członków |
+| `network` | `unable to download webpage`, błędy DNS i połączenia, `timed out`, `urlopen error`; także nieudane pobranie narzędzi |
+| `invalid_url` | link nie jest filmem YouTube (`urls.py`) |
+| `tools_missing` | brak narzędzi przy pobieraniu; zła suma kontrolna, uszkodzone archiwum, brak pliku w archiwum |
+| `cancelled` | Cancel / Ctrl+C |
+| `unknown` | wszystko inne; `details` = ostatnie 40 linii stderr albo traceback |
+
+Okno przy `bot_check` i `engine_outdated` pokazuje w panelu błędu przycisk „Update engine”
+(to samo co w menu `⋯`).
 
 ## Narzędzia zewnętrzne
 
@@ -87,19 +114,32 @@ wyzwań YouTube (`--js-runtimes deno:<ścieżka>`).
 sum, rozpakowuje do `tools/.staging/<narzędzie>/` (spłaszczone; odrzuca ścieżki wychodzące
 poza katalog, także z literą dysku), nadaje `0755` (`zipfile` gubi bit wykonywalności) i
 dopiero wtedy podmienia `tools/<narzędzie>/` przez `os.replace` (poprzednia wersja jest
-odtwarzana, gdy podmiana się nie uda). Błąd sieci, sumy lub archiwum → `tools_missing` ze
-szczegółami. `missing()` uznaje narzędzie za brakujące, gdy brak pliku (yt-dlp, ffmpeg) albo
-Deno nie odpowiada wersją ≥ 2.3.0.
+odtwarzana, gdy podmiana się nie uda). Błąd sieci przy pobieraniu archiwum albo pliku sum
+(`URLError`, przekroczony czas, zerwane połączenie, inny `OSError` z pobierania) → `network`,
+więc pierwsze uruchomienie offline pokazuje „No connection…” i przycisk Retry; zła suma,
+uszkodzone archiwum albo brak wymaganego pliku → `tools_missing`. W obu przypadkach pliki
+częściowe i katalog roboczy są sprzątane. `missing()` uznaje narzędzie za brakujące, gdy brak
+pliku yt-dlp, gdy dołączony ffmpeg nie ma obok siebie `ffprobe` (instalacja też wymaga obu),
+albo gdy Deno nie odpowiada wersją ≥ 2.3.0.
 
 ### Polityka aktualizacji
 
 - **Kanał stabilny** yt-dlp (`-U` bez przełączania na nightly).
 - **Co najwyżej raz na 24 h** (`UPDATE_CHECK_INTERVAL`), przy starcie GUI, w tle:
   `yt-dlp -U`, wynik w stopce („updated” / „up to date” / „update failed”). Czas ostatniego
-  sprawdzenia siedzi w `settings.json`.
-- **Przycisk „Update engine”** (menu `⋯`): `update_all` — `yt-dlp -U`, potem ponowna instalacja
-  ffmpeg (poza systemowym) i Deno. Zablokowany w trakcie pobierania.
-- CLI: `tools --update` robi to samo; CLI nie sprawdza aktualizacji samo.
+  sprawdzenia siedzi w `settings.json` i jest zapisywany **tylko po udanej aktualizacji** —
+  po porażce (np. offline) następny start próbuje znowu.
+- `update_ytdlp()` zwraca `(stara, nowa)`; gdy `-U` nie da się uruchomić albo kończy się
+  kodem ≠ 0, zwraca `(stara, None)` — to jest „update failed”, nigdy „up to date”.
+- **Przycisk „Update engine”** (menu `⋯` oraz panel błędu przy `bot_check`/`engine_outdated`):
+  `update_all` — `yt-dlp -U`; gdy yt-dlp nie odpowiada na `--version` przed albo po `-U`,
+  instaluje go od nowa ścieżką z sumą kontrolną; potem ponowna instalacja ffmpeg (poza
+  systemowym) i Deno. Zablokowany w trakcie pobierania.
+- **CLI:** `get` i `info` po doinstalowaniu brakujących narzędzi robią tę samą dobową
+  aktualizację co okno (komunikaty na stderr, wspólny `last_update_check` w `settings.json`);
+  porażka to tylko ostrzeżenie na stderr i praca na obecnej wersji. `tools --update` wywołuje
+  `update_all`; `updated.to` = `null` oznacza nieudaną aktualizację yt-dlp. Czas sprawdzenia
+  zapisują tylko udane aktualizacje.
 
 ## Lokalizacje na dysku
 
@@ -111,8 +151,9 @@ Deno nie odpowiada wersją ≥ 2.3.0.
 | domyślny folder pobierania | systemowy „Pobrane” | `~/Downloads` (wg XDG) |
 
 Deinstalator Windows usuwa `tools\`; ustawień i logów nie rusza. `.deb` niczego w profilu nie
-zakłada ani nie usuwa. CLI na Linuksie/WSL ma własną konfigurację, osobną od Windows, i
-**nie czyta** ustawień zapisanych przez GUI — folder zawsze podaje `--out`.
+zakłada ani nie usuwa. CLI na Linuksie/WSL ma własną konfigurację, osobną od Windows; z
+`settings.json` czyta i zapisuje wyłącznie `last_update_check` (wspólny z oknem na tym samym
+systemie) — folder zawsze podaje `--out`.
 
 ## yt-dlp — fakty, które mają znaczenie
 
@@ -151,8 +192,11 @@ Zweryfikowane na prawdziwych uruchomieniach (fixtury w `tests/fixtures/`).
 ## Nazwy i rozpoznawanie istniejących plików
 
 Film jest „ten sam” tylko wtedy, gdy zgadza się ID: z pola `url:` frontmattera notatki `.md`
-albo z końcówki nazwy pliku `… [ID].mp4|mp3`. Stany: [MP4 + notatka] → `already_exists`;
-[notatka bez MP4] → dociąga MP4, notatki nie rusza; [MP4 `[ID]` bez notatki] → sama notatka.
+albo z końcówki nazwy pliku `… [ID].<format>`. Liczy się tylko **żądany format**: MP4 nie
+czyni MP3 „już pobranym” (i odwrotnie). Stany: [plik + notatka] → `already_exists`;
+[notatka bez pliku] → dociąga plik, notatki nie rusza; [plik `[ID]` bez notatki] → sama
+notatka; [plik `[ID]` bez notatki, notatka niechciana i bez `.srt` do zapisania] →
+`already_exists` bez uruchamiania yt-dlp (`note` = `null`).
 Kolizja nazwy z innym filmem → oba pliki dostają ` [ID]`. Istniejąca notatka nigdy nie jest
 nadpisywana ani kasowana (także przy sprzątaniu po błędzie); zapis notatki idzie przez
 `write_failed` i usuwa niedokończony plik, żeby nie został uznany za „istniejącą”.
@@ -169,15 +213,18 @@ samym tytule mogłaby dopiąć notatkę do cudzego pliku. Ponowne pobranie trafi
 - **Linux: dołączamy `libtcl*`/`libtk*` ręcznie** (blok `tcltk_binaries` w `.spec`). Python
   zarządzany przez uv trzyma je obok `libpython`, a `_tkinter` nie ma RPATH, więc PyInstaller
   ich nie znajduje i zamrożone okno się nie uruchamia.
-- **Windows: `console=False`** — plik okienkowy, bez konsoli; stąd CLI tylko na Linuksie/WSL.
-  Ikona `.ico`, zasoby przez `sys._MEIPASS`.
+- **Windows: `console=False`** — plik okienkowy, bez konsoli; stąd CLI tylko na Linuksie/WSL
+  (podpolecenie w `.exe` → okno komunikatu i kod 2). Ikona `.ico` (błąd jej wczytania tylko
+  trafia do logu), zasoby przez `sys._MEIPASS`.
 - **NSIS** (`installer/windows/installer.nsi`): instalacja do Program Files, skróty, wpis
   odinstalowania; wersja z `/DAPP_VERSION` (domyślnie zgodna z `version.py`).
 - **`.deb`** (`installer/linux/build-deb.sh`): jeden plik `/usr/bin/youtube-downloader`, ikony,
   plik `.desktop`; `Recommends: ffmpeg`; wersja z `version.py`.
 - **CI:** `ci.yml` — lint (tylko błędy składni), testy na Ubuntu (przez `xvfb-run`) i Windows;
-  `build.yml` — paczki na obu systemach, test instalacji `.deb` na Ubuntu 22.04/24.04, na
-  tagu `v*` wydanie GitHub. Akcje przypięte do SHA.
+  `build.yml` — paczki na obu systemach, test instalacji `.deb` na Ubuntu 22.04/24.04 (po
+  `dpkg -i` zamrożony plik uruchamia `youtube-downloader tools --json` i musi zwrócić
+  `"ok": true` — to pobiera narzędzia, więc wymaga sieci), na tagu `v*` wydanie GitHub. Oba
+  workflow robią `uv sync --locked`. Akcje przypięte do SHA.
 
 ## Testy
 
@@ -185,17 +232,16 @@ samym tytule mogłaby dopiąć notatkę do cudzego pliku. Ponowne pobranie trafi
 `Runner` zastępuje `tests/fake_ytdlp.py`, JSON-y i VTT pochodzą z prawdziwych odpowiedzi
 (`tests/fixtures/`). Testy GUI (`test_gui_smoke.py`) wymagają wyświetlacza (WSLg lokalnie,
 `xvfb-run` w CI) i same się pomijają bez niego. Zrzutów ekranu pod WSLg zrobić się nie da.
+Testy CLI podmieniają ścieżkę `settings.json` na plik tymczasowy (dobowa aktualizacja silnika
+czyta i zapisuje `last_update_check`), więc nigdy nie dotykają prawdziwych ustawień.
 
 ## Known Issues
 
 Znane, jeszcze niepoprawione. Pierwsze cztery grupy są widoczne dla użytkownika albo ryzykowne.
 
 **Aktualizacja narzędzi**
-- `-U` yt-dlp: wynik jest ignorowany, więc `tools --update` i „Update engine” offline pokazują
-  „up to date” zamiast błędu (para wersji `(stara, stara)`).
-- `update_all` nie naprawia brakującego ani uszkodzonego yt-dlp (robi tylko `-U`);
-  `missing()` sprawdza tylko istnienie pliku, a `ffprobe` w paczce ffmpeg nie jest wymagany
-  ani sprawdzany.
+- `missing()` sprawdza yt-dlp tylko po istnieniu pliku: uszkodzony plik naprawia dopiero
+  „Update engine” / `tools --update`, nie start aplikacji.
 - Windows: aktualizacja narzędzia, które właśnie działa, kończy się mylącym `tools_missing`;
   brak ponowienia przy `PermissionError`; zostawiony katalog `.old` blokuje kolejne
   aktualizacje; awaria między dwoma `rename` może zgubić ostatnią dobrą kopię; sumy pobierane
@@ -203,25 +249,18 @@ Znane, jeszcze niepoprawione. Pierwsze cztery grupy są widoczne dla użytkownik
 - „Check” podczas „Update engine” nie jest serializowane.
 
 **Anulowanie i CLI**
-- `cancel` ustawione tuż po udanym zakończeniu yt-dlp wymusza kod `-1`, więc ukończone
-  pobranie bywa zgłoszone jako anulowane.
-- Zamrożony `.exe` na Windows (`console=False`) ma `sys.stdout = None`: podpolecenia CLI
-  uruchomione tam wywracają się przy zapisie (CLI jest wspierane tylko na Linuksie/WSL).
-- Kod wyjścia 2 (błąd użycia, `argparse`) nie wypisuje JSON-a; Ctrl+C w trakcie instalacji
-  narzędzi nie jest honorowane; na Windows `lines.get()` bez limitu czasu opóźnia Ctrl+C.
-- `already_exists` zwraca `transcript: "none"`, choć notatka może mieć transkrypt; `note_only`
-  bez ścieżki napisów nadal uruchamia yt-dlp.
+- Ctrl+C w trakcie instalacji narzędzi i dobowej aktualizacji yt-dlp w CLI nie jest
+  honorowane; na Windows `lines.get()` bez limitu czasu opóźnia Ctrl+C.
+- `already_exists` zwraca `transcript: "none"`, choć notatka może mieć transkrypt (README i
+  skill to opisują).
 - Wywołanie `probe` nie da się anulować.
 
 **Okno**
-- Uszkodzony `.ico` wywala start na Windows (`iconbitmap` bez osłony).
 - Zamknięcie okna przy otwartym dialogu „Already downloaded” może zgłosić `TclError`;
   anulowanie w momencie zwrotu `already_exists` bywa pokazane jako dialog.
-- Miniatura: brak limitu rozmiaru pobieranego obrazka.
 
 **Notatka i nazwy**
-- Tytuły rozdziałów i tekst transkryptu nie są zneutralizowane — `#tag` w transkrypcie
-  trafia do vaulta Obsidiana jako tag; pusty opis daje trzy puste linie.
+- Pusty opis daje trzy puste linie.
 - Rozpoznanie notatki: BOM UTF-8 uniemożliwia odczyt pola `url:`; pole dopasowywane luźno
   (wcięte, w cudzysłowie); rozszerzenie `.MD` wielkimi literami nie jest rozpoznawane;
   katalog o nazwie `base.md` koliduje, ale nie jest zgłaszany.
@@ -230,15 +269,13 @@ Znane, jeszcze niepoprawione. Pierwsze cztery grupy są widoczne dla użytkownik
 - Pusty plik `.vtt` daje pusty `.srt`.
 
 **Ustawienia i logi**
-- `resolve_output_dir` traktuje pusty ciąg jako ustawiony (`Path("")` to bieżący katalog).
 - Wczytana lista „recent” nie jest przycinana do 5; `last_update_check` z absurdalną liczbą
   może rzucić `OverflowError`, `NaN`/`inf` są przyjmowane.
 - `setup_logging` przy ponownym wywołaniu ignoruje zmienioną ścieżkę i poziom.
 
 **CI i testy**
-- Brak testu uruchomienia zamrożonego pliku w CI (np. `youtube-downloader tools --json` po
-  `dpkg -i`); lint tylko błędów składni; `uv sync` bez `--locked`; `RMDir` w NSIS bez
-  warunku.
+- Lint tylko błędów składni; `RMDir` w NSIS bez warunku; zamrożony plik Windows nie jest
+  uruchamiany w CI.
 - Gałąź systemu Windows w `paths` jest wyliczana przy imporcie, więc nie da się jej
   przetestować na Linuksie.
 - Niepokryte testami: ścieżki cofania instalacji narzędzi, archiwum tar z podatnymi
@@ -250,7 +287,10 @@ Znane, jeszcze niepoprawione. Pierwsze cztery grupy są widoczne dla użytkownik
   `unavailable`.
 - Świadomie: bez kolejki i playlist — jedno pobranie naraz, `--no-playlist` zawsze.
 - Świadomie: CLI tylko na Linuksie/WSL; plik Windows jest okienkowy.
-- Świadomie: CLI nie czyta ustawień GUI; `--out` jest wymagane, a skill pyta o folder.
+- Świadomie: CLI nie korzysta z ustawień GUI (poza wspólnym czasem ostatniej aktualizacji
+  yt-dlp); `--out` jest wymagane, a skill pyta o folder.
+- Świadomie: kod wyjścia 2 (błąd użycia, `argparse`) nie wypisuje JSON-a — wyjaśnienie idzie
+  na stderr; skill i README to opisują.
 - Świadomie: goły `Tytuł.mp4` bez notatki nie jest uznawany za ten sam film (patrz wyżej).
 - Świadomie: yt-dlp z kanału stabilnego, nie nightly.
 - Świadomie: aplikacja nie prowadzi historii pobrań — „Recent downloads” to pięć ostatnich

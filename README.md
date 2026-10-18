@@ -60,7 +60,8 @@ System requirements: Windows 10 / 11, or Linux (Ubuntu 22.04+ / Debian 12+), 64-
 >
 > The application is open source — you can review the full source code in this repository.
 
-The Windows app is windowed only; it has no command line.
+The Windows app is windowed only; it has no command line (started with a command such as
+`get`, it shows a message and exits).
 
 ### Linux — .deb package
 
@@ -85,11 +86,14 @@ youtube-downloader tools    # checks the setup, downloads missing tools
 yt-dlp, Deno and (on Windows, or on Linux without a system ffmpeg) ffmpeg are not bundled. On the
 first start the app downloads the official builds and checks their SHA-256 checksums, showing
 progress for each tool. About 140 MB on Windows, about 60 MB on Linux with a system ffmpeg
-(about 210 MB without). This needs an internet connection once.
+(about 210 MB without). This needs an internet connection once; if the connection fails, the
+window says so and offers **Retry**.
 
 Afterwards the app updates yt-dlp by itself at most once a day, so it keeps working when YouTube
-changes. The footer shows the current yt-dlp version; the `...` menu has **Update engine**,
-which refreshes all tools on demand.
+changes; if an update fails (for example offline), the next start tries again. The footer shows
+the current yt-dlp version; the `...` menu has **Update engine**, which refreshes all tools on
+demand and reinstalls yt-dlp if it no longer runs. The same button appears next to errors an
+engine update may fix.
 
 ## Using the window
 
@@ -103,12 +107,15 @@ which refreshes all tools on demand.
 
 If the video is already in the folder the app says so and offers **Show file** or
 **Download again**. If only the MP4 is missing, it fetches the MP4 and leaves your note alone.
-The last five downloads are listed under "Recent downloads".
+MP4 and MP3 are separate: having the MP4 does not stop an MP3 download of the same video.
+The quality you pick is remembered as a ceiling — a video that only goes up to 720p does not
+lower it for the next one. The last five downloads are listed under "Recent downloads".
 
 ## Command line (Linux / WSL)
 
 The command line never asks questions and never uses the folder saved by the window: you pass
-the folder every time.
+the folder every time. Like the window, `get` and `info` update yt-dlp at most once a day before
+they start (a status line on stderr; if the update fails they warn and carry on).
 
 ```bash
 youtube-downloader get <URL> --out DIR [--quality 1080] [--audio] [--subs LANG|none]
@@ -133,7 +140,34 @@ Success from `get --json`:
 ```
 
 `transcript` is `youtube-manual-<lang>`, `youtube-auto-<lang>` or `none`. `already_exists: true`
-means nothing was downloaded and the paths are the existing files.
+means nothing was downloaded and the paths are the existing files; `transcript` is then always
+`"none"` because the note was not rebuilt (the existing note may well contain a transcript).
+With `--no-note` and the video already in the folder, `note` is `null`.
+
+`info --json`:
+
+```json
+{"ok": true, "video_id": "VIw16SXObUQ", "title": "...", "channel": "...",
+ "url": "https://www.youtube.com/watch?v=VIw16SXObUQ", "duration": 3935,
+ "published": "2020-07-01", "heights": [720, 360, 144],
+ "subtitles": [{"lang": "pl", "kind": "auto"}]}
+```
+
+`duration` is in seconds and `published` an ISO date; both can be `null`. `heights` are the
+available video heights, highest first; `kind` is `manual` or `auto`.
+
+`tools --json`:
+
+```json
+{"ok": true,
+ "tools": {"yt-dlp": {"path": "...", "version": "2026.10.18"},
+           "ffmpeg": {"path": "..."}, "deno": {"path": "..."}},
+ "updated": null}
+```
+
+`ffmpeg.path` is the folder holding `ffmpeg` and `ffprobe`. `updated` is `null` without
+`--update`; with it, `{"from": "<old>", "to": "<new>"}`, where `"to": null` means the yt-dlp
+update failed.
 
 Failure (any command):
 
@@ -156,11 +190,12 @@ the destination folder first.
 |---|---|---|
 | `invalid_url` | The text is not a YouTube video link. | Paste a link like `https://www.youtube.com/watch?v=...`. Playlists are not supported. |
 | `unavailable` | Private, removed, age-restricted, members-only or region-blocked video. | Check the link or try another video. Logging in is not supported. |
-| `network` | No connection to YouTube. | Check your internet connection and try again. |
-| `bot_check` | YouTube suspects automated access (common on VPNs and office networks). | Try again later, or run **Update engine** (`youtube-downloader tools --update`). |
+| `network` | No connection to YouTube (or, while installing the tools, to GitHub). | Check your internet connection and try again. |
+| `bot_check` | YouTube suspects automated access (common on VPNs and office networks). | Click **Update engine** (`youtube-downloader tools --update`) and try again, or try again later. |
+| `engine_outdated` | YouTube changed something and yt-dlp can no longer read the video. | Click **Update engine** (`youtube-downloader tools --update`) and try again. |
 | `rate_limit` | Too many requests. | Wait a few minutes. |
 | `write_failed` | The folder is not writable or the disk is full. | Pick another folder or free up space. |
-| `tools_missing` | Download tools are missing or a download of them failed. | Restart the app while online, or run `youtube-downloader tools`. |
+| `tools_missing` | Download tools are missing, or a downloaded tool failed its checksum or was incomplete. | Restart the app while online, or run `youtube-downloader tools`. |
 | `cancelled` | You cancelled the download. | Nothing to do; partial files were removed. |
 | `unknown` | Anything else. | Use **Show details** in the window (or `error.details` in JSON) in a bug report. |
 
