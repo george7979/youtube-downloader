@@ -237,7 +237,7 @@ czyta i zapisuje `last_update_check`), więc nigdy nie dotykają prawdziwych ust
 
 ## Known Issues
 
-Znane, jeszcze niepoprawione. Pierwsze pięć grup jest widocznych dla użytkownika albo ryzykowne.
+Znane, jeszcze niepoprawione. Pierwsze pięć grup jest widocznych dla użytkownika albo ryzykownych.
 
 **Aktualizacja narzędzi**
 - `missing()` sprawdza yt-dlp tylko po istnieniu pliku: uszkodzony plik naprawia dopiero
