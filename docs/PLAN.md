@@ -22,11 +22,20 @@
 
 ## Bieżący krok
 
-`dev` wypchnięty, CI zielone (testy Ubuntu i Windows, budowanie, test `.deb` na 22.04/24.04).
-PO pobiera artefakt `windows-installer` z ostatniego przebiegu „Build and Release” na `dev`,
-instaluje i przechodzi siedem scenariuszy ze spec §11; na Linux/WSL scenariusz 2 przez skill
-(CLI i skill zainstalowane na thinkpadzie). Uwagi PO → poprawki na `dev`; po akceptacji PR
-`dev` → `main` i tag `v2.0.0` (za zgodą PO).
+Testy akceptacyjne PO na Windows w toku. Pierwsza próba wywróciła się na sumie kontrolnej Deno
+(plik `.sha256sum` dla Windows ma format PowerShell `Get-FileHash`) — naprawione i wypchnięte;
+PO instaluje instalator z przebiegu „Build and Release” dla tej poprawki (artefakt
+`windows-installer`) na poprzednią wersję i kontynuuje scenariusze ze spec §11 (lista w
+spec §11; po przypomnienie z opisem kroków — poprosić Claude). Na Linux/WSL scenariusz 2
+przez skill (CLI i skill zainstalowane na thinkpadzie).
+
+CI na Windows bywa czerwone przez losowy błąd startu Tcl/Tk w testach GUI (aplikacji nie
+dotyczy); poprawka testów jest w commicie lokalnym, do wypchnięcia razem z poprawkami po
+testach PO. Uwagi PO → poprawki na `dev`; po akceptacji PR `dev` → `main` i tag `v2.0.0`
+(za zgodą PO).
+
+Otwarte pytanie do PO (bez decyzji): czy deinstalator ma usuwać też ustawienia i logi —
+dziś usuwa program i narzędzia, ustawienia i logi zostają celowo, pobrane pliki zawsze zostają.
 
 ## Backlog
 
