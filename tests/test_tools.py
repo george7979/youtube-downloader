@@ -247,6 +247,53 @@ def test_checksum_mismatch_leaves_previous_install(tmp_path):
     assert _leftovers(tmp_path) == []
 
 
+def _files_outside(root: Path) -> list[Path]:
+    return [p for p in root.parent.rglob("*") if p.is_file() and root not in p.parents]
+
+
+@pytest.mark.parametrize("evil", ["x/bin/D:evil.dll", "x/bin/a:b.dll", "x/bin/../evil", "x/bin/ev|il"])
+def test_zip_unsafe_member_is_rejected(tmp_path, evil):
+    root = tmp_path / "tools"
+    (root / "ffmpeg").mkdir(parents=True)
+    (root / "ffmpeg" / "ffmpeg.exe").write_text("old")
+    spec = _spec("win32", "ffmpeg")
+    net = FakeNet(spec, _zip({"x/bin/ffmpeg.exe": b"new", evil: b"evil"}))
+    tm = ToolManager(root=root, platform="win32", fetch=net.fetch, fetch_text=net.fetch_text,
+                     which=_no_which, run=FakeRun({}))
+    with pytest.raises(FriendlyError) as exc:
+        tm.install(spec, lambda d, t: None)
+    assert exc.value.code == "tools_missing"
+    assert "unsafe archive member" in exc.value.details
+    assert [p.name for p in (root / "ffmpeg").iterdir()] == ["ffmpeg.exe"]
+    assert (root / "ffmpeg" / "ffmpeg.exe").read_text() == "old"
+    assert _files_outside(root) == []
+    assert _leftovers(root) == []
+
+
+def test_zip_member_outside_patterns_is_ignored(tmp_path):
+    root = tmp_path / "tools"
+    spec = _spec("linux", "deno")
+    net = FakeNet(spec, _zip({"../evil": b"evil", "deno": b"deno-binary"}))
+    ToolManager(root=root, platform="linux", fetch=net.fetch, fetch_text=net.fetch_text,
+                which=_no_which, run=FakeRun({})).install(spec, lambda d, t: None)
+    assert [p.name for p in (root / "deno").iterdir()] == ["deno"]
+    assert _files_outside(root) == []
+
+
+def test_tar_unsafe_member_is_rejected(tmp_path):
+    root = tmp_path / "tools"
+    spec = _spec("linux", "ffmpeg")
+    net = FakeNet(spec, _tar_xz({"x/bin/ffmpeg": b"ffmpeg", "x/bin/../ffprobe/../bin/ffprobe": b"evil"}))
+    tm = ToolManager(root=root, platform="linux", fetch=net.fetch, fetch_text=net.fetch_text,
+                     which=_no_which, run=FakeRun({}))
+    with pytest.raises(FriendlyError) as exc:
+        tm.install(spec, lambda d, t: None)
+    assert exc.value.code == "tools_missing"
+    assert not (root / "ffmpeg").exists()
+    assert _files_outside(root) == []
+    assert _leftovers(root) == []
+
+
 def test_fetch_failure_midway_cleans_up(tmp_path):
     spec = _spec("linux", "yt-dlp")
     net = FakeNet(spec, b"x" * 1000, fail_midway=True)

@@ -12,7 +12,7 @@ import tarfile
 import urllib.request
 import zipfile
 from dataclasses import dataclass
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Callable
 
 from ytdownloader import __version__
@@ -121,11 +121,25 @@ def _matches(member: str, patterns: tuple[str, ...]) -> bool:
     return any(fnmatch.fnmatchcase(member, p) for p in patterns)
 
 
-def _flat_name(member: str) -> str:
-    name = PurePosixPath(member.replace("\\", "/")).name
-    if name in ("", ".", ".."):
+_UNSAFE_CHARS = frozenset('<>:"/\\|?*') | frozenset(chr(c) for c in range(32))
+
+
+def _flat_target(member: str, dest: Path) -> Path:
+    """Flattened install path for an archive member; rejects anything that could escape `dest`."""
+    parts = member.replace("\\", "/").split("/")
+    name = parts[-1]
+    if (
+        ".." in parts
+        or name in ("", ".")
+        or any(ch in _UNSAFE_CHARS for ch in name)
+        or PureWindowsPath(name).name != name
+        or PurePosixPath(name).name != name
+    ):
         raise ValueError(f"unsafe archive member: {member!r}")
-    return name
+    target = dest / name
+    if target.parent != dest:
+        raise ValueError(f"unsafe archive member: {member!r}")
+    return target
 
 
 def _extract_zip(archive: Path, patterns: tuple[str, ...], dest: Path) -> None:
@@ -133,7 +147,7 @@ def _extract_zip(archive: Path, patterns: tuple[str, ...], dest: Path) -> None:
         for info in zf.infolist():
             if info.is_dir() or not _matches(info.filename, patterns):
                 continue
-            with zf.open(info) as src, open(dest / _flat_name(info.filename), "wb") as out:
+            with zf.open(info) as src, open(_flat_target(info.filename, dest), "wb") as out:
                 shutil.copyfileobj(src, out, CHUNK)
 
 
@@ -147,7 +161,7 @@ def _extract_tar(archive: Path, patterns: tuple[str, ...], dest: Path) -> None:
                 continue
             src = tf.extractfile(member)
             assert src is not None
-            with src, open(dest / _flat_name(member.name), "wb") as out:
+            with src, open(_flat_target(member.name, dest), "wb") as out:
                 shutil.copyfileobj(src, out, CHUNK)
 
 
