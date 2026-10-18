@@ -848,16 +848,36 @@ def test_crash_reporter_shows_log_path(make_window, monkeypatch, tmp_path):
     assert "Permission denied" in no_log.message()
 
 
+def record_geometry(monkeypatch, cls) -> list[str]:
+    """Geometry strings the window asks for. Reading geometry() back is useless here: a withdrawn
+    window on Windows reports Tk's default 200x200 until it is mapped."""
+    asked: list[str] = []
+
+    def geometry(self, geometry_string=None):
+        if geometry_string is not None:
+            asked.append(geometry_string)
+        return ctk.CTk.geometry(self, geometry_string)
+
+    monkeypatch.setattr(cls, "geometry", geometry)
+    return asked
+
+
+def asked_size(asked: list[str]) -> tuple[int, int]:
+    width, height = asked[-1].split("+")[0].split("x")
+    return int(width), int(height)
+
+
 def test_window_height_fits_small_work_area(make_window, monkeypatch):
     import ytdownloader.gui.app as app_module
     from ytdownloader.gui.placement import FRAME
 
     monkeypatch.setattr(app_module, "work_area", lambda root: (0, 0, 1280, 600))
+    asked = record_geometry(monkeypatch, MainWindow)
     w = make_window()
-    w.update_idletasks()
-    width, height = w.geometry().split("+")[0].split("x")
-    assert int(width) <= 540
-    assert (int(height) + FRAME) * w._get_window_scaling() <= 600
+    width, height = asked_size(asked)
+    assert width == 540
+    assert (height + FRAME) * w._get_window_scaling() <= 600
+    assert height == int(600 / w._get_window_scaling()) - FRAME
 
 
 def test_clear_recent_empties_list_and_saves(make_window, tmp_path, monkeypatch):
@@ -902,16 +922,18 @@ def test_first_run_grows_to_show_error_details(monkeypatch):
     import ytdownloader.gui.first_run as first_run_mod
 
     monkeypatch.setattr(first_run_mod, "work_area", lambda root: (0, 0, 1920, 1040))
+    asked = record_geometry(monkeypatch, FirstRunWindow)
     tools = FakeInstaller()
     w = create_root(lambda: FirstRunWindow(tools, tool_specs("linux")))
     w.withdraw()
     try:
+        assert asked_size(asked) == (480, 360)
         pump(w, lambda: w.retry_button.winfo_manager() == "pack", timeout=3)
         w.error_panel.details_button.invoke()
         w.update_idletasks()
-        scaling = w._get_window_scaling()
-        height = int(w.geometry().split("+")[0].split("x")[1])
-        assert height * scaling >= w.winfo_reqheight() - 1
+        width, height = asked_size(asked)
+        assert width == 480
+        assert height * w._get_window_scaling() >= w.winfo_reqheight() - 1
         assert height > 360
     finally:
         w.destroy()
