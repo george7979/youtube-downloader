@@ -26,17 +26,26 @@ class Placement:
     min_height: int  # logical
 
 
-def fit_window(work: tuple[int, int, int, int], scaling: float) -> Placement:
-    """Fit PREFERRED into `work` (left, top, width, height in physical px), centred.
+def max_height(work: tuple[int, int, int, int], scaling: float) -> int:
+    """Tallest logical window height whose frame still fits the work area."""
+    return max(1, int(work[3] / scaling) - FRAME)
+
+
+def fit_window(
+    work: tuple[int, int, int, int],
+    scaling: float,
+    preferred: tuple[int, int] = PREFERRED,
+    minimum: tuple[int, int] = MINIMUM,
+) -> Placement:
+    """Fit `preferred` into `work` (left, top, width, height in physical px), centred.
 
     The minimum shrinks with the window on very small screens, so the window can never be
     forced taller than the work area.
     """
     left, top, work_w, work_h = work
     room_w = int(work_w / scaling) - FRAME // 2
-    room_h = int(work_h / scaling) - FRAME
-    width = max(1, min(PREFERRED[0], room_w))
-    height = max(1, min(PREFERRED[1], room_h))
+    width = max(1, min(preferred[0], room_w))
+    height = min(preferred[1], max_height(work, scaling))
     outer_w = round(width * scaling)
     outer_h = round((height + FRAME) * scaling)
     return Placement(
@@ -44,8 +53,8 @@ def fit_window(work: tuple[int, int, int, int], scaling: float) -> Placement:
         height=height,
         x=left + max(0, (work_w - outer_w) // 2),
         y=top + max(0, (work_h - outer_h) // 2),
-        min_width=min(MINIMUM[0], width),
-        min_height=min(MINIMUM[1], height),
+        min_width=min(minimum[0], width),
+        min_height=min(minimum[1], height),
     )
 
 

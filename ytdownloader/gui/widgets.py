@@ -33,10 +33,12 @@ class ErrorPanel(ctk.CTkFrame):
         master,
         pack_opts: dict | None = None,
         on_update_engine: Callable[[], None] | None = None,
+        on_layout: Callable[[], None] | None = None,
         **kwargs,
     ):
         super().__init__(master, **kwargs)
         self._pack_opts = pack_opts or {"fill": "x"}
+        self._on_layout = on_layout  # called after the panel grows (shown, details expanded)
         self._details = ""
         self._on_update_engine = on_update_engine
 
@@ -88,6 +90,11 @@ class ErrorPanel(ctk.CTkFrame):
         if self._details:
             self.details_button.pack(anchor="w", padx=10, pady=(4, 8))
         self.pack(**self._pack_opts)
+        self._layout_changed()
+
+    def _layout_changed(self) -> None:
+        if self._on_layout is not None:
+            self._on_layout()
 
     def _update_engine(self) -> None:
         if self._on_update_engine is not None:
@@ -103,6 +110,7 @@ class ErrorPanel(ctk.CTkFrame):
         else:
             self.details_box.pack(fill="x", padx=10, pady=(0, 10))
             self.details_button.configure(text="Hide details")
+            self._layout_changed()
 
     def copy_details(self) -> None:
         self.clipboard_clear()

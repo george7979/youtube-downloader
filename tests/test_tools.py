@@ -1,5 +1,6 @@
 import hashlib
 import io
+import json
 import os
 import posixpath
 import socket
@@ -72,6 +73,8 @@ class FakeNet:
         on_bytes(len(self.payload), len(self.payload))
 
     def fetch_text(self, url):
+        if url.startswith("https://api.github.com/"):
+            raise urllib.error.URLError("offline")  # ffmpeg falls back to the `latest` URLs
         assert url == self.spec.sums_url
         return f"{'0' * 64}  some-other-asset\n{self.sums_hex}  {self.spec.asset}\n"
 
@@ -540,3 +543,57 @@ def test_expected_sha256_getfilehash_for_other_asset_is_none():
 
     text = (FIXTURES / "deno_windows.sha256sum").read_text(encoding="utf-8")
     assert _expected_sha256(text, "something-else.zip") is None
+
+
+def _release(tag, assets, state="uploaded"):
+    base = f"https://github.com/yt-dlp/FFmpeg-Builds/releases/download/{tag}/"
+    return {
+        "tag_name": tag,
+        "draft": False,
+        "assets": [
+            {"name": n, "state": state, "browser_download_url": base + n} for n in assets
+        ],
+    }
+
+
+WIN_ZIP = "ffmpeg-N-127654-g7045cc9b80-win64-gpl-shared.zip"
+RELEASES = [
+    _release("latest", ["checksums.sha256", "ffmpeg-master-latest-win64-gpl-shared.zip"]),
+    _release("autobuild-2026-10-17-20-33", ["checksums.sha256", "ffmpeg-N-127600-gaaaa-win64-gpl-shared.zip"]),
+    _release("autobuild-2026-10-18-17-17", [
+        "checksums.sha256", WIN_ZIP, "ffmpeg-N-127654-g7045cc9b80-winarm64-gpl-shared.zip",
+    ]),
+]
+
+
+def test_ffmpeg_resolves_to_newest_autobuild():
+    tm = ToolManager(root=Path("unused"), platform="win32",
+                     fetch_text=lambda url: json.dumps(RELEASES), which=_no_which, run=FakeRun({}))
+    spec = tm._resolve(_spec("win32", "ffmpeg"))
+    assert spec.asset == WIN_ZIP
+    assert spec.url.endswith("/autobuild-2026-10-18-17-17/" + WIN_ZIP)
+    assert spec.sums_url.endswith("/autobuild-2026-10-18-17-17/checksums.sha256")
+
+
+def test_ffmpeg_skips_autobuild_still_uploading():
+    releases = RELEASES[:2] + [_release("autobuild-2026-10-18-17-17", ["checksums.sha256", WIN_ZIP], state="starter")]
+    tm = ToolManager(root=Path("unused"), platform="win32",
+                     fetch_text=lambda url: json.dumps(releases), which=_no_which, run=FakeRun({}))
+    assert tm._resolve(_spec("win32", "ffmpeg")).asset == "ffmpeg-N-127600-gaaaa-win64-gpl-shared.zip"
+
+
+@pytest.mark.parametrize("reply", ['{"message": "API rate limit exceeded"}', "not json", "[]"])
+def test_ffmpeg_falls_back_to_latest(reply):
+    tm = ToolManager(root=Path("unused"), platform="linux",
+                     fetch_text=lambda url: reply, which=_no_which, run=FakeRun({}))
+    spec = _spec("linux", "ffmpeg")
+    assert tm._resolve(spec) == spec
+
+
+def test_other_tools_are_not_resolved():
+    def no_api(url):
+        raise AssertionError("no API call for yt-dlp")
+
+    tm = ToolManager(root=Path("unused"), platform="linux", fetch_text=no_api, which=_no_which, run=FakeRun({}))
+    spec = _spec("linux", "yt-dlp")
+    assert tm._resolve(spec) is spec

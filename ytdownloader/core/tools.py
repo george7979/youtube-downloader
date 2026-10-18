@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import dataclasses
 import fnmatch
 import hashlib
 import http.client
+import json
+import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -19,6 +23,8 @@ from typing import Callable
 from ytdownloader import __version__
 from ytdownloader.core import paths
 from ytdownloader.core.errors import FriendlyError, friendly
+
+log = logging.getLogger(__name__)
 
 OnBytes = Callable[[int, int | None], None]
 Fetch = Callable[[str, Path, OnBytes], None]  # url, dest, on_bytes(done, total)
@@ -34,6 +40,11 @@ CHUNK = 64 * 1024
 _YTDLP = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/"
 _FFMPEG = "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/"
 _DENO = "https://github.com/denoland/deno/releases/latest/download/"
+# FFmpeg-Builds re-uploads the assets of its `latest` release in place every day; for a few
+# minutes the archive and checksums.sha256 come from different builds (404, checksum mismatch).
+# Each `autobuild-*` release is a fixed snapshot, so install from the newest complete one.
+_FFMPEG_RELEASES = "https://api.github.com/repos/yt-dlp/FFmpeg-Builds/releases?per_page=10"
+_FFMPEG_LATEST_PREFIX = "ffmpeg-master-latest"
 
 
 @dataclass(frozen=True)
@@ -125,6 +136,27 @@ def _expected_sha256(sums_text: str, asset: str) -> str | None:
         parts = line.split(None, 1)
         if len(parts) == 2 and parts[1].strip().lstrip("*") == asset:
             return parts[0].lower()
+    return None
+
+
+def _newest_autobuild(spec: ToolSpec, releases: list[dict]) -> ToolSpec | None:
+    suffix = spec.asset.removeprefix(_FFMPEG_LATEST_PREFIX)  # e.g. "-win64-gpl-shared.zip"
+    pattern = re.compile(r"ffmpeg-N-\d+-g[0-9a-f]+" + re.escape(suffix))
+    autobuilds = [
+        r for r in releases
+        if str(r.get("tag_name", "")).startswith("autobuild-") and not r.get("draft")
+    ]
+    for release in sorted(autobuilds, key=lambda r: r["tag_name"], reverse=True):
+        uploaded = {
+            a["name"]: a["browser_download_url"]
+            for a in release.get("assets", [])
+            if a.get("state") == "uploaded"
+        }
+        asset = next((n for n in uploaded if pattern.fullmatch(n)), None)
+        if asset and "checksums.sha256" in uploaded:
+            return dataclasses.replace(
+                spec, url=uploaded[asset], sums_url=uploaded["checksums.sha256"], asset=asset
+            )
     return None
 
 
@@ -330,7 +362,19 @@ class ToolManager:
 
     # --- install ------------------------------------------------------------
 
+    def _resolve(self, spec: ToolSpec) -> ToolSpec:
+        """ffmpeg from the newest complete `autobuild-*` release; `spec` unchanged otherwise or
+        when the GitHub API is unavailable (offline, rate limit, unexpected reply)."""
+        if spec.name != "ffmpeg":
+            return spec
+        try:
+            return _newest_autobuild(spec, json.loads(self._fetch_text(_FFMPEG_RELEASES))) or spec
+        except Exception:  # noqa: BLE001 - fall back to the `latest` release
+            log.warning("Could not list FFmpeg-Builds releases; using latest", exc_info=True)
+            return spec
+
     def install(self, spec: ToolSpec, on_bytes: OnBytes) -> None:
+        spec = self._resolve(spec)
         download_dir = self.root / ".download"
         staging_root = self.root / ".staging"
         part = download_dir / f"{spec.asset}.part"

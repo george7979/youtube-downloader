@@ -896,3 +896,22 @@ def test_footer_menu_uses_larger_font(make_window):
     assert font.cget("size") == app_mod.MENU_FONT_SIZE >= 12
     labels = [w.engine_menu.entrycget(i, "label").strip() for i in range(3)]
     assert labels == ["Update engine", "Open log folder", "About"]
+
+
+def test_first_run_grows_to_show_error_details(monkeypatch):
+    import ytdownloader.gui.first_run as first_run_mod
+
+    monkeypatch.setattr(first_run_mod, "work_area", lambda root: (0, 0, 1920, 1040))
+    tools = FakeInstaller()
+    w = create_root(lambda: FirstRunWindow(tools, tool_specs("linux")))
+    w.withdraw()
+    try:
+        pump(w, lambda: w.retry_button.winfo_manager() == "pack", timeout=3)
+        w.error_panel.details_button.invoke()
+        w.update_idletasks()
+        scaling = w._get_window_scaling()
+        height = int(w.geometry().split("+")[0].split("x")[1])
+        assert height * scaling >= w.winfo_reqheight() - 1
+        assert height > 360
+    finally:
+        w.destroy()

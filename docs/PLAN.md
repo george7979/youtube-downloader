@@ -35,7 +35,10 @@ thinkpadzie). Poprawki po dotychczasowych uwagach PO (sprawdzenie w instalatorze
 - błąd HTTP 403 przy pobieraniu (przeszedł dopiero za drugim razem) — jedna automatyczna
   ponowna próba i własny komunikat `forbidden`;
 - lista Recent: przycisk „Clear”; deinstalator usuwa też ustawienia, Recent i logi (decyzja PO);
-- większe menu `⋯`.
+- większe menu `⋯`;
+- „checksum mismatch” ffmpeg przy pierwszym uruchomieniu (trafienie w codzienną podmianę
+  wydania `latest` FFmpeg-Builds) — pobieranie z niezmiennego `autobuild-*`; ucięte szczegóły
+  błędu w oknie pierwszego uruchomienia — okno rośnie do treści.
 
 Uwagi PO → poprawki na `dev`; po akceptacji PR `dev` → `main` i tag `v2.0.0` (za zgodą PO).
 

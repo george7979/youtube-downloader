@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import traceback
 
 import customtkinter as ctk
@@ -11,6 +12,7 @@ from ytdownloader import __version__
 from ytdownloader.core.errors import FriendlyError, friendly
 from ytdownloader.core.tools import OnBytes, ToolManager, ToolSpec
 
+from .placement import fit_window, max_height, work_area
 from .widgets import ErrorPanel
 from .worker import UiQueue, cancel_pending_after
 
@@ -42,8 +44,12 @@ class FirstRunWindow(ctk.CTk):
         self._installed: set[str] = set()
 
         self.title(f"YouTube Downloader {__version__}")
-        self.geometry("480x360")
-        self.minsize(420, 300)
+        place = fit_window(
+            work_area(self), self._get_window_scaling(), preferred=(480, 360), minimum=(420, 300)
+        )
+        self._width = place.width
+        self.minsize(place.min_width, place.min_height)
+        self.geometry(f"{place.width}x{place.height}+{place.x}+{place.y}")
         self.protocol("WM_DELETE_WINDOW", self.quit)
 
         total_mb = sum(spec.approx_mb for spec in self.specs)
@@ -79,7 +85,9 @@ class FirstRunWindow(ctk.CTk):
         self.retry_button = ctk.CTkButton(
             self.buttons, text="Retry", width=80, command=self.start
         )
-        self.error_panel = ErrorPanel(self, pack_opts={"fill": "x", "padx": 16, "pady": (8, 0)})
+        self.error_panel = ErrorPanel(
+            self, pack_opts={"fill": "x", "padx": 16, "pady": (8, 0)}, on_layout=self._fit_content
+        )
 
         self.start()
 
@@ -135,6 +143,16 @@ class FirstRunWindow(ctk.CTk):
             exc = friendly("unknown", details="".join(traceback.format_exception(exc)))
         self.error_panel.show(exc)
         self.retry_button.pack(side="right", padx=(0, 8))
+
+    def _fit_content(self) -> None:
+        """Grow (never shrink) so the error panel and its details are not cut off."""
+        self.update_idletasks()
+        scaling = self._get_window_scaling()
+        need = min(
+            math.ceil(self.winfo_reqheight() / scaling), max_height(work_area(self), scaling)
+        )
+        if need > round(self.winfo_height() / scaling):
+            self.geometry(f"{self._width}x{need}")
 
     def destroy(self) -> None:
         self.ui.close()

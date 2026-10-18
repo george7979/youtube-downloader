@@ -64,7 +64,9 @@ CustomTkinter mnoży szerokość i wysokość z `geometry()` przez skalowanie Wi
 `SystemParametersInfoW(SPI_GETWORKAREA)`, czyli bez paska zadań; Linux: ekran minus 48 px na
 panele): preferowane 540×780 logicznych, wysokość przycięta tak, żeby okno z paskiem tytułu
 (40 px logicznych) się zmieściło, okno wyśrodkowane. Minimum 480×420 maleje razem z oknem.
-Treść jest w `CTkScrollableFrame`, więc niższe okno przewija się zamiast ucinać.
+Treść jest w `CTkScrollableFrame`, więc niższe okno przewija się zamiast ucinać. Okno
+pierwszego uruchomienia startuje tak samo (480×360) i rośnie (`_fit_content`, nigdy nie maleje),
+gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru roboczego.
 
 ## Moduły `core/`
 
@@ -112,9 +114,17 @@ Okno przy `bot_check`, `forbidden` i `engine_outdated` pokazuje w panelu błędu
 | Narzędzie | Źródło (`releases/latest`) | Suma kontrolna |
 |---|---|---|
 | yt-dlp | `github.com/yt-dlp/yt-dlp` — `yt-dlp.exe` / `yt-dlp_linux` (kanał stabilny) | `SHA2-256SUMS` |
-| ffmpeg (Windows) | `yt-dlp/FFmpeg-Builds` — `ffmpeg-master-latest-win64-gpl-shared.zip` (84 MB; cały katalog `bin/`) | `checksums.sha256` |
-| ffmpeg (Linux) | `ffmpeg` i `ffprobe` z `PATH`, jeśli oba są; inaczej `ffmpeg-master-latest-linux64-gpl.tar.xz` (149 MB; `bin/ffmpeg`, `bin/ffprobe`) | `checksums.sha256` |
+| ffmpeg (Windows) | `yt-dlp/FFmpeg-Builds`, najnowsze kompletne wydanie `autobuild-*` — `ffmpeg-N-…-win64-gpl-shared.zip` (ok. 90 MB; cały katalog `bin/`) | `checksums.sha256` z tego samego wydania |
+| ffmpeg (Linux) | `ffmpeg` i `ffprobe` z `PATH`, jeśli oba są; inaczej `ffmpeg-N-…-linux64-gpl.tar.xz` z `autobuild-*` (149 MB; `bin/ffmpeg`, `bin/ffprobe`) | `checksums.sha256` z tego samego wydania |
 | Deno | `github.com/denoland/deno` — `deno-x86_64-{pc-windows-msvc\|unknown-linux-gnu}.zip` (min. **2.3.0**) | `<plik>.sha256sum` — Linux: `<hex>  <nazwa>`, Windows: format PowerShell `Get-FileHash` (`Hash : …` / `Path : …`) |
+
+FFmpeg-Builds co dzień przebudowuje wydanie `latest`, podmieniając pliki w miejscu — przez kilka
+minut archiwum i `checksums.sha256` pochodzą z różnych kompilacji (404, „checksum mismatch”).
+Dlatego `ToolManager._resolve` pyta API GitHuba (`/releases?per_page=10`) o najnowsze wydanie
+`autobuild-*` (niezmienne), w którym archiwum pasujące do `ffmpeg-N-<nr>-g<hash><przyrostek>`
+i plik sum mają stan `uploaded`. Gdy API zawiedzie (offline, limit 60 zapytań/h, inna
+odpowiedź), instalacja idzie ze starych adresów `latest`. yt-dlp i Deno mają niezmienne
+wydania pod tagiem, więc pobierają się przez `releases/latest`.
 
 Pliki sum to linie `<sha256>  <nazwa-zasobu>`. Deno jest potrzebny yt-dlp do rozwiązywania
 wyzwań YouTube (`--js-runtimes deno:<ścieżka>`).
