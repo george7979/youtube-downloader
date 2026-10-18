@@ -216,7 +216,7 @@ class Runner:
     ) -> tuple[int, str]:
         """Run yt-dlp; every stdout and stderr line goes to `on_line` on this thread.
 
-        Returns (returncode, stderr text); returncode is -1 when cancelled.
+        Returns (returncode, stderr text); returncode is -1 when Cancel killed the process.
         """
         kwargs: dict = {}
         if sys.platform == "win32":
@@ -251,11 +251,15 @@ class Runner:
             threading.Thread(target=pump, args=(proc.stderr, stderr_parts), daemon=True),
         ]
         done = threading.Event()
+        killed = threading.Event()
 
         def watch() -> None:
             while not done.wait(_POLL_SECONDS):
                 if cancel.is_set():
-                    kill_tree(proc)
+                    # Cancel pressed as yt-dlp exits must not turn a finished run into -1.
+                    if proc.poll() is None:
+                        killed.set()
+                        kill_tree(proc)
                     return
 
         watcher = threading.Thread(target=watch, daemon=True)
@@ -283,6 +287,6 @@ class Runner:
             proc.stdout.close()
             proc.stderr.close()
 
-        if cancel.is_set():
+        if killed.is_set() and returncode != 0:
             returncode = -1
         return returncode, "".join(stderr_parts)

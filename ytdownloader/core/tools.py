@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import fnmatch
 import hashlib
+import http.client
 import os
 import shutil
 import subprocess
@@ -200,6 +201,13 @@ class ToolManager:
     def _spec(self, name: str) -> ToolSpec:
         return next(s for s in self.specs if s.name == name)
 
+    def _required_files(self, spec: ToolSpec) -> list[str]:
+        """Files a complete install of `spec` must contain (yt-dlp needs ffprobe next to ffmpeg)."""
+        if spec.name == "ffmpeg":
+            exe = ".exe" if self.platform == "win32" else ""
+            return [spec.target, "ffprobe" + exe]
+        return [spec.target]
+
     def _system_ffmpeg_dir(self) -> Path | None:
         if self.platform != "linux":
             return None
@@ -222,7 +230,9 @@ class ToolManager:
             if spec.name == "yt-dlp":
                 ok = p.yt_dlp.is_file()
             elif spec.name == "ffmpeg":
-                ok = self._system_ffmpeg_dir() is not None or (p.ffmpeg_dir / spec.target).is_file()
+                ok = self._system_ffmpeg_dir() is not None or all(
+                    (p.ffmpeg_dir / name).is_file() for name in self._required_files(spec)
+                )
             else:
                 ok = p.deno.is_file() and self.deno_ok()
             if not ok:
@@ -271,17 +281,31 @@ class ToolManager:
             return False
         return version >= DENO_MIN_VERSION
 
+    def _self_update(self) -> bool:
+        """Run `yt-dlp -U`; False when it could not run or exited non-zero (e.g. offline)."""
+        args = [str(self.paths().yt_dlp), "--ignore-config", "-U"]
+        return self._output(args, UPDATE_TIMEOUT) is not None
+
     def update_ytdlp(self) -> tuple[str | None, str | None]:
+        """(version before, version after); after is None when the update failed."""
         old = self.ytdlp_version()
-        self._output([str(self.paths().yt_dlp), "--ignore-config", "-U"], UPDATE_TIMEOUT)
+        if not self._self_update():
+            return old, None
         return old, self.ytdlp_version()
 
     def update_all(self, on_bytes_for: Callable[[str], OnBytes]) -> tuple[str | None, str | None]:
-        versions = self.update_ytdlp()
+        """Update yt-dlp (reinstalled when it does not run), then reinstall ffmpeg and Deno."""
+        old = self.ytdlp_version()
+        updated = old is not None and self._self_update()
+        current = self.ytdlp_version() if old is not None else None
+        if current is None:  # broken before or after -U: fresh checksum-verified install
+            self.install(self._spec("yt-dlp"), on_bytes_for("yt-dlp"))
+            current = self.ytdlp_version()
+            updated = current is not None
         if self._system_ffmpeg_dir() is None:
             self.install(self._spec("ffmpeg"), on_bytes_for("ffmpeg"))
         self.install(self._spec("deno"), on_bytes_for("deno"))
-        return versions
+        return old, current if updated else None
 
     # --- install ------------------------------------------------------------
 
@@ -296,8 +320,13 @@ class ToolManager:
             _remove(staging)
             staging.mkdir(parents=True)
 
-            self._fetch(spec.url, part, on_bytes)
-            expected = _expected_sha256(self._fetch_text(spec.sums_url), spec.asset)
+            try:
+                self._fetch(spec.url, part, on_bytes)
+                sums_text = self._fetch_text(spec.sums_url)
+            except (OSError, http.client.HTTPException) as exc:
+                # URLError, timeouts and connection errors are all OSError subclasses.
+                raise friendly("network", details=f"{spec.name}: {exc}") from exc
+            expected = _expected_sha256(sums_text, spec.asset)
             if expected is None:
                 raise friendly("tools_missing", details=f"no checksum listed for {spec.asset}")
             if _sha256(part) != expected:
@@ -311,8 +340,9 @@ class ToolManager:
                 _extract_tar(part, spec.members, staging)
             else:
                 raise ValueError(f"unsupported archive type {spec.archive!r}")
-            if not (staging / spec.target).is_file():
-                raise friendly("tools_missing", details=f"{spec.target} not found in {spec.asset}")
+            for name in self._required_files(spec):
+                if not (staging / name).is_file():
+                    raise friendly("tools_missing", details=f"{name} not found in {spec.asset}")
 
             if self.platform != "win32":
                 for f in staging.iterdir():

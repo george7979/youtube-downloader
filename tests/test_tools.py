@@ -1,10 +1,12 @@
 import hashlib
 import io
 import os
+import socket
 import stat
 import subprocess
 import sys
 import tarfile
+import urllib.error
 import zipfile
 from pathlib import Path
 
@@ -74,7 +76,10 @@ class FakeNet:
 
 
 class FakeRun:
-    """Returns canned results; `script` maps an argv flag to a list of stdouts consumed in order."""
+    """Returns canned results; `script` maps an argv flag to a list of outputs consumed in order.
+
+    An output is the stdout of a successful run, or an int: the exit code of a failed run.
+    """
 
     def __init__(self, script: dict[str, list[str]]):
         self.script = {k: list(v) for k, v in script.items()}
@@ -87,7 +92,10 @@ class FakeRun:
         assert kwargs["timeout"] > 0
         for flag, outputs in self.script.items():
             if flag in args:
-                return subprocess.CompletedProcess(args, 0, outputs.pop(0), "")
+                out = outputs.pop(0)
+                if isinstance(out, int):
+                    return subprocess.CompletedProcess(args, out, "", "ERROR: failed")
+                return subprocess.CompletedProcess(args, 0, out, "")
         raise FileNotFoundError(args[0])
 
 
@@ -207,11 +215,14 @@ def test_install_zip_flattens_members(tmp_path):
     ff_net = FakeNet(ff_spec, _zip({
         "ffmpeg-x/LICENSE.txt": b"license",
         "ffmpeg-x/bin/ffmpeg.exe": b"ffmpeg-exe",
+        "ffmpeg-x/bin/ffprobe.exe": b"ffprobe-exe",
         "ffmpeg-x/bin/avcodec.dll": b"avcodec",
     }))
     ToolManager(root=tmp_path, platform="win32", fetch=ff_net.fetch, fetch_text=ff_net.fetch_text,
                 which=_no_which, run=FakeRun({})).install(ff_spec, lambda d, t: None)
-    assert sorted(p.name for p in (tmp_path / "ffmpeg").iterdir()) == ["avcodec.dll", "ffmpeg.exe"]
+    assert sorted(p.name for p in (tmp_path / "ffmpeg").iterdir()) == [
+        "avcodec.dll", "ffmpeg.exe", "ffprobe.exe"
+    ]
     assert (tmp_path / "ffmpeg" / "ffmpeg.exe").read_bytes() == b"ffmpeg-exe"
     assert _leftovers(tmp_path) == []
 
@@ -301,11 +312,78 @@ def test_fetch_failure_midway_cleans_up(tmp_path):
                      which=_no_which, run=FakeRun({}))
     with pytest.raises(FriendlyError) as exc:
         tm.install(spec, lambda d, t: None)
-    assert exc.value.code == "tools_missing"
+    assert exc.value.code == "network"
     assert "connection reset" in exc.value.details
     assert _leftovers(tmp_path) == []
     assert not (tmp_path / "yt-dlp").exists()
     assert "yt-dlp" in [s.name for s in tm.missing()]
+
+
+@pytest.mark.parametrize(
+    ("where", "error"),
+    [
+        ("fetch", urllib.error.URLError(socket.gaierror(-3, "Temporary failure in name resolution"))),
+        ("fetch", TimeoutError("timed out")),
+        ("fetch", ConnectionResetError("reset by peer")),
+        ("fetch_text", urllib.error.URLError("no route")),
+        ("fetch_text", socket.timeout("read timed out")),
+        ("fetch_text", OSError("network is unreachable")),
+    ],
+)
+def test_network_failure_is_network_error(tmp_path, where, error):
+    spec = _spec("linux", "deno")
+    net = FakeNet(spec, _zip({"deno": b"deno-binary"}))
+
+    def failing(*args):
+        if where == "fetch":
+            Path(args[1]).write_bytes(b"partial")
+        raise error
+
+    fetch = failing if where == "fetch" else net.fetch
+    fetch_text = failing if where == "fetch_text" else net.fetch_text
+    tm = ToolManager(root=tmp_path, platform="linux", fetch=fetch, fetch_text=fetch_text,
+                     which=_no_which, run=FakeRun({}))
+    with pytest.raises(FriendlyError) as exc:
+        tm.install(spec, lambda d, t: None)
+    assert exc.value.code == "network"
+    assert exc.value.message == "No connection to YouTube."
+    assert exc.value.details.startswith("deno: ")
+    assert _leftovers(tmp_path) == []
+    assert not (tmp_path / "deno").exists()
+
+
+def test_bad_archive_is_still_tools_missing(tmp_path):
+    spec = _spec("linux", "deno")
+    net = FakeNet(spec, b"not a zip")
+    tm = ToolManager(root=tmp_path, platform="linux", fetch=net.fetch, fetch_text=net.fetch_text,
+                     which=_no_which, run=FakeRun({}))
+    with pytest.raises(FriendlyError) as exc:
+        tm.install(spec, lambda d, t: None)
+    assert exc.value.code == "tools_missing"
+    assert _leftovers(tmp_path) == []
+
+
+@pytest.mark.parametrize("platform, exe", [("linux", ""), ("win32", ".exe")])
+def test_bundled_ffmpeg_needs_ffprobe(tmp_path, platform, exe):
+    tm = ToolManager(root=tmp_path, platform=platform, which=_no_which, run=FakeRun({}))
+    (tmp_path / "ffmpeg").mkdir()
+    (tmp_path / "ffmpeg" / f"ffmpeg{exe}").write_text("ffmpeg")
+    assert "ffmpeg" in [s.name for s in tm.missing()]
+    (tmp_path / "ffmpeg" / f"ffprobe{exe}").write_text("ffprobe")
+    assert "ffmpeg" not in [s.name for s in tm.missing()]
+
+
+def test_install_ffmpeg_without_ffprobe_fails(tmp_path):
+    spec = _spec("linux", "ffmpeg")
+    net = FakeNet(spec, _tar_xz({"x/bin/ffmpeg": b"ffmpeg"}))
+    tm = ToolManager(root=tmp_path, platform="linux", fetch=net.fetch, fetch_text=net.fetch_text,
+                     which=_no_which, run=FakeRun({}))
+    with pytest.raises(FriendlyError) as exc:
+        tm.install(spec, lambda d, t: None)
+    assert exc.value.code == "tools_missing"
+    assert exc.value.details == f"ffprobe not found in {spec.asset}"
+    assert not (tmp_path / "ffmpeg").exists()
+    assert _leftovers(tmp_path) == []
 
 
 def test_should_check_update():
@@ -343,6 +421,17 @@ def test_update_ytdlp_reports_versions(tmp_path):
     assert all("--ignore-config" in c for c in run.calls)
 
 
+def test_update_ytdlp_failed_run_reports_no_new_version(tmp_path):
+    # -U exits non-zero (offline): the old version must not be reported as "up to date".
+    failing = FakeRun({"-U": [1], "--version": ["2026.08.19\n", "2026.08.19\n"]})
+    tm = ToolManager(root=tmp_path, platform="linux", which=_no_which, run=failing)
+    assert tm.update_ytdlp() == ("2026.08.19", None)
+    # -U cannot even start.
+    missing = FakeRun({"--version": ["2026.08.19\n"]})
+    tm = ToolManager(root=tmp_path, platform="linux", which=_no_which, run=missing)
+    assert tm.update_ytdlp() == ("2026.08.19", None)
+
+
 def test_ytdlp_version_none_on_failure(tmp_path):
     tm = ToolManager(root=tmp_path, platform="linux", which=_no_which, run=FakeRun({}))
     assert tm.ytdlp_version() is None
@@ -370,3 +459,32 @@ def test_update_all_skips_system_ffmpeg(tmp_path):
     tm.install = lambda spec, on_bytes: installed.append(spec.name)
     tm.update_all(lambda name: (lambda d, t: None))
     assert installed == ["deno"]
+
+
+def test_update_all_reinstalls_broken_ytdlp(tmp_path):
+    # yt-dlp does not answer --version: no -U, a fresh checksum-verified install instead.
+    run = FakeRun({"--version": [1, "2026.10.01\n"]})
+    tm = ToolManager(root=tmp_path, platform="linux", which=_no_which, run=run)
+    installed = []
+    tm.install = lambda spec, on_bytes: installed.append(spec.name)
+    assert tm.update_all(lambda name: (lambda d, t: None)) == (None, "2026.10.01")
+    assert installed == ["yt-dlp", "ffmpeg", "deno"]
+    assert not any("-U" in c for c in run.calls)
+
+
+def test_update_all_reinstalls_ytdlp_broken_by_update(tmp_path):
+    run = FakeRun({"-U": ["ok\n"], "--version": ["2026.08.19\n", 1, "2026.10.01\n"]})
+    tm = ToolManager(root=tmp_path, platform="linux", which=_no_which, run=run)
+    installed = []
+    tm.install = lambda spec, on_bytes: installed.append(spec.name)
+    assert tm.update_all(lambda name: (lambda d, t: None)) == ("2026.08.19", "2026.10.01")
+    assert installed == ["yt-dlp", "ffmpeg", "deno"]
+
+
+def test_update_all_failed_self_update_keeps_working_ytdlp(tmp_path):
+    run = FakeRun({"-U": [1], "--version": ["2026.08.19\n", "2026.08.19\n"]})
+    tm = ToolManager(root=tmp_path, platform="linux", which=_no_which, run=run)
+    installed = []
+    tm.install = lambda spec, on_bytes: installed.append(spec.name)
+    assert tm.update_all(lambda name: (lambda d, t: None)) == ("2026.08.19", None)
+    assert installed == ["ffmpeg", "deno"]

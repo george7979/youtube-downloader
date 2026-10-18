@@ -347,3 +347,17 @@ def test_runner_cancel_before_any_output_still_returns_minus_one():
         [sys.executable, "-c", "import time; time.sleep(60)"], lambda line: None, cancel
     )
     assert rc == -1
+
+
+def test_cancel_after_process_exited_keeps_success():
+    # The process prints its last line and exits 0; Cancel arrives only after that, while the
+    # runner is still handling the output. Nothing was killed, so the run is a success.
+    cancel = threading.Event()
+
+    def on_line(line: str) -> None:
+        time.sleep(0.5)  # the process exits meanwhile
+        cancel.set()
+        time.sleep(0.3)  # the watcher wakes up and sees Cancel
+
+    rc, _ = Runner().run([sys.executable, "-c", "print('LAST', flush=True)"], on_line, cancel)
+    assert rc == 0

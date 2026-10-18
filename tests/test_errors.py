@@ -13,6 +13,10 @@ from ytdownloader.core.errors import FriendlyError, classify, friendly
         ("ERROR: [youtube] x: Sign in to confirm you’re not a bot", "bot_check"),
         ("ERROR: This content isn't available, try again later", "rate_limit"),
         ("HTTP Error 429: Too Many Requests", "rate_limit"),
+        ("WARNING: [youtube] x: nsig extraction failed: You may experience throttling", "engine_outdated"),
+        ("ERROR: [youtube] x: Signature extraction failed: Some formats may be missing", "engine_outdated"),
+        ("ERROR: [youtube] x: Unable to extract initial player response", "engine_outdated"),
+        ("ERROR: [youtube] x: Requested format is not available", "engine_outdated"),
         ("ERROR: [youtube] x: Private video", "unavailable"),
         ("ERROR: Video unavailable", "unavailable"),
         ("This video has been removed by the uploader", "unavailable"),
@@ -51,7 +55,9 @@ def test_friendly_table():
     assert err.hint == "Paste a link like https://www.youtube.com/watch?v=…"
     assert friendly("cancelled").hint == ""
     assert friendly("unknown", "d").details == "d"
-    assert friendly("unknown").hint == 'Open "Show details" and copy them into a bug report.'
+    assert friendly("unknown").hint == "See the details and include them in a bug report."
+    assert friendly("engine_outdated").message == "The download engine needs an update."
+    assert friendly("engine_outdated").hint == "Update the engine and try again."
     assert friendly("tools_missing").message == "Download tools are missing."
 
 
@@ -59,3 +65,10 @@ def test_friendly_error_is_exception():
     err = FriendlyError("c", "m", "h", "d")
     assert isinstance(err, Exception)
     assert (err.code, err.message, err.hint, err.details) == ("c", "m", "h", "d")
+
+
+def test_engine_outdated_order():
+    # After bot_check and rate_limit, before unavailable.
+    assert classify("Sign in to confirm you're not a bot\nUnable to extract x").code == "bot_check"
+    assert classify("HTTP Error 429\nnsig extraction failed").code == "rate_limit"
+    assert classify("Unable to extract x\nVideo unavailable").code == "engine_outdated"

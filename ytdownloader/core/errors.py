@@ -27,6 +27,10 @@ _TABLE: dict[str, tuple[str, str]] = {
         "YouTube rate limit reached.",
         "Wait a few minutes and try again.",
     ),
+    "engine_outdated": (
+        "The download engine needs an update.",
+        "Update the engine and try again.",
+    ),
     "unavailable": (
         "This video is not publicly available.",
         "Check the link, or try a different video.",
@@ -37,7 +41,7 @@ _TABLE: dict[str, tuple[str, str]] = {
     ),
     "unknown": (
         "Something went wrong.",
-        'Open "Show details" and copy them into a bug report.',
+        "See the details and include them in a bug report.",
     ),
     "invalid_url": (
         "This doesn't look like a YouTube video link.",
@@ -64,6 +68,15 @@ _PATTERNS: list[tuple[str, tuple[str, ...]]] = [
     ),
     ("bot_check", ("not a bot",)),
     ("rate_limit", ("this content isn't available, try again later", "http error 429")),
+    (
+        "engine_outdated",
+        (
+            "nsig extraction failed",
+            "signature extraction failed",
+            "unable to extract",
+            "requested format is not available",
+        ),
+    ),
     (
         "unavailable",
         (
