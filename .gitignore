@@ -1,7 +1,4 @@
-# ===============================================
-# YouTube Downloader - Dual Repository Architecture  
-# Git Ignore Rules for Private Development Repository
-# ===============================================
+# YouTube Downloader — git ignore rules
 
 # === SENSITIVE FILES - NEVER COMMIT ===
 # These files MUST stay in private repo only!
@@ -228,4 +225,3 @@ Network Trash Folder
 Temporary Items
 .apdisk
 .superpowers/
-*.deb
