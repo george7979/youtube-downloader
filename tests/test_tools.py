@@ -130,7 +130,7 @@ def test_specs_windows_and_linux():
         "zip",
         ("*/bin/*",),
         "ffmpeg.exe",
-        84,
+        90,
     )
     assert lin["ffmpeg"] == ToolSpec(
         "ffmpeg",
@@ -162,7 +162,7 @@ def test_specs_windows_and_linux():
         "deno",
         40,
     )
-    assert sum(s.approx_mb for s in win.values()) == 142
+    assert sum(s.approx_mb for s in win.values()) == 148
     assert sum(s.approx_mb for s in lin.values()) == 207
 
 
@@ -597,3 +597,29 @@ def test_other_tools_are_not_resolved():
     tm = ToolManager(root=Path("unused"), platform="linux", fetch_text=no_api, which=_no_which, run=FakeRun({}))
     spec = _spec("linux", "yt-dlp")
     assert tm._resolve(spec) is spec
+
+
+def test_ffmpeg_installs_from_resolved_autobuild(tmp_path):
+    payload = _zip({
+        "ffmpeg-N-127654-g7045cc9b80-win64-gpl-shared/bin/ffmpeg.exe": b"ffmpeg-exe",
+        "ffmpeg-N-127654-g7045cc9b80-win64-gpl-shared/bin/ffprobe.exe": b"ffprobe-exe",
+    })
+    build = RELEASES[2]["assets"]
+    urls = {a["name"]: a["browser_download_url"] for a in build}
+
+    def fetch(url, dest, on_bytes):
+        assert url == urls[WIN_ZIP]
+        Path(dest).write_bytes(payload)
+
+    def fetch_text(url):
+        if url.startswith("https://api.github.com/"):
+            return json.dumps(RELEASES)
+        assert url == urls["checksums.sha256"]
+        return f"{'0' * 64}  ffmpeg-master-latest-win64-gpl-shared.zip\n{_sha(payload)}  {WIN_ZIP}\n"
+
+    tm = ToolManager(root=tmp_path, platform="win32", fetch=fetch, fetch_text=fetch_text,
+                     which=_no_which, run=FakeRun({}))
+    tm.install(_spec("win32", "ffmpeg"), lambda d, t: None)
+
+    assert sorted(p.name for p in (tmp_path / "ffmpeg").iterdir()) == ["ffmpeg.exe", "ffprobe.exe"]
+    assert _leftovers(tmp_path) == []

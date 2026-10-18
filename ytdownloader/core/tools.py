@@ -70,7 +70,7 @@ def tool_specs(platform: str) -> list[ToolSpec]:
     if platform == "win32":
         ytdlp_asset, exe = "yt-dlp.exe", ".exe"
         ffmpeg_asset = "ffmpeg-master-latest-win64-gpl-shared.zip"
-        ffmpeg_archive, ffmpeg_members, ffmpeg_mb = "zip", ("*/bin/*",), 84
+        ffmpeg_archive, ffmpeg_members, ffmpeg_mb = "zip", ("*/bin/*",), 90
         deno_asset = "deno-x86_64-pc-windows-msvc.zip"
     else:
         ytdlp_asset, exe = "yt-dlp_linux", ""
@@ -369,8 +369,8 @@ class ToolManager:
             return spec
         try:
             return _newest_autobuild(spec, json.loads(self._fetch_text(_FFMPEG_RELEASES))) or spec
-        except Exception:  # noqa: BLE001 - fall back to the `latest` release
-            log.warning("Could not list FFmpeg-Builds releases; using latest", exc_info=True)
+        except Exception as exc:  # noqa: BLE001 - fall back to the `latest` release
+            log.info("Could not list FFmpeg-Builds releases (%s); using latest", exc)
             return spec
 
     def install(self, spec: ToolSpec, on_bytes: OnBytes) -> None:
