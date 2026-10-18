@@ -32,7 +32,7 @@ po stronie YouTube.
    z `[ID]` — sam `Tytuł.mp4` bez notatki nie jest uznawany za ten film); istniejąca notatka
    nigdy nie jest nadpisywana.
 7. Nieinteraktywne CLI z wynikiem JSON dla Claude Code; Claude zawsze pyta o folder.
-8. Lista 5 ostatnich pobrań w oknie, z ręcznym czyszczeniem (pliki zostają).
+8. Lista 3 ostatnich pobrań w oknie (zwarta — nie dominuje okna), z ręcznym czyszczeniem (pliki zostają).
 9. Chwilowa odmowa YouTube (HTTP 403) jest ponawiana automatycznie raz, bez udziału
    użytkownika.
 10. Deinstalacja na Windows usuwa wszystko, co aplikacja trzyma w profilu (narzędzia,

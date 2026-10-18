@@ -59,12 +59,13 @@ UI/CLI --Service.download--> engine.download_args --> Runner.run (yt-dlp, nowa s
 ### Rozmiar okna
 
 CustomTkinter mnoży szerokość i wysokość z `geometry()` przez skalowanie Windows (150% →
-780 px to 1170 px fizycznych), a pozycję `+x+y` podaje w pikselach fizycznych.
+660 px to 990 px fizycznych), a pozycję `+x+y` podaje w pikselach fizycznych.
 `gui/placement.py` liczy rozmiar startowy z obszaru roboczego ekranu głównego (Windows:
 `SystemParametersInfoW(SPI_GETWORKAREA)`, czyli bez paska zadań; Linux: ekran minus 48 px na
-panele): preferowane 540×780 logicznych, wysokość przycięta tak, żeby okno z paskiem tytułu
+panele): preferowane 540×660 logicznych (cały układ z kartą filmu i trzema ostatnimi pobraniami), wysokość przycięta tak, żeby okno z paskiem tytułu
 (40 px logicznych) się zmieściło, okno wyśrodkowane. Minimum 480×420 maleje razem z oknem.
-Treść jest w `CTkScrollableFrame`, więc niższe okno przewija się zamiast ucinać. Okno
+Treść jest w `CTkScrollableFrame`, więc niższe okno przewija się zamiast ucinać; pasek
+przewijania jest ukryty, dopóki wszystko się mieści (`_on_body_scroll`). Okno
 pierwszego uruchomienia startuje tak samo (480×360) i rośnie (`_fit_content`, nigdy nie maleje),
 gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru roboczego.
 
@@ -73,7 +74,7 @@ gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru r
 | Moduł | Odpowiedzialność |
 |---|---|
 | `paths.py` | **jedyne** źródło lokalizacji: konfiguracja, dane, logi, narzędzia, Pobrane, zasoby (`sys._MEIPASS` w paczce) |
-| `settings.py` | `settings.json` (folder, tryb, jakość, język napisów, notatka/srt, czas ostatniej aktualizacji) i lista 5 ostatnich pobrań; walidacja typów, zapis atomowy; `resolve_output_dir` wraca do Pobrane z komunikatem, gdy zapisany folder zniknął (pusty `output_dir` = nie wybrano). Jakość to pułap: okno domyślnie wybiera najwyższą wysokość filmu ≤ zapisanej i zapisuje jakość tylko wtedy, gdy użytkownik wybrał inną niż ta domyślna (film z maks. 720p nie obniża ustawienia 1080) |
+| `settings.py` | `settings.json` (folder, tryb, jakość, język napisów, notatka/srt, czas ostatniej aktualizacji) i lista 3 ostatnich pobrań (`MAX_RECENT`); walidacja typów, zapis atomowy; `resolve_output_dir` wraca do Pobrane z komunikatem, gdy zapisany folder zniknął (pusty `output_dir` = nie wybrano). Jakość to pułap: okno domyślnie wybiera najwyższą wysokość filmu ≤ zapisanej i zapisuje jakość tylko wtedy, gdy użytkownik wybrał inną niż ta domyślna (film z maks. 720p nie obniża ustawienia 1080) |
 | `logsetup.py` | rotujący `app.log` (1 MB × 3), a gdy jest `stderr` — także na konsolę. `Service` loguje na INFO każde uruchomienie silnika (adres, tryb, jakość, próba), linie yt-dlp poza postępem (`--print` wycisza resztę, więc to ostrzeżenia, błędy, `CODEC`, `FILE`), każdą przerwę bez wyjścia ≥ 15 s (`STALL_LOG_S`) z linią sprzed niej oraz kod wyjścia i czas |
 | `urls.py` | ID filmu z linku (`watch`, `youtu.be`, `shorts`, `embed`, `live`); inne → `invalid_url`; playlisty ignorowane |
 | `errors.py` | `FriendlyError(code, message, hint, details)`; tabela 10 kodów (niżej); `classify(stderr)` dopasowuje podciągi (kolejność ma znaczenie) |
@@ -241,7 +242,8 @@ samym tytule mogłaby dopiąć notatkę do cudzego pliku. Ponowne pobranie trafi
   (podpolecenie w `.exe` → okno komunikatu i kod 2). Ikona `.ico` (błąd jej wczytania tylko
   trafia do logu), zasoby przez `sys._MEIPASS`.
 - **NSIS** (`installer/windows/installer.nsi`): instalacja do Program Files, skróty, wpis
-  odinstalowania; wersja z `/DAPP_VERSION` (domyślnie zgodna z `version.py`).
+  odinstalowania z `DisplayIcon` (bez niego Ustawienia → Aplikacje pokazują pustą ikonę), ikona
+  aplikacji także na instalatorze i deinstalatorze; wersja z `/DAPP_VERSION` (domyślnie zgodna z `version.py`).
 - **`.deb`** (`installer/linux/build-deb.sh`): jeden plik `/usr/bin/youtube-downloader`, ikony,
   plik `.desktop`; `Recommends: ffmpeg`; wersja z `version.py`.
 - **CI:** `ci.yml` — lint (tylko błędy składni), testy na Ubuntu (przez `xvfb-run`) i Windows;
@@ -261,7 +263,15 @@ czyta i zapisuje `last_update_check`), więc nigdy nie dotykają prawdziwych ust
 
 ## Known Issues
 
-Znane, jeszcze niepoprawione. Pierwsze pięć grup jest widocznych dla użytkownika albo ryzykownych.
+Znane, jeszcze niepoprawione. Pierwsze sześć grup jest widocznych dla użytkownika albo ryzykownych.
+
+**Pobieranie z YouTube**
+- Przestoje: YouTube co pewien czas wstrzymuje wydanie każdego 10-MB kawałka strumienia
+  (yt-dlp pobiera YouTube w kawałkach `http_chunk_size`) na ok. 20 s — film 60 MB schodzi wtedy
+  w 2–4 min zamiast kilkunastu sekund. Odtworzone 2026-10-18 na tym samym łączu i z tymi samymi
+  argumentami: raz 9–33 s, raz 220 s — zależy od chwili (serwer/klient YouTube), nie od
+  aplikacji ani łącza. W `app.log` widać to jako serię „no output for ~20 s” co ~10 MB. Bez
+  obejścia; do zbadania przy kolejnym wystąpieniu z `-v` (który klient YouTube i serwer `rr…`).
 
 **Aktualizacja narzędzi**
 - `missing()` sprawdza yt-dlp tylko po istnieniu pliku: uszkodzony plik naprawia dopiero
@@ -331,5 +341,5 @@ Znane, jeszcze niepoprawione. Pierwsze pięć grup jest widocznych dla użytkown
   na stderr; skill i README to opisują.
 - Świadomie: goły `Tytuł.mp4` bez notatki nie jest uznawany za ten sam film (patrz wyżej).
 - Świadomie: yt-dlp z kanału stabilnego, nie nightly.
-- Świadomie: aplikacja nie prowadzi historii pobrań — „Recent downloads” to pięć ostatnich
+- Świadomie: aplikacja nie prowadzi historii pobrań — „Recent downloads” to trzy ostatnie
   pozycji w ustawieniach, a stan „już pobrano” wynika z plików w folderze.

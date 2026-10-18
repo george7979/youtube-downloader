@@ -52,7 +52,7 @@ def test_add_recent_dedupes_and_caps():
         settings.add_recent(s, _item(vid))
     settings.add_recent(s, _item("c"))
     ids = [r.video_id for r in s.recent]
-    assert len(ids) == 5
+    assert len(ids) == settings.MAX_RECENT == 3
     assert ids[0] == "c"
     assert ids.count("c") == 1
 

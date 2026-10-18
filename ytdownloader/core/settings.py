@@ -10,7 +10,7 @@ from pathlib import Path
 
 from ytdownloader.core import paths
 
-MAX_RECENT = 5
+MAX_RECENT = 3
 
 
 @dataclass

@@ -831,7 +831,7 @@ class MainWindow(ctk.CTk):
             path = Path(item.media_path)
             present = path.is_file()
             row = ctk.CTkFrame(self.recent_rows, fg_color="transparent")
-            row.pack(fill="x", pady=1)
+            row.pack(fill="x")
             text = _shorten_end(item.title, 46)
             if not present:
                 text += "  (file missing)"

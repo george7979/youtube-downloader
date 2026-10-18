@@ -110,7 +110,7 @@ If the video is already in the folder the app says so and offers **Show file** o
 **Download again**. If only the MP4 is missing, it fetches the MP4 and leaves your note alone.
 MP4 and MP3 are separate: having the MP4 does not stop an MP3 download of the same video.
 The quality you pick is remembered as a ceiling — a video that only goes up to 720p does not
-lower it for the next one. The last five downloads are listed under "Recent downloads"; **Clear** empties the list
+lower it for the next one. The last three downloads are listed under "Recent downloads"; **Clear** empties the list
 (the files stay on disk).
 
 ## Command line (Linux / WSL)

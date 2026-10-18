@@ -41,4 +41,4 @@ def test_large_screen_keeps_preferred_size_centred():
     p = fit_window((0, 0, 1920, 1040), 1.0)
     assert (p.width, p.height) == PREFERRED
     assert p.x == (1920 - 540) // 2
-    assert p.y == (1040 - 820) // 2
+    assert p.y == (1040 - (PREFERRED[1] + FRAME)) // 2

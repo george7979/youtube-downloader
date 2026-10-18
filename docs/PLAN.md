@@ -41,8 +41,10 @@ thinkpadzie). Poprawki po dotychczasowych uwagach PO (sprawdzenie w instalatorze
   błędu w oknie pierwszego uruchomienia — okno rośnie do treści;
 - pasek przewijania widoczny zawsze — teraz tylko, gdy treść się nie mieści; „Save note” nie mówił,
   czy będzie transkrypt — etykieta zależna od wybranych napisów;
-- przestoje w pobieraniu — przyczyna nieznana (log był pusty); log zapisuje teraz przerwy ≥ 15 s
-  i komunikaty yt-dlp, do analizy przy następnym przestoju;
+- przestoje w pobieraniu — po stronie YouTube (co ~10 MB ok. 20 s przerwy, zmiennie w czasie;
+  odtworzone poza aplikacją), opis w TECH Known Issues; log zapisuje przerwy ≥ 15 s;
+- okno za wysokie — Recent pokazuje 3 pozycje w zwartych wierszach, okno 660 zamiast 780;
+- brak ikony w Ustawienia → Aplikacje — `DisplayIcon` w instalatorze;
 - „chińskie znaczki” w transkrypcie — błąd programu do odczytu, nie aplikacji (pliki są
   poprawnym UTF-8; w innym edytorze i w Obsidianie OK — potwierdził PO).
 

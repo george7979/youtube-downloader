@@ -25,6 +25,8 @@ SetCompressor /SOLID lzma
 
 !include "MUI2.nsh"
 !define MUI_ABORTWARNING
+!define MUI_ICON   "icons\youtube-downloader.ico"
+!define MUI_UNICON "icons\youtube-downloader.ico"
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
@@ -46,6 +48,8 @@ Section "Main" SecMain
 
   WriteRegStr   HKLM "${REG_KEY}" "DisplayName"     "${APP_NAME}"
   WriteRegStr   HKLM "${REG_KEY}" "DisplayVersion"  "${APP_VERSION}"
+  ; Settings > Apps shows a blank icon without this.
+  WriteRegStr   HKLM "${REG_KEY}" "DisplayIcon"     "$INSTDIR\${APP_EXE},0"
   WriteRegStr   HKLM "${REG_KEY}" "Publisher"       "${PUBLISHER}"
   WriteRegStr   HKLM "${REG_KEY}" "URLInfoAbout"    "${WEBSITE}"
   WriteRegStr   HKLM "${REG_KEY}" "InstallLocation" "$INSTDIR"
