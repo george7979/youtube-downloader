@@ -37,6 +37,22 @@ from ytdownloader.gui.app import MainWindow  # noqa: E402
 from ytdownloader.gui.first_run import FirstRunWindow  # noqa: E402
 from ytdownloader.gui.worker import UiQueue  # noqa: E402
 
+# Creating many Tk roots in one process occasionally fails on the Windows CI runner while Tcl
+# initialises ("Can't find a usable init.tcl", "invalid command name tcl_findLibrary") — an
+# environmental flake, not an app defect (the app creates a single root). Retry only those.
+_TCL_INIT_ERRORS = ("init.tcl", "tcl_findLibrary")
+
+
+def create_root(factory):
+    for attempt in range(3):
+        try:
+            return factory()
+        except tkinter.TclError as exc:
+            if not any(m in str(exc) for m in _TCL_INIT_ERRORS) or attempt == 2:
+                raise
+            time.sleep(0.2)
+
+
 real_fetch_thumbnail = app_mod.fetch_thumbnail  # the autouse fixture replaces it in app_mod
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -126,16 +142,7 @@ def make_window(tmp_path):
 
     def build(service=None, settings=None, tools=None):
         settings = settings or Settings(output_dir=str(tmp_path))
-        # Creating many Tk roots in one process occasionally fails on the Windows CI runner
-        # with "Can't find a usable init.tcl" (environmental flake, not an app defect).
-        for attempt in range(3):
-            try:
-                w = MainWindow(service or FakeService(), tools or FakeTools(), settings)
-                break
-            except tkinter.TclError as exc:
-                if "init.tcl" not in str(exc) or attempt == 2:
-                    raise
-                time.sleep(0.2)
+        w = create_root(lambda: MainWindow(service or FakeService(), tools or FakeTools(), settings))
         w.withdraw()
         windows.append(w)
         return w
@@ -799,7 +806,7 @@ class FakeInstaller:
 
 def test_first_run_retry_after_failure():
     tools = FakeInstaller()
-    w = FirstRunWindow(tools, tool_specs("linux"))
+    w = create_root(lambda: FirstRunWindow(tools, tool_specs("linux")))
     w.withdraw()
     try:
         assert w.header_label.cget("text") == (
