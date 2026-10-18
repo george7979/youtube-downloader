@@ -123,6 +123,22 @@ def test_note_video_id_reads_frontmatter(tmp_path):
     assert note_video_id(note) == VID
 
 
+def test_note_video_id_reads_rendered_note(tmp_path):
+    from datetime import date
+
+    from ytdownloader.core.models import VideoInfo
+    from ytdownloader.core.note import render_note
+
+    info = VideoInfo(
+        id=VID, url=f"https://www.youtube.com/watch?v={VID}", title="x", channel="c",
+        duration=10, published=None, language=None, thumbnail=None, description="",
+        chapters=[], heights=[], subtitles=[],
+    )
+    note = tmp_path / "n.md"
+    note.write_text(render_note(info, "x.mp4", "none", None, date(2026, 10, 18)), encoding="utf-8")
+    assert note_video_id(note) == VID
+
+
 def test_note_video_id_ignores_missing_frontmatter(tmp_path):
     note = tmp_path / "n.md"
     note.write_text(f"# Title\n\nurl: https://www.youtube.com/watch?v={VID}\n", encoding="utf-8")

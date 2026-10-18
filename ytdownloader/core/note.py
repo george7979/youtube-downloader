@@ -42,7 +42,7 @@ def render_note(
     downloaded: date,
 ) -> str:
     long = (info.duration or 0) >= 3600
-    front = ["---", f"title: {_q(info.title)}", f"channel: {_q(info.channel)}", f"url: {info.url}"]
+    front = [f"title: {_q(info.title)}", f"channel: {_q(info.channel)}", f"url: {info.url}"]
     if info.published is not None:
         front.append(f"published: {info.published.isoformat()}")
     front.append(f"downloaded: {downloaded.isoformat()}")
@@ -50,10 +50,12 @@ def render_note(
     front.append(f"video: {_q(f'[[{media_filename}]]')}")
     front.append(f"transcript: {transcript_kind}")
     front.append("tags: [video, youtube]")
-    front.append("---")
 
+    # Blank lines between fields are valid YAML and keep the header readable in Markdown
+    # viewers without frontmatter support: each field stays its own paragraph and the closing
+    # `---` stays a rule instead of turning the fields into one setext heading.
     parts = [
-        "\n".join(front),
+        "---\n" + "\n\n".join(front) + "\n\n---",
         f"# {info.title}",
         f"![[{media_filename}]]",
         "## Description\n\n" + neutralize_markdown(info.description.strip()),

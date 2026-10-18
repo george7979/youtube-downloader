@@ -32,14 +32,23 @@ def test_render_note_zoo():
     expected = (
         "---\n"
         'title: "Me at the zoo"\n'
+        "\n"
         'channel: "jawed"\n'
+        "\n"
         "url: https://www.youtube.com/watch?v=jNQXAC9IVRw\n"
+        "\n"
         "published: 2005-04-24\n"
+        "\n"
         "downloaded: 2026-10-18\n"
+        "\n"
         'duration: "00:19"\n'
+        "\n"
         'video: "[[Me at the zoo.mp4]]"\n'
+        "\n"
         "transcript: youtube-manual-en\n"
+        "\n"
         "tags: [video, youtube]\n"
+        "\n"
         "---\n"
         "\n"
         "# Me at the zoo\n"
@@ -104,3 +113,15 @@ def test_title_with_quotes_is_valid_yaml_string():
 def test_missing_published_omits_line():
     out = render_note(make_info(published=None), "a.mp4", "none", None, date(2026, 10, 18))
     assert "published:" not in out
+
+
+def test_frontmatter_survives_viewers_without_frontmatter_support():
+    """A blank line between fields keeps each one a paragraph of its own, and a blank line
+    before the closing `---` keeps it a rule instead of turning the fields into a heading."""
+    out = render_note(make_info(), "Me at the zoo.mp4", "none", None, date(2026, 10, 18))
+    front = out.split("\n---\n", 1)[0].split("\n")
+    assert front[0] == "---"
+    fields = front[1:]
+    assert fields[-1] == ""
+    assert all(line == "" for line in fields[1::2])
+    assert all(": " in line for line in fields[0::2])

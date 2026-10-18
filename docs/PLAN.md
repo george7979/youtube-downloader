@@ -24,12 +24,14 @@
 
 Testy akceptacyjne PO na Windows w toku (scenariusze w spec §11; po przypomnienie z opisem
 kroków — poprosić Claude). Na Linux/WSL scenariusz 2 przez skill (CLI i skill zainstalowane na
-thinkpadzie). Poprawki po dotychczasowych uwagach PO:
+thinkpadzie). Poprawki po dotychczasowych uwagach PO (sprawdzenie w instalatorze z przebiegu
+„Build and Release”, artefakt `windows-installer`):
 
 - suma kontrolna Deno na Windows (format `Get-FileHash`) — wypchnięte, CI zielone;
 - okno za wysokie na Full HD przy skalowaniu 125–150% — rozmiar liczony z obszaru roboczego
-  ekranu; do sprawdzenia przez PO w instalatorze z przebiegu „Build and Release” (artefakt
-  `windows-installer`).
+  ekranu;
+- nagłówek notatki sklejony w jedną linię w edytorach bez obsługi frontmattera (Notepad++
+  z wtyczką Markdown) — pusta linia między polami; PO sprawdza w Notepad++ i w Obsidianie.
 
 Uwagi PO → poprawki na `dev`; po akceptacji PR `dev` → `main` i tag `v2.0.0` (za zgodą PO).
 

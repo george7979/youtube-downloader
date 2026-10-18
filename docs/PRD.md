@@ -20,7 +20,9 @@ po stronie YouTube.
    MP3 jako opcja.
 2. Notatka `.md` obok pliku, ta sama nazwa: metadane we frontmatterze, osadzony film,
    opis, rozdziały, transkrypt z napisów YouTube (ręcznych przed automatycznymi) jako
-   akapity ze znacznikami czasu-linkami do YouTube. Opcjonalnie plik `.srt`.
+   akapity ze znacznikami czasu-linkami do YouTube. Opcjonalnie plik `.srt`. Notatka czytelna
+   także poza Obsidianem — w edytorze Markdown bez obsługi frontmattera metadane są osobnymi
+   liniami, nie sklejonym nagłówkiem.
 3. Folder docelowy wybierany przez użytkownika, domyślnie systemowe Pobrane, pamiętany.
 4. Aplikacja sama pobiera i aktualizuje swoje narzędzia (yt-dlp, ffmpeg, Deno) — działa
    dalej po zmianach YouTube bez nowego wydania.
