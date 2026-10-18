@@ -443,3 +443,29 @@ def test_other_errors_are_not_retried(tmp_path, lecture):
         download(make_service(runner), request(tmp_path), lecture)
 
     assert runner.calls == 1
+
+
+def test_engine_output_and_stalls_are_logged(tmp_path, lecture, caplog):
+    now = [100.0]
+
+    class SlowRunner(FakeRunner):
+        def run(self, args, on_line, cancel):
+            (self.folder / "T.mp4").write_bytes(b"video")
+            on_line('YTDL {"status": "downloading", "downloaded_bytes": 1, "total_bytes": 10}')
+            now[0] += 40  # YouTube stopped sending for 40 s
+            on_line("WARNING: [youtube] something odd")
+            on_line("FILE " + str(self.folder / "T.mp4"))
+            now[0] += 2
+            return 0, ""
+
+    runner = SlowRunner(tmp_path)
+    service = Service(FakeTools(), runner_factory=lambda: runner, today=lambda: TODAY,
+                      clock=lambda: now[0])
+    with caplog.at_level("INFO", logger="ytdownloader.core.service"):
+        download(service, request(tmp_path), lecture)
+
+    text = caplog.text
+    assert 'no output for 40 s after: YTDL {"status": "downloading"' in text
+    assert "yt-dlp: WARNING: [youtube] something odd" in text
+    assert "yt-dlp: exit code 0 after 42 s" in text
+    assert "downloaded_bytes" not in text.split("no output")[0]  # progress lines are not logged

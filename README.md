@@ -18,7 +18,7 @@ For every video, in the folder you choose:
 - `Title.md` — a note with the video's metadata, the embedded video (`![[Title.mp4]]`), the
   description, chapters, and the transcript as paragraphs with clickable timestamp links to
   YouTube. An existing note is never overwritten.
-- `Title.<lang>.srt` — optional, if you tick "Also save .srt".
+- `Title.<lang>.srt` — optional, if you tick "Also save subtitles (.srt)".
 
 The transcript comes from YouTube captions: manual ones are preferred, automatic ones are used
 as a fallback. Videos without captions get a note without a transcript (`transcript: none`).
@@ -99,7 +99,8 @@ engine update may fix.
 
 1. Paste a YouTube link and click **Check** — you see the title, channel, length and thumbnail.
 2. Choose **MP4** or **MP3**, the **quality**, and the **subtitles** language (the kind, manual
-   or auto, is shown). Tick **Save note (.md)** and, if you want it, **Also save .srt**.
+   or auto, is shown). Tick **Save note with transcript (.md)** — the label says "without transcript" when
+   Subtitles is set to None — and, if you want it, **Also save subtitles (.srt)**.
 3. The folder defaults to your system Downloads folder; **Change** picks another one. It is
    remembered between sessions.
 4. Click **Download**. The status line always shows what is happening (fetching, downloading,
@@ -204,7 +205,8 @@ the destination folder first.
 Other things worth knowing:
 
 - **Log file:** `...` menu, **Open log folder**. Linux: `~/.local/state/youtube-downloader/log/app.log`;
-  Windows: `%LOCALAPPDATA%\YouTube Downloader\Logs\app.log`.
+  Windows: `%LOCALAPPDATA%\YouTube Downloader\Logs\app.log`. Each download logs yt-dlp's
+  warnings, every pause longer than 15 s and the total time — attach it when reporting slow downloads.
 - **No H.264 at the chosen quality:** the app says so and downloads VP9/AV1 instead; some
   players cannot decode it.
 - **Application won't start on Linux:** `sudo apt reinstall youtube-downloader`; for dependency

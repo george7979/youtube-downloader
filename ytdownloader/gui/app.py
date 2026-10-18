@@ -60,6 +60,7 @@ THUMB_MAX_BYTES = 5 * 1024 * 1024
 PLACEHOLDER_RGB = (75, 85, 99)
 DIM_TEXT = ("gray40", "gray60")
 NO_SUBS = "None"
+NOTE_LABELS = {True: "Save note with transcript (.md)", False: "Save note without transcript (.md)"}
 MENU_FONT_SIZE = 12  # points
 MODES = {"MP4": "mp4", "MP3": "mp3"}
 MENU_UPDATE = 0  # index of "Update engine" in the footer menu
@@ -159,6 +160,9 @@ class MainWindow(ctk.CTk):
         self._build_footer()
         self.body = ctk.CTkScrollableFrame(self, fg_color="transparent")
         self.body.pack(fill="both", expand=True, padx=6, pady=(6, 0))
+        # CTkScrollableFrame always shows its scrollbar (a full-height thumb when everything
+        # fits); show it only when there is something to scroll. Private attributes of CTk 6.
+        self.body._parent_canvas.configure(yscrollcommand=self._on_body_scroll)
         self._build_url_row()
         self._build_card()
         self._build_options()
@@ -189,6 +193,15 @@ class MainWindow(ctk.CTk):
                     self.iconbitmap(str(ico))
                 except tk.TclError:
                     log.warning("Could not load window icon %s", ico, exc_info=True)
+
+    def _on_body_scroll(self, first: str, last: str) -> None:
+        bar = self.body._scrollbar
+        bar.set(first, last)
+        fits = float(first) <= 0.0 and float(last) >= 1.0
+        if fits and bar.winfo_manager():
+            bar.grid_remove()
+        elif not fits and not bar.winfo_manager():
+            bar.grid()
 
     def _section(self) -> ctk.CTkFrame:
         return ctk.CTkFrame(self.body)
@@ -240,16 +253,20 @@ class MainWindow(ctk.CTk):
         subs_row = ctk.CTkFrame(self.options, fg_color="transparent")
         subs_row.grid(row=1, column=0, columnspan=2, padx=10, pady=6, sticky="w")
         ctk.CTkLabel(subs_row, text="Subtitles").pack(side="left", padx=(0, 6))
-        self.subs_menu = ctk.CTkOptionMenu(subs_row, values=[NO_SUBS], width=140)
+        self.subs_menu = ctk.CTkOptionMenu(
+            subs_row, values=[NO_SUBS], width=140, command=lambda _v: self._update_note_label()
+        )
         self.subs_menu.pack(side="left")
 
         checks = ctk.CTkFrame(self.options, fg_color="transparent")
         checks.grid(row=2, column=0, columnspan=2, padx=10, pady=(6, 10), sticky="w")
         self.note_var = tk.BooleanVar(master=self, value=self.settings.save_note)
         self.srt_var = tk.BooleanVar(master=self, value=self.settings.save_srt)
-        self.note_check = ctk.CTkCheckBox(checks, text="Save note (.md)", variable=self.note_var)
+        self.note_check = ctk.CTkCheckBox(checks, text=NOTE_LABELS[False], variable=self.note_var)
         self.note_check.pack(side="left", padx=(0, 16))
-        self.srt_check = ctk.CTkCheckBox(checks, text="Also save .srt", variable=self.srt_var)
+        self.srt_check = ctk.CTkCheckBox(
+            checks, text="Also save subtitles (.srt)", variable=self.srt_var
+        )
         self.srt_check.pack(side="left")
 
         self._reset_options()
@@ -429,6 +446,7 @@ class MainWindow(ctk.CTk):
         track, _warning = pick_track(info, SUBS_DEFAULT, self.settings.subs_lang)
         self.subs_menu.configure(values=[NO_SUBS, *self._tracks_by_label])
         self.subs_menu.set(track.label() if track else NO_SUBS)
+        self._update_note_label()
 
         if not self.card.winfo_manager():
             self.card.pack(fill="x", pady=(0, 8), after=self.url_row)
@@ -448,6 +466,11 @@ class MainWindow(ctk.CTk):
         self._tracks_by_label = {}
         self.subs_menu.configure(values=[NO_SUBS])
         self.subs_menu.set(NO_SUBS)
+        self._update_note_label()
+
+    def _update_note_label(self) -> None:
+        """Say whether the note will carry a transcript (it comes from the chosen subtitles)."""
+        self.note_check.configure(text=NOTE_LABELS[self.subs_menu.get() != NO_SUBS])
 
     def _set_thumbnail(self, img: Image.Image) -> None:
         self._thumb_image = ctk.CTkImage(light_image=img, dark_image=img, size=THUMB_SIZE)

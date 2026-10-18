@@ -38,7 +38,13 @@ thinkpadzie). Poprawki po dotychczasowych uwagach PO (sprawdzenie w instalatorze
 - większe menu `⋯`;
 - „checksum mismatch” ffmpeg przy pierwszym uruchomieniu (trafienie w codzienną podmianę
   wydania `latest` FFmpeg-Builds) — pobieranie z niezmiennego `autobuild-*`; ucięte szczegóły
-  błędu w oknie pierwszego uruchomienia — okno rośnie do treści.
+  błędu w oknie pierwszego uruchomienia — okno rośnie do treści;
+- pasek przewijania widoczny zawsze — teraz tylko, gdy treść się nie mieści; „Save note” nie mówił,
+  czy będzie transkrypt — etykieta zależna od wybranych napisów;
+- przestoje w pobieraniu — przyczyna nieznana (log był pusty); log zapisuje teraz przerwy ≥ 15 s
+  i komunikaty yt-dlp, do analizy przy następnym przestoju;
+- „chińskie znaczki” w transkrypcie — pliki `.md` i `.srt` są poprawnym UTF-8 (uchardet: UTF-8,
+  0,99); czekamy na informację od PO, w jakim programie i który plik.
 
 Uwagi PO → poprawki na `dev`; po akceptacji PR `dev` → `main` i tag `v2.0.0` (za zgodą PO).
 

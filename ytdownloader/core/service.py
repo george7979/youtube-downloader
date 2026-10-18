@@ -7,6 +7,7 @@ import fnmatch
 import logging
 import os
 import threading
+import time
 from collections.abc import Callable
 from datetime import date
 from pathlib import Path
@@ -24,6 +25,8 @@ log = logging.getLogger(__name__)
 
 # Extra engine runs after an HTTP 403 (stream URL refused); the second run usually succeeds.
 FORBIDDEN_RETRIES = 1
+# A gap this long without any engine output is logged, with the line before it.
+STALL_LOG_S = 15.0
 
 _PARTIAL_PATTERNS = ("*.part", "*.ytdl", "*.f[0-9]*.*", "*.vtt", "*.temp.*")
 
@@ -55,16 +58,47 @@ def _cleanup(names: NamePlan) -> None:
                 pass
 
 
+class _EngineLog:
+    """What a slow or failed download needs afterwards in app.log: yt-dlp's own messages
+    (warnings, errors, codec and file lines — `--print` silences the rest), every gap without
+    output of STALL_LOG_S or more with the line before it, and the total time."""
+
+    def __init__(self, clock: Callable[[], float]):
+        self.clock = clock
+        self.start = self.last = clock()
+        self.last_line = "(start)"
+
+    def _check_gap(self) -> float:
+        now = self.clock()
+        gap = now - self.last
+        if gap >= STALL_LOG_S:
+            log.info("yt-dlp: no output for %.0f s after: %s", gap, self.last_line[:300])
+        self.last = now
+        return now
+
+    def line(self, line: str) -> None:
+        self._check_gap()
+        self.last_line = line.rstrip()
+        if not line.startswith(("YTDL ", "YTPP ")):
+            log.info("yt-dlp: %s", self.last_line[:500])
+
+    def done(self, rc: int) -> None:
+        now = self._check_gap()
+        log.info("yt-dlp: exit code %s after %.0f s", rc, now - self.start)
+
+
 class Service:
     def __init__(
         self,
         tools: ToolManager,
         runner_factory: Callable[[], Runner] = Runner,
         today: Callable[[], date] = date.today,
+        clock: Callable[[], float] = time.monotonic,
     ):
         self.tools = tools
         self.runner_factory = runner_factory
         self.today = today
+        self.clock = clock
 
     def probe(self, url: str) -> VideoInfo:
         return probe(url, self.tools.paths(), self.runner_factory())
@@ -211,9 +245,16 @@ class Service:
         captured: list[Path] = []
         for attempt in range(FORBIDDEN_RETRIES + 1):
             parser = ProgressParser(req.mode)
+            engine_log = _EngineLog(self.clock)
             captured.clear()
+            log.info(
+                "Download %s (%s, %sp, attempt %d)", req.url, req.mode, req.quality, attempt + 1
+            )
 
-            def on_line(line: str, parser: ProgressParser = parser) -> None:
+            def on_line(
+                line: str, parser: ProgressParser = parser, engine_log: _EngineLog = engine_log
+            ) -> None:
+                engine_log.line(line)
                 event = parser.feed(line)
                 if event is None:
                     return
@@ -226,6 +267,7 @@ class Service:
                 sink(event)
 
             rc, stderr = self.runner_factory().run(args, on_line, cancel)
+            engine_log.done(rc)
             if rc == -1:
                 _cleanup(names)
                 raise friendly("cancelled")

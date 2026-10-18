@@ -937,3 +937,24 @@ def test_first_run_grows_to_show_error_details(monkeypatch):
         assert height > 360
     finally:
         w.destroy()
+
+
+def test_note_label_says_whether_transcript_is_included(make_window):
+    w = make_window()
+    assert w.note_check.cget("text") == "Save note without transcript (.md)"
+    w.apply_info(lecture())
+    assert w.subs_menu.get() != app_mod.NO_SUBS
+    assert w.note_check.cget("text") == "Save note with transcript (.md)"
+    w.subs_menu._dropdown_callback(app_mod.NO_SUBS)  # what picking from the list does
+    assert w.note_check.cget("text") == "Save note without transcript (.md)"
+
+
+def test_scrollbar_only_when_content_overflows(make_window):
+    w = make_window()
+    bar = w.body._scrollbar
+    w._on_body_scroll("0.0", "1.0")
+    assert bar.winfo_manager() == ""
+    w._on_body_scroll("0.0", "0.6")
+    assert bar.winfo_manager() == "grid"
+    w._on_body_scroll("0.0", "1.0")
+    assert bar.winfo_manager() == ""

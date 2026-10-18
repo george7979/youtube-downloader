@@ -74,7 +74,7 @@ gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru r
 |---|---|
 | `paths.py` | **jedyne** źródło lokalizacji: konfiguracja, dane, logi, narzędzia, Pobrane, zasoby (`sys._MEIPASS` w paczce) |
 | `settings.py` | `settings.json` (folder, tryb, jakość, język napisów, notatka/srt, czas ostatniej aktualizacji) i lista 5 ostatnich pobrań; walidacja typów, zapis atomowy; `resolve_output_dir` wraca do Pobrane z komunikatem, gdy zapisany folder zniknął (pusty `output_dir` = nie wybrano). Jakość to pułap: okno domyślnie wybiera najwyższą wysokość filmu ≤ zapisanej i zapisuje jakość tylko wtedy, gdy użytkownik wybrał inną niż ta domyślna (film z maks. 720p nie obniża ustawienia 1080) |
-| `logsetup.py` | rotujący `app.log` (1 MB × 3), a gdy jest `stderr` — także na konsolę |
+| `logsetup.py` | rotujący `app.log` (1 MB × 3), a gdy jest `stderr` — także na konsolę. `Service` loguje na INFO każde uruchomienie silnika (adres, tryb, jakość, próba), linie yt-dlp poza postępem (`--print` wycisza resztę, więc to ostrzeżenia, błędy, `CODEC`, `FILE`), każdą przerwę bez wyjścia ≥ 15 s (`STALL_LOG_S`) z linią sprzed niej oraz kod wyjścia i czas |
 | `urls.py` | ID filmu z linku (`watch`, `youtu.be`, `shorts`, `embed`, `live`); inne → `invalid_url`; playlisty ignorowane |
 | `errors.py` | `FriendlyError(code, message, hint, details)`; tabela 10 kodów (niżej); `classify(stderr)` dopasowuje podciągi (kolejność ma znaczenie) |
 | `models.py` | typy danych wspólne dla warstw (`VideoInfo`, `DownloadRequest`, `DownloadResult`, `Status`, `Progress`) |
