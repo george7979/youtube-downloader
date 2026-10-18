@@ -45,6 +45,8 @@ thinkpadzie). Poprawki po dotychczasowych uwagach PO (sprawdzenie w instalatorze
   odtworzone poza aplikacją), opis w TECH Known Issues; log zapisuje przerwy ≥ 15 s;
 - okno za wysokie — Recent pokazuje 3 pozycje w zwartych wierszach, okno 660 zamiast 780;
 - brak ikony w Ustawienia → Aplikacje — `DisplayIcon` w instalatorze;
+- „Sign in to confirm you're not a bot” dla każdego filmu w Windows — YouTube oznaczył adres
+  IPv6 laptopa; aplikacja łączy się zawsze przez IPv4 (`--force-ipv4`).
 - „chińskie znaczki” w transkrypcie — błąd programu do odczytu, nie aplikacji (pliki są
   poprawnym UTF-8; w innym edytorze i w Obsidianie OK — potwierdził PO).
 

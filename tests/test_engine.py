@@ -50,6 +50,7 @@ def _base() -> list[str]:
         "--ignore-config",
         "--no-playlist",
         "--no-mtime",
+        "--force-ipv4",
         "--encoding",
         "utf-8",
         "--js-runtimes",
@@ -84,7 +85,7 @@ def _option_value(args: list[str], option: str) -> str:
 
 
 def test_common_and_base_and_probe_args():
-    assert COMMON == ["--ignore-config", "--no-playlist", "--no-mtime"]
+    assert COMMON == ["--ignore-config", "--no-playlist", "--no-mtime", "--force-ipv4"]
     assert base_args(TOOLS) == _base()
     assert probe_args(URL, TOOLS) == _base() + ["-J", "--", URL]
 

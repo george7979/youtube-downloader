@@ -17,7 +17,9 @@ from .models import DownloadRequest, Progress, Status, SubtitleTrack
 from .naming import NamePlan
 from .tools import ToolPaths
 
-COMMON: list[str] = ["--ignore-config", "--no-playlist", "--no-mtime"]
+# IPv4 only: YouTube flags IPv6 addresses for "Sign in to confirm you're not a bot" while the
+# same machine's IPv4 address still works (seen on the PO's Windows laptop, 2026-10-18).
+COMMON: list[str] = ["--ignore-config", "--no-playlist", "--no-mtime", "--force-ipv4"]
 
 _POLL_SECONDS = 0.1
 _TERM_GRACE_SECONDS = 3

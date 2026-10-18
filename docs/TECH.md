@@ -188,6 +188,10 @@ Zweryfikowane na prawdziwych uruchomieniach (fixtury w `tests/fixtures/`).
   `Runner` karmi `on_line` liniami obu strumieni; stderr jest też zachowany dla
   `classify`. Bez tego status „Merging…” nigdy się nie pojawi.
 - **`--print` wycisza yt-dlp** — zawsze dodajemy `--progress` (i `--newline`).
+- **`--force-ipv4` zawsze** (w `COMMON`): YouTube potrafi oznaczyć adres IPv6 („Sign in to
+  confirm you're not a bot” dla każdego filmu), podczas gdy IPv4 tej samej maszyny działa —
+  sprawdzone 2026-10-18 na laptopie PO: ten sam `yt-dlp.exe` i to samo łącze, bez `-4` blokada,
+  z `-4` pobiera. Świadomie: sieć bez IPv4 nie połączy się z YouTube (błąd `network`).
 - **Własne szablony postępu:** `--progress-template "download:YTDL %(progress)j"` i
   `"postprocess:YTPP %(progress)j"`; wartości z `--print`: `before_dl:CODEC %(vcodec)s`
   (ostrzeżenie „No H.264…”, gdy kodek nie zaczyna się od `avc1`) i `after_move:FILE
