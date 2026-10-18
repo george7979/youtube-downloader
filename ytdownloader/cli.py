@@ -17,7 +17,7 @@ from .core.errors import FriendlyError, friendly
 from .core.logsetup import setup_logging
 from .core.models import SUBS_DEFAULT, SUBS_NONE, DownloadRequest, Progress, Status
 from .core.service import Service
-from .core.tools import ToolManager
+from .core.tools import ToolManager, should_check_update
 
 log = logging.getLogger(__name__)
 
@@ -141,6 +141,37 @@ def _install_missing(tools: ToolManager) -> None:
         tools.install(spec, on_bytes)
 
 
+def _store_update_check(now: float) -> None:
+    """Record a successful engine update in the settings.json the window shares."""
+    try:
+        current = settings_module.load_settings()
+        current.last_update_check = now
+        settings_module.save_settings(current)
+    except OSError:
+        log.warning("Could not store the update check time", exc_info=True)
+
+
+def _daily_engine_update(tools: ToolManager) -> None:
+    """Like the window: once a day `yt-dlp -U` before working; a failure only warns."""
+    now = time.time()
+    if not should_check_update(settings_module.load_settings().last_update_check, now):
+        return
+    _err("Checking for engine updates…")
+    try:
+        old, new = tools.update_ytdlp()
+    except Exception:  # noqa: BLE001 - the current engine may still work
+        log.warning("yt-dlp update failed", exc_info=True)
+        old = new = None
+    if new is None:
+        _err("Warning: could not update the download engine; continuing with the current version.")
+        return
+    if new != old:
+        _err(f"Engine updated: yt-dlp {old} -> {new}")
+    else:
+        _err(f"Engine up to date: yt-dlp {new}")
+    _store_update_check(now)
+
+
 # --- commands --------------------------------------------------------------
 
 
@@ -159,6 +190,7 @@ def _run_get(service: Service, args: argparse.Namespace, cancel: threading.Event
     except OSError as exc:
         raise friendly("write_failed", details=str(exc)) from exc
     _install_missing(service.tools)
+    _daily_engine_update(service.tools)
     req = DownloadRequest(
         url=args.url,
         output_dir=out,
@@ -185,6 +217,7 @@ def _run_get(service: Service, args: argparse.Namespace, cancel: threading.Event
 
 def _run_info(service: Service, args: argparse.Namespace) -> dict[str, Any]:
     _install_missing(service.tools)
+    _daily_engine_update(service.tools)
     info = service.probe(args.url)
     return {
         "ok": True,
@@ -219,12 +252,10 @@ def _run_tools(service: Service, args: argparse.Namespace) -> dict[str, Any]:
 
         old, new = tools.update_all(on_bytes_for)
         updated = {"from": old, "to": new}
-        try:
-            current = settings_module.load_settings()
-            current.last_update_check = time.time()
-            settings_module.save_settings(current)
-        except OSError:
-            log.warning("Could not store the update check time", exc_info=True)
+        if new is None:
+            _err("Warning: could not update yt-dlp.")
+        else:
+            _store_update_check(time.time())
     p = tools.paths()
     return {
         "ok": True,
