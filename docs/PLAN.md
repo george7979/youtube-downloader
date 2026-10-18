@@ -33,8 +33,9 @@ przez skill. Uwagi PO → poprawki na `dev`.
 
 Uwaga PO z Linux/WSL: okno z liter „Y”/„Z” i postrzępionych rogów, menu „⋯” nie znika.
 Poprawione na `dev`: menu (X11), paczka Linux na Pythonie z systemowym Tk z Xft (TECH
-„Pakowanie”). Czeka: przebieg CI z krokiem sprawdzającym Xft i startem okna w kontenerach,
-potem retest PO z `.deb` i z `uv tool install --python /usr/bin/python3`.
+„Pakowanie”); CI i budowanie zielone (przebieg 39162447294: 20 rodzin fontów w Tk, okno żyje
+10 s w kontenerach 22.04 i 24.04). Czeka retest PO z `.deb` (artefakt `linux-deb`) i z
+`uv tool install --python /usr/bin/python3`.
 
 ## Backlog
 
