@@ -26,8 +26,9 @@ po stronie YouTube.
    dalej po zmianach YouTube bez nowego wydania.
 5. Zawsze widać, co się dzieje (pierwsze uruchomienie, aktualizacja, etapy pobierania);
    błędy opisane prostym językiem z podpowiedzią i szczegółami do skopiowania.
-6. Ponowne pobranie rozpoznane po plikach w folderze; istniejąca notatka nigdy nie jest
-   nadpisywana.
+6. Ponowne pobranie rozpoznane po plikach w folderze (po notatce tego filmu albo po nazwie
+   z `[ID]` — sam `Tytuł.mp4` bez notatki nie jest uznawany za ten film); istniejąca notatka
+   nigdy nie jest nadpisywana.
 7. Nieinteraktywne CLI z wynikiem JSON dla Claude Code; Claude zawsze pyta o folder.
 
 ## Poza zakresem

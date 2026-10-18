@@ -2,25 +2,36 @@
 
 ## Development environment
 
+The project uses [uv](https://docs.astral.sh/uv/). Use a uv-managed Python: a system Python
+often has no `tkinter`.
+
 ```bash
 git clone https://github.com/george7979/youtube-downloader.git
 cd youtube-downloader
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv sync --managed-python --python 3.12
 ```
 
-Run locally:
+Run the window or the command line from the working tree:
 
 ```bash
-python3 launcher.py
+uv run youtube-downloader                 # GUI
+uv run youtube-downloader info <URL>      # CLI (get / info / tools)
+uv run python launcher.py                 # same entry point as the packaged binary
 ```
 
-Run tests:
+Run the tests (no network is used):
 
 ```bash
-python3 -m pytest tests/ -v
+uv run pytest -q
 ```
+
+GUI tests need a display. On a headless Linux machine or in CI use a virtual one:
+
+```bash
+xvfb-run -a uv run pytest -q
+```
+
+Without any display the GUI tests skip themselves; the rest still run.
 
 ## Branch workflow
 
@@ -28,89 +39,84 @@ python3 -m pytest tests/ -v
 - `main` — stable, only updated via PR from `dev`
 - Never commit directly to `main`
 
-Feature development:
-
 ```
-work on dev → push → CI green → PR to main → merge
+work on dev -> push -> CI green -> PR to main -> merge -> tag
 ```
 
 ## Building installers
 
-Requires PyInstaller:
-
-```bash
-pip install "pyinstaller>=6.0" pillow
-```
+PyInstaller is in the `dev` dependency group (already installed by `uv sync`). yt-dlp is **not**
+bundled; the app downloads it at first run.
 
 ### Linux (.deb)
 
 ```bash
-pyinstaller youtube-downloader.spec --clean
-bash installer/linux/build-deb.sh
+uv run pyinstaller youtube-downloader.spec --clean
+bash installer/linux/build-deb.sh            # version is read from version.py
 ```
 
-Output: `youtube-downloader_VERSION_amd64.deb`
-
-Requires: `fakeroot`, `dpkg-dev`
+Output: `youtube-downloader_VERSION_amd64.deb`. Requires `fakeroot` and `dpkg-dev`.
 
 ### Windows (.exe installer)
 
 ```bash
-pyinstaller youtube-downloader.spec --clean
+uv run pyinstaller youtube-downloader.spec --clean
 makensis /DAPP_VERSION=VERSION installer\windows\installer.nsi
 ```
 
-Output: `installer\windows\youtube-downloader-VERSION-setup.exe`
-
-Requires: NSIS 3.x
+Output: `installer\windows\youtube-downloader-VERSION-setup.exe`. Requires NSIS 3.x.
 
 ## Releasing
 
-GitHub Actions builds both platforms automatically on every `v*` tag.
+GitHub Actions (`build.yml`) builds both packages on every push to `dev`/`main` and uploads them
+as artifacts; a `v*` tag additionally creates a GitHub Release.
 
-To release a new version:
-
-1. Bump version (on `dev`):
+1. Bump the version on `dev` (it lives only in `version.py`):
    ```bash
-   ./build-tools/version-manager.sh bump minor   # 1.2.0 → 1.3.0
-   ./build-tools/version-manager.sh bump patch   # 1.3.0 → 1.3.1
+   ./build-tools/version-manager.sh bump patch   # or minor / major
    ```
-
-2. Commit and push to `dev`, merge to `main` via PR
-
-3. Create and push tag (ask before doing this):
+2. Push `dev`, wait for CI, merge to `main` via PR.
+3. Tag only with the product owner's approval:
    ```bash
    git tag vX.Y.Z
    git push origin vX.Y.Z
    ```
 
-CI will build `.deb` + `.exe` and create a GitHub Release automatically.
-
 ## Project structure
 
 ```
-launcher.py          # entry point, auto-detects GUI/CLI
-version.py           # version number
-requirements.txt     # Python dependencies
-youtube-downloader.spec  # PyInstaller config
+launcher.py              # entry point for PyInstaller and `python launcher.py`
+version.py               # the version number (single source)
+pyproject.toml           # dependencies, console script, pytest config
+youtube-downloader.spec  # PyInstaller config (no yt-dlp inside)
 
-core/
-  downloader.py      # yt-dlp download engine
-  utils.py           # utilities
-  translations.py    # i18n
-
-ui/
-  gui.py             # CustomTkinter GUI
-  cli.py             # CLI fallback
+ytdownloader/
+  __main__.py            # routes: get/info/tools -> cli, otherwise the window
+  cli.py                 # command line, JSON contract
+  core/                  # no tkinter here
+    paths.py             #   per-OS locations (config, data, logs, tools)
+    settings.py          #   settings.json and the recent list
+    logsetup.py          #   rotating log file
+    urls.py              #   video id from a URL
+    errors.py            #   friendly errors, yt-dlp stderr classification
+    models.py            #   shared data types
+    tools.py             #   yt-dlp / ffmpeg / Deno: download, verify, update
+    engine.py            #   yt-dlp arguments, progress parsing, cancellable runner
+    probe.py             #   video info and caption track choice
+    subtitles.py         #   VTT -> paragraphs, SRT
+    naming.py            #   file names, detecting existing downloads
+    note.py              #   the Markdown note
+    service.py           #   the one entry point for GUI and CLI
+  gui/                   # CustomTkinter window
+    app.py  first_run.py  widgets.py  worker.py  system.py
 
 installer/
-  linux/build-deb.sh     # .deb packaging script
-  windows/installer.nsi  # NSIS installer script
+  linux/build-deb.sh     # .deb packaging
+  windows/installer.nsi  # NSIS installer
 
-tests/
-  test_cancel.py     # cancel mechanism tests
-
+integrations/claude-skill/youtube-downloader/SKILL.md   # Claude Code skill
+tests/                   # pytest; fixtures from real yt-dlp output in tests/fixtures/
 .github/workflows/
-  build.yml          # main build + release pipeline
-  ci.yml             # lint, tests, security scan
+  build.yml              # packages, .deb install test, release
+  ci.yml                 # lint, tests (Ubuntu with xvfb, Windows), security scan
 ```
