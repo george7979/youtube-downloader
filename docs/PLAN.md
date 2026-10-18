@@ -48,6 +48,11 @@ thinkpadzie). Poprawki po dotychczasowych uwagach PO (sprawdzenie w instalatorze
 - „Sign in to confirm you're not a bot” dla każdego filmu w Windows — YouTube oznaczył adres
   IPv6 laptopa; aplikacja łączy się zawsze przez IPv4 (`--force-ipv4`);
 - pole „Run YouTube Downloader” na końcu instalatora (prośba PO).
+
+Następny krok: poprawki wyglądu wybrane przez PO po analizie UI — hierarchia przycisków i własny
+kolor akcentu (`#1E7A68`), zwarty układ (folder w opcjach, postęp tylko w trakcie, „Recent”),
+auto-Check po wklejeniu linku, okno pierwszego uruchomienia. Makiety czekają na akceptację PO
+(kanwa „YouTube Downloader — UI mockups” w Claude Artifacts).
 - „chińskie znaczki” w transkrypcie — błąd programu do odczytu, nie aplikacji (pliki są
   poprawnym UTF-8; w innym edytorze i w Obsidianie OK — potwierdził PO).
 
