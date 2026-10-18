@@ -11,6 +11,7 @@ from ytdownloader.core.errors import FriendlyError
 from ytdownloader.core.models import DownloadRequest, Progress, Status
 from ytdownloader.core.naming import safe_filename
 from ytdownloader.core.probe import info_from_json
+from ytdownloader.core import service as service_module
 from ytdownloader.core.service import Service
 from ytdownloader.core.tools import ToolPaths
 
@@ -209,6 +210,65 @@ def test_cancelled_forced_redownload_keeps_note_and_media(tmp_path, lecture):
     assert exc.value.code == "cancelled"
     assert "--force-overwrites" in runner.calls[0]
     assert sorted(p.name for p in tmp_path.iterdir()) == ["Other.mp4.part", "T.md", "T.mp4"]
+
+
+def test_note_write_error_is_write_failed(tmp_path, lecture, vtt, monkeypatch):
+    real_write = service_module._write_text
+
+    def failing_write(path, text):
+        if path.suffix == ".md":
+            path.write_text("---\nurl: https://www.youtube.com/watch?v=VIw16SXObUQ\n", encoding="utf-8")
+            raise PermissionError(13, "Permission denied", str(path))
+        real_write(path, text)
+
+    monkeypatch.setattr(service_module, "_write_text", failing_write)
+    runner = full_runner(tmp_path, vtt)
+
+    with pytest.raises(FriendlyError) as exc:
+        download(make_service(runner), request(tmp_path, save_srt=True), lecture)
+
+    assert exc.value.code == "write_failed"
+    assert "Permission denied" in exc.value.details
+    assert not list(tmp_path.glob("*.vtt"))
+    assert not (tmp_path / "T.md").exists()  # the half-written note is removed
+    assert (tmp_path / "T.mp4").exists()
+
+
+def test_vtt_read_error_is_write_failed(tmp_path, lecture, vtt, monkeypatch):
+    real_read = Path.read_text
+
+    def failing_read(self, *args, **kwargs):
+        if self.suffix == ".vtt":
+            raise OSError(5, "Input/output error", str(self))
+        return real_read(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", failing_read)
+    runner = full_runner(tmp_path, vtt)
+
+    with pytest.raises(FriendlyError) as exc:
+        download(make_service(runner), request(tmp_path), lecture)
+
+    assert exc.value.code == "write_failed"
+    assert not list(tmp_path.glob("*.vtt"))
+    assert not (tmp_path / "T.md").exists()
+
+
+def test_write_error_keeps_existing_note(tmp_path, lecture, monkeypatch):
+    note = tmp_path / "T.md"
+    original = "---\nurl: https://www.youtube.com/watch?v=VIw16SXObUQ\n---\n\nMY NOTES\n"
+    note.write_text(original, encoding="utf-8")
+    runner = FakeRunner(tmp_path, files={"T.mp4": b"video"}, lines=[f"FILE {tmp_path / 'T.mp4'}"])
+
+    def boom(self, *args, **kwargs):
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(service_module.Service, "_write_outputs", boom)
+
+    with pytest.raises(FriendlyError) as exc:
+        download(make_service(runner), request(tmp_path), lecture)
+
+    assert exc.value.code == "write_failed"
+    assert note.read_text(encoding="utf-8") == original
 
 
 def test_unwritable_folder(tmp_path, lecture):

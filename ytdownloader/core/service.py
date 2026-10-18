@@ -109,6 +109,37 @@ class Service:
 
         media_path = self._run_engine(req, names, track, sink, cancel, media_only, note_only)
 
+        try:
+            transcript, srt_path, note_path = self._write_outputs(
+                req, info, names, track, media_path, sink, warnings
+            )
+        except OSError as exc:
+            _cleanup(names)
+            raise friendly("write_failed", details=str(exc)) from exc
+
+        sink(Status("Done."))
+        return DownloadResult(
+            video_id=info.id,
+            title=info.title,
+            media_path=media_path,
+            note_path=note_path,
+            srt_path=srt_path,
+            transcript=transcript,
+            warnings=warnings,
+        )
+
+    def _write_outputs(
+        self,
+        req: DownloadRequest,
+        info: VideoInfo,
+        names: NamePlan,
+        track: SubtitleTrack | None,
+        media_path: Path,
+        sink: EventSink,
+        warnings: list[str],
+    ) -> tuple[str, Path | None, Path | None]:
+        """Transcript, .srt and note after a successful engine run; may raise OSError."""
+        folder = names.media.parent
         transcript = "none"
         srt_path: Path | None = None
         paragraphs = None
@@ -132,19 +163,17 @@ class Service:
         if req.save_note and names.existing_note is None:
             sink(Status("Writing note…"))
             note_text = render_note(info, media_path.name, transcript, paragraphs, self.today())
-            _write_text(names.note, note_text)
+            try:
+                _write_text(names.note, note_text)
+            except OSError:
+                # A half-written note would later count as "existing" and never be rewritten.
+                try:
+                    names.note.unlink(missing_ok=True)
+                except OSError:
+                    pass
+                raise
             note_path = names.note
-
-        sink(Status("Done."))
-        return DownloadResult(
-            video_id=info.id,
-            title=info.title,
-            media_path=media_path,
-            note_path=note_path,
-            srt_path=srt_path,
-            transcript=transcript,
-            warnings=warnings,
-        )
+        return transcript, srt_path, note_path
 
     def _run_engine(
         self,
