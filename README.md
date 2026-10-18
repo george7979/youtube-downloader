@@ -109,7 +109,8 @@ If the video is already in the folder the app says so and offers **Show file** o
 **Download again**. If only the MP4 is missing, it fetches the MP4 and leaves your note alone.
 MP4 and MP3 are separate: having the MP4 does not stop an MP3 download of the same video.
 The quality you pick is remembered as a ceiling — a video that only goes up to 720p does not
-lower it for the next one. The last five downloads are listed under "Recent downloads".
+lower it for the next one. The last five downloads are listed under "Recent downloads"; **Clear** empties the list
+(the files stay on disk).
 
 ## Command line (Linux / WSL)
 
@@ -194,6 +195,7 @@ the destination folder first.
 | `bot_check` | YouTube suspects automated access (common on VPNs and office networks). | Click **Update engine** (`youtube-downloader tools --update`) and try again, or try again later. |
 | `engine_outdated` | YouTube changed something and yt-dlp can no longer read the video. | Click **Update engine** (`youtube-downloader tools --update`) and try again. |
 | `rate_limit` | Too many requests. | Wait a few minutes. |
+| `forbidden` | YouTube refused the video stream (HTTP 403). The app already retried once. | Try again; if it keeps happening, click **Update engine** (`youtube-downloader tools --update`). |
 | `write_failed` | The folder is not writable or the disk is full. | Pick another folder or free up space. |
 | `tools_missing` | Download tools are missing, or a downloaded tool failed its checksum or was incomplete. | Restart the app while online, or run `youtube-downloader tools`. |
 | `cancelled` | You cancelled the download. | Nothing to do; partial files were removed. |
@@ -220,7 +222,9 @@ sudo dpkg -P youtube-downloader     # purge
 Settings and downloaded tools stay in your profile (`~/.config/youtube-downloader`,
 `~/.local/share/youtube-downloader`); delete them by hand to remove everything.
 
-Windows: use "Apps" in Settings; the uninstaller also removes the downloaded tools.
+Windows: use "Apps" in Settings. The uninstaller also removes the downloaded tools, settings,
+the recent list and logs. Your downloaded videos and notes are never removed. Installing a new
+version over an old one keeps your settings.
 
 ## Building from source
 

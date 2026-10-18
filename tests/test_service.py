@@ -387,3 +387,59 @@ def test_probe_when_info_missing(tmp_path):
     assert result.title.startswith("Wykład")
     assert result.media_path is not None and result.media_path.is_file()
     assert all(isinstance(e, (Status, Progress)) for e in events)
+
+
+class SequenceRunner:
+    """Returns (rc, stderr) from `results` one call at a time; the last result repeats."""
+
+    def __init__(self, folder: Path, results, files=None):
+        self.folder = folder
+        self.results = list(results)
+        self.files = files or {}
+        self.calls = 0
+
+    def run(self, args, on_line, cancel):
+        rc, stderr = self.results[min(self.calls, len(self.results) - 1)]
+        self.calls += 1
+        if rc == 0:
+            for name, data in self.files.items():
+                (self.folder / name).write_bytes(data)
+        else:
+            (self.folder / "T.f137.mp4.part").write_bytes(b"partial")
+        return rc, stderr
+
+
+FORBIDDEN = "ERROR: unable to download video data: HTTP Error 403: Forbidden\n"
+
+
+def test_forbidden_is_retried_once_and_succeeds(tmp_path, lecture):
+    runner = SequenceRunner(tmp_path, [(1, FORBIDDEN), (0, "")], files={"T.mp4": b"video"})
+    events = []
+    result = make_service(runner).download(
+        request(tmp_path), lecture, events.append, threading.Event()
+    )
+
+    assert runner.calls == 2
+    assert result.media_path == tmp_path / "T.mp4"
+    assert any(getattr(e, "text", "") == "YouTube refused the stream — retrying…" for e in events)
+    assert not (tmp_path / "T.f137.mp4.part").exists()
+
+
+def test_forbidden_twice_raises_forbidden(tmp_path, lecture):
+    runner = SequenceRunner(tmp_path, [(1, FORBIDDEN)])
+
+    with pytest.raises(FriendlyError) as exc:
+        download(make_service(runner), request(tmp_path), lecture)
+
+    assert runner.calls == 2
+    assert exc.value.code == "forbidden"
+    assert not (tmp_path / "T.f137.mp4.part").exists()
+
+
+def test_other_errors_are_not_retried(tmp_path, lecture):
+    runner = SequenceRunner(tmp_path, [(1, "ERROR: HTTP Error 429: Too Many Requests\n")])
+
+    with pytest.raises(FriendlyError):
+        download(make_service(runner), request(tmp_path), lecture)
+
+    assert runner.calls == 1

@@ -72,3 +72,9 @@ def test_engine_outdated_order():
     assert classify("Sign in to confirm you're not a bot\nUnable to extract x").code == "bot_check"
     assert classify("HTTP Error 429\nnsig extraction failed").code == "rate_limit"
     assert classify("Unable to extract x\nVideo unavailable").code == "engine_outdated"
+
+
+def test_http_403_is_forbidden():
+    err = classify("ERROR: unable to download video data: HTTP Error 403: Forbidden\n")
+    assert err.code == "forbidden"
+    assert "try again" in err.hint

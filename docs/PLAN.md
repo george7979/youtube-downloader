@@ -31,12 +31,13 @@ thinkpadzie). Poprawki po dotychczasowych uwagach PO (sprawdzenie w instalatorze
 - okno za wysokie na Full HD przy skalowaniu 125–150% — rozmiar liczony z obszaru roboczego
   ekranu;
 - nagłówek notatki sklejony w jedną linię w edytorach bez obsługi frontmattera (Notepad++
-  z wtyczką Markdown) — pusta linia między polami; PO sprawdza w Notepad++ i w Obsidianie.
+  z wtyczką Markdown) — pusta linia między polami; PO sprawdza w Notepad++ i w Obsidianie;
+- błąd HTTP 403 przy pobieraniu (przeszedł dopiero za drugim razem) — jedna automatyczna
+  ponowna próba i własny komunikat `forbidden`;
+- lista Recent: przycisk „Clear”; deinstalator usuwa też ustawienia, Recent i logi (decyzja PO);
+- większe menu `⋯`.
 
 Uwagi PO → poprawki na `dev`; po akceptacji PR `dev` → `main` i tag `v2.0.0` (za zgodą PO).
-
-Otwarte pytanie do PO (bez decyzji): czy deinstalator ma usuwać też ustawienia i logi —
-dziś usuwa program i narzędzia, ustawienia i logi zostają celowo, pobrane pliki zawsze zostają.
 
 ## Backlog
 

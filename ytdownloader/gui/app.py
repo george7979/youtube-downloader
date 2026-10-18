@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 import tkinter as tk
+import tkinter.font as tkfont
 import traceback
 import urllib.parse
 import urllib.request
@@ -59,6 +60,7 @@ THUMB_MAX_BYTES = 5 * 1024 * 1024
 PLACEHOLDER_RGB = (75, 85, 99)
 DIM_TEXT = ("gray40", "gray60")
 NO_SUBS = "None"
+MENU_FONT_SIZE = 12  # points
 MODES = {"MP4": "mp4", "MP3": "mp3"}
 MENU_UPDATE = 0  # index of "Update engine" in the footer menu
 
@@ -302,9 +304,23 @@ class MainWindow(ctk.CTk):
     def _build_recent(self) -> None:
         self.recent_box = self._section()
         self.recent_box.pack(fill="x", pady=(0, 8))
+        header = ctk.CTkFrame(self.recent_box, fg_color="transparent")
+        header.pack(fill="x", padx=10, pady=(8, 2))
         ctk.CTkLabel(
-            self.recent_box, text="RECENT DOWNLOADS", font=self._font_heading, text_color=DIM_TEXT
-        ).pack(anchor="w", padx=10, pady=(8, 2))
+            header, text="RECENT DOWNLOADS", font=self._font_heading, text_color=DIM_TEXT
+        ).pack(side="left")
+        self.clear_recent_button = ctk.CTkButton(
+            header,
+            text="Clear",
+            width=56,
+            height=22,
+            font=self._font_small,
+            fg_color="transparent",
+            border_width=1,
+            text_color=DIM_TEXT,
+            command=self.clear_recent,
+        )
+        self.clear_recent_button.pack(side="right")
         self.recent_rows = ctk.CTkFrame(self.recent_box, fg_color="transparent")
         self.recent_rows.pack(fill="x", padx=10, pady=(0, 8))
 
@@ -323,10 +339,20 @@ class MainWindow(ctk.CTk):
             self.footer, text=f"v{__version__}", font=self._font_small, text_color=DIM_TEXT
         )
         self.version_label.pack(side="right")
-        self.engine_menu = tk.Menu(self, tearoff=False)
-        self.engine_menu.add_command(label="Update engine", command=self.update_engine)
-        self.engine_menu.add_command(label="Open log folder", command=self.open_log_folder)
-        self.engine_menu.add_command(label="About", command=self.about)
+        # Tk's default menu font (9 pt on Windows) looks tiny next to the CustomTkinter widgets.
+        # Kept on self: Tk deletes a named font when its Python object is garbage-collected.
+        self._font_menu = tkfont.nametofont("TkMenuFont").copy()
+        self._font_menu.configure(size=MENU_FONT_SIZE)
+        pad = round(4 * self._get_window_scaling())
+        self.engine_menu = tk.Menu(
+            self, tearoff=False, font=self._font_menu, borderwidth=pad, activeborderwidth=pad
+        )
+        for label, command in (
+            ("Update engine", self.update_engine),
+            ("Open log folder", self.open_log_folder),
+            ("About", self.about),
+        ):
+            self.engine_menu.add_command(label=f"  {label}    ", command=command)
 
     def _open_menu(self) -> None:
         x = self.menu_button.winfo_rootx()
@@ -800,6 +826,13 @@ class MainWindow(ctk.CTk):
                 command=lambda p=path: system.show_file(p),
             ).pack(side="right")
             self.recent_labels.append(label)
+        self.clear_recent_button.configure(state="normal" if self.settings.recent else "disabled")
+
+    def clear_recent(self) -> None:
+        """Forget the history only; the downloaded files stay where they are."""
+        self.settings.recent = []
+        self._save_settings()
+        self.refresh_recent()
 
     # --- lifecycle -----------------------------------------------------------
 

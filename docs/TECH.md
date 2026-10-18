@@ -95,6 +95,7 @@ nie odwołują się do elementów okna.
 | `write_failed` | `permission denied`, `no space left on device`, `[errno 28]`, `[errno 13]`, `read-only file system`; także błąd zapisu notatki/`.srt` i niezapisywalny folder |
 | `bot_check` | `not a bot` |
 | `rate_limit` | `this content isn't available, try again later`, `http error 429` |
+| `forbidden` | `http error 403` — YouTube odrzucił adres strumienia; `Service` sam ponawia uruchomienie silnika raz (`FORBIDDEN_RETRIES`, nowy przebieg dostaje nowe adresy), z komunikatem „YouTube refused the stream — retrying…”; kod trafia do użytkownika dopiero po drugiej porażce |
 | `engine_outdated` | `nsig extraction failed`, `signature extraction failed`, `unable to extract`, `requested format is not available` — typowe objawy zmiany po stronie YouTube |
 | `unavailable` | prywatny, usunięty, blokada regionu, wiek, tylko dla członków |
 | `network` | `unable to download webpage`, błędy DNS i połączenia, `timed out`, `urlopen error`; także nieudane pobranie narzędzi |
@@ -103,7 +104,7 @@ nie odwołują się do elementów okna.
 | `cancelled` | Cancel / Ctrl+C |
 | `unknown` | wszystko inne; `details` = ostatnie 40 linii stderr albo traceback |
 
-Okno przy `bot_check` i `engine_outdated` pokazuje w panelu błędu przycisk „Update engine”
+Okno przy `bot_check`, `forbidden` i `engine_outdated` pokazuje w panelu błędu przycisk „Update engine”
 (to samo co w menu `⋯`).
 
 ## Narzędzia zewnętrzne
@@ -141,7 +142,7 @@ albo gdy Deno nie odpowiada wersją ≥ 2.3.0.
   po porażce (np. offline) następny start próbuje znowu.
 - `update_ytdlp()` zwraca `(stara, nowa)`; gdy `-U` nie da się uruchomić albo kończy się
   kodem ≠ 0, zwraca `(stara, None)` — to jest „update failed”, nigdy „up to date”.
-- **Przycisk „Update engine”** (menu `⋯` oraz panel błędu przy `bot_check`/`engine_outdated`):
+- **Przycisk „Update engine”** (menu `⋯` oraz panel błędu przy `bot_check`/`forbidden`/`engine_outdated`):
   `update_all` — `yt-dlp -U`; gdy yt-dlp nie odpowiada na `--version` przed albo po `-U`,
   instaluje go od nowa ścieżką z sumą kontrolną; potem ponowna instalacja ffmpeg (poza
   systemowym) i Deno. Zablokowany w trakcie pobierania.
@@ -160,7 +161,10 @@ albo gdy Deno nie odpowiada wersją ≥ 2.3.0.
 | log `app.log` | `%LOCALAPPDATA%\YouTube Downloader\Logs\` | `~/.local/state/youtube-downloader/log/` |
 | domyślny folder pobierania | systemowy „Pobrane” | `~/Downloads` (wg XDG) |
 
-Deinstalator Windows usuwa `tools\`; ustawień i logów nie rusza. `.deb` niczego w profilu nie
+Deinstalator Windows usuwa całe `%LOCALAPPDATA%\YouTube Downloader\` (narzędzia, logi) i
+`%APPDATA%\YouTube Downloader\` (ustawienia, lista Recent); instalacja nowej wersji na starą
+deinstalatora nie uruchamia, więc aktualizacja ustawienia zachowuje. Pobrane pliki leżą w
+folderze wybranym przez użytkownika i nie są ruszane. `.deb` niczego w profilu nie
 zakłada ani nie usuwa. CLI na Linuksie/WSL ma własną konfigurację, osobną od Windows; z
 `settings.json` czyta i zapisuje wyłącznie `last_update_check` (wspólny z oknem na tym samym
 systemie) — folder zawsze podaje `--out`.

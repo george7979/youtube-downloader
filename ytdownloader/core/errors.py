@@ -27,6 +27,10 @@ _TABLE: dict[str, tuple[str, str]] = {
         "YouTube rate limit reached.",
         "Wait a few minutes and try again.",
     ),
+    "forbidden": (
+        "YouTube refused the video stream (HTTP 403).",
+        "This is usually temporary — try again. If it keeps happening, update the engine.",
+    ),
     "engine_outdated": (
         "The download engine needs an update.",
         "Update the engine and try again.",
@@ -68,6 +72,7 @@ _PATTERNS: list[tuple[str, tuple[str, ...]]] = [
     ),
     ("bot_check", ("not a bot",)),
     ("rate_limit", ("this content isn't available, try again later", "http error 429")),
+    ("forbidden", ("http error 403",)),
     (
         "engine_outdated",
         (

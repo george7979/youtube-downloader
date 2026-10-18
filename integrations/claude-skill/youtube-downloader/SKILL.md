@@ -98,12 +98,13 @@ bug report.
 | `bot_check` | YouTube is blocking the request (often a VPN). Update the engine and retry once (below); if it still fails, suggest trying later or without the VPN. |
 | `engine_outdated` | YouTube changed something and the download engine needs an update. Update the engine and retry once (below). |
 | `rate_limit` | Too many requests. Wait a few minutes. |
+| `forbidden` | YouTube refused the video stream (HTTP 403); the app already retried once. Update the engine and retry once (below). |
 | `write_failed` | The folder is not writable or the disk is full. Ask for another folder. |
 | `tools_missing` | Tools could not be downloaded. Run `youtube-downloader tools` while online and retry. |
 | `cancelled` | The download was cancelled (exit code 130); partial files were removed. |
 | `unknown` | Something unexpected. Show `details` and suggest a bug report. |
 
-On `engine_outdated` or `bot_check`: run `youtube-downloader tools --update --json` once, tell
+On `engine_outdated`, `bot_check` or `forbidden`: run `youtube-downloader tools --update --json` once, tell
 the user the yt-dlp version change (`updated.from` → `updated.to`), then run the failed command
 again exactly once. Retry at most once in total (also after a `network` fix); do not loop. If
 the retry fails the same way, report it with `message` and `hint`.

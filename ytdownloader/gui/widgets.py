@@ -18,7 +18,7 @@ ERROR_TEXT = ("#b91c1c", "#f87171")
 DIM_TEXT = ("gray40", "gray60")
 LINK_TEXT = ("#1d4ed8", "#93c5fd")
 WRAP = 420
-ENGINE_FIXABLE = frozenset({"bot_check", "engine_outdated"})  # errors an engine update may fix
+ENGINE_FIXABLE = frozenset({"bot_check", "engine_outdated", "forbidden"})  # errors an engine update may fix
 
 
 class ErrorPanel(ctk.CTkFrame):

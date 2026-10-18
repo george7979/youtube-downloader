@@ -471,7 +471,8 @@ def test_download_error_shows_panel_with_details(make_window, tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("code", "offered"), [("engine_outdated", True), ("bot_check", True), ("unavailable", False)]
+    ("code", "offered"),
+    [("engine_outdated", True), ("bot_check", True), ("forbidden", True), ("unavailable", False)],
 )
 def test_error_panel_offers_engine_update(make_window, code, offered):
     tools = FakeTools()
@@ -857,3 +858,41 @@ def test_window_height_fits_small_work_area(make_window, monkeypatch):
     width, height = w.geometry().split("+")[0].split("x")
     assert int(width) <= 540
     assert (int(height) + FRAME) * w._get_window_scaling() <= 600
+
+
+def test_clear_recent_empties_list_and_saves(make_window, tmp_path, monkeypatch):
+    settings_file = tmp_path / "settings.json"
+    monkeypatch.setattr(
+        app_mod, "save_settings", lambda s, path=None: real_save_settings(s, settings_file)
+    )
+    present = tmp_path / "present.mp4"
+    present.write_bytes(b"x")
+    settings = Settings(
+        output_dir=str(tmp_path),
+        recent=[RecentItem("bbb", "Here video", str(present), "2026-10-18")],
+    )
+    w = make_window(settings=settings)
+    assert w.clear_recent_button.cget("state") == "normal"
+
+    w.clear_recent_button.invoke()
+
+    assert w.recent_labels == []
+    assert w.clear_recent_button.cget("state") == "disabled"
+    assert json.loads(settings_file.read_text(encoding="utf-8"))["recent"] == []
+    assert present.exists()  # history only — files stay
+
+
+def test_clear_recent_disabled_when_empty(make_window):
+    w = make_window()
+    assert w.clear_recent_button.cget("state") == "disabled"
+
+
+def test_footer_menu_uses_larger_font(make_window):
+    import tkinter.font as tkfont
+
+    w = make_window()
+    # The configured size: X servers without scalable fonts (WSLg's "fixed") round the actual one.
+    font = tkfont.nametofont(str(w.engine_menu.cget("font")), root=w)
+    assert font.cget("size") == app_mod.MENU_FONT_SIZE >= 12
+    labels = [w.engine_menu.entrycget(i, "label").strip() for i in range(3)]
+    assert labels == ["Update engine", "Open log folder", "About"]

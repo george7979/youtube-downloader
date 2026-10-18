@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import fnmatch
+import logging
 import os
 import threading
 from collections.abc import Callable
@@ -18,6 +19,11 @@ from .note import render_note
 from .probe import pick_track, probe
 from .subtitles import clean_auto, parse_vtt, to_paragraphs, to_srt
 from .tools import ToolManager
+
+log = logging.getLogger(__name__)
+
+# Extra engine runs after an HTTP 403 (stream URL refused); the second run usually succeeds.
+FORBIDDEN_RETRIES = 1
 
 _PARTIAL_PATTERNS = ("*.part", "*.ytdl", "*.f[0-9]*.*", "*.vtt", "*.temp.*")
 
@@ -202,28 +208,36 @@ class Service:
         note_only: bool,
     ) -> Path:
         args = download_args(req, names, track, self.tools.paths(), media_only, note_only)
-        parser = ProgressParser(req.mode)
         captured: list[Path] = []
+        for attempt in range(FORBIDDEN_RETRIES + 1):
+            parser = ProgressParser(req.mode)
+            captured.clear()
 
-        def on_line(line: str) -> None:
-            event = parser.feed(line)
-            if event is None:
-                return
-            if isinstance(event, FileDone):
-                if not note_only:
-                    captured.append(event.path)
-                return
-            if note_only and line.startswith("CODEC "):
-                return
-            sink(event)
+            def on_line(line: str, parser: ProgressParser = parser) -> None:
+                event = parser.feed(line)
+                if event is None:
+                    return
+                if isinstance(event, FileDone):
+                    if not note_only:
+                        captured.append(event.path)
+                    return
+                if note_only and line.startswith("CODEC "):
+                    return
+                sink(event)
 
-        rc, stderr = self.runner_factory().run(args, on_line, cancel)
-        if rc == -1:
+            rc, stderr = self.runner_factory().run(args, on_line, cancel)
+            if rc == -1:
+                _cleanup(names)
+                raise friendly("cancelled")
+            if rc == 0:
+                break
             _cleanup(names)
-            raise friendly("cancelled")
-        if rc != 0:
-            _cleanup(names)
-            raise classify(stderr)
+            error = classify(stderr)
+            # YouTube now and then refuses a stream URL with 403; a fresh run gets new URLs.
+            if error.code != "forbidden" or attempt == FORBIDDEN_RETRIES or cancel.is_set():
+                raise error
+            log.warning("HTTP 403 from YouTube, retrying the download")
+            sink(Status("YouTube refused the stream — retrying…"))
 
         if note_only and names.existing_media is not None:
             return names.existing_media

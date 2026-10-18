@@ -66,9 +66,13 @@ Section "Uninstall"
 
   DeleteRegKey HKLM "${REG_KEY}"
 
-  ; Remove downloaded tools (yt-dlp, ffmpeg, Deno); keep settings and logs.
-  ; The uninstaller runs elevated, so $LOCALAPPDATA is the profile of the account it runs as;
-  ; if a standard user elevated with another account's credentials, their own tools stay.
+  ; Remove everything the app keeps per user: tools (yt-dlp, ffmpeg, Deno) and logs in
+  ; Local, settings and the recent list in Roaming. Downloaded videos and notes live in the
+  ; folder the user chose and are never touched. Installing a new version over an old one
+  ; does not run this section, so upgrades keep the settings.
+  ; The uninstaller runs elevated, so these are the folders of the account it runs as;
+  ; if a standard user elevated with another account's credentials, their own data stays.
   SetShellVarContext current
-  RMDir /r "$LOCALAPPDATA\YouTube Downloader\tools"
+  RMDir /r "$LOCALAPPDATA\YouTube Downloader"
+  RMDir /r "$APPDATA\YouTube Downloader"
 SectionEnd
