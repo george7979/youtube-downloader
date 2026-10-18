@@ -845,3 +845,15 @@ def test_crash_reporter_shows_log_path(make_window, monkeypatch, tmp_path):
     no_log = gui_mod.CrashReporter(None, "Permission denied")
     assert "could not be created" in no_log.message()
     assert "Permission denied" in no_log.message()
+
+
+def test_window_height_fits_small_work_area(make_window, monkeypatch):
+    import ytdownloader.gui.app as app_module
+    from ytdownloader.gui.placement import FRAME
+
+    monkeypatch.setattr(app_module, "work_area", lambda root: (0, 0, 1280, 600))
+    w = make_window()
+    w.update_idletasks()
+    width, height = w.geometry().split("+")[0].split("x")
+    assert int(width) <= 540
+    assert (int(height) + FRAME) * w._get_window_scaling() <= 600

@@ -48,6 +48,8 @@ nietypowej instalacji — `uv sync --reinstall-package youtube-downloader`.
 - `-S res:<q>,vcodec:h264,acodec:m4a` — kolejność kluczy ma znaczenie.
 - `%` w `-o` trzeba podwoić; własne `-o` zawsze (yt-dlp zamienia `?` na `？`).
 - Zrzutów ekranu okna pod WSLg nie zrobisz; wygląd sprawdza PO na Windows.
+- `geometry()`/`minsize()` w CustomTkinter są mnożone przez skalowanie Windows (150% na
+  laptopach Full HD) — rozmiar okna licz z obszaru roboczego (`gui/placement.py`), nie na sztywno.
 - PyInstaller na Linuksie nie znajduje `libtcl`/`libtk` z Pythona uv — dokłada je `.spec`.
 - Windows `.exe` jest okienkowy (`console=False`): `sys.stdout` bywa `None`, CLI tam nie działa.
 - Skill z `integrations/claude-skill/` kopiuje do `~/.claude/skills/` użytkownik; repo jest

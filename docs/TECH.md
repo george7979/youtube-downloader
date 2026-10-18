@@ -56,6 +56,16 @@ UI/CLI --Service.download--> engine.download_args --> Runner.run (yt-dlp, nowa s
   tylko gdy proces jeszcze działa. Kod `-1` („anulowano”) zapada wyłącznie po takim
   zabiciu: Cancel wciśnięty, gdy yt-dlp właśnie skończył, zostawia udane pobranie.
 
+### Rozmiar okna
+
+CustomTkinter mnoży szerokość i wysokość z `geometry()` przez skalowanie Windows (150% →
+780 px to 1170 px fizycznych), a pozycję `+x+y` podaje w pikselach fizycznych.
+`gui/placement.py` liczy rozmiar startowy z obszaru roboczego ekranu głównego (Windows:
+`SystemParametersInfoW(SPI_GETWORKAREA)`, czyli bez paska zadań; Linux: ekran minus 48 px na
+panele): preferowane 540×780 logicznych, wysokość przycięta tak, żeby okno z paskiem tytułu
+(40 px logicznych) się zmieściło, okno wyśrodkowane. Minimum 480×420 maleje razem z oknem.
+Treść jest w `CTkScrollableFrame`, więc niższe okno przewija się zamiast ucinać.
+
 ## Moduły `core/`
 
 | Moduł | Odpowiedzialność |

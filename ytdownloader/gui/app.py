@@ -47,6 +47,7 @@ from ytdownloader.core.tools import ToolManager, should_check_update
 
 from . import system
 from .first_run import size_text
+from .placement import fit_window, work_area
 from .widgets import ErrorPanel, ask_already_downloaded, show_about
 from .worker import UiQueue, cancel_pending_after
 
@@ -144,8 +145,9 @@ class MainWindow(ctk.CTk):
         self.recent_labels: list[ctk.CTkLabel] = []
 
         self.title(f"YouTube Downloader {__version__}")
-        self.geometry("540x780")
-        self.minsize(480, 640)
+        place = fit_window(work_area(self), self._get_window_scaling())
+        self.minsize(place.min_width, place.min_height)
+        self.geometry(f"{place.width}x{place.height}+{place.x}+{place.y}")
         self._set_icon()
 
         self._font_title = ctk.CTkFont(size=14, weight="bold")
