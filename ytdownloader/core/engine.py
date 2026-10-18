@@ -38,7 +38,7 @@ def base_args(tools: ToolPaths) -> list[str]:
 
 
 def probe_args(url: str, tools: ToolPaths) -> list[str]:
-    return base_args(tools) + ["-J", url]
+    return base_args(tools) + ["-J", "--", url]
 
 
 def download_args(
@@ -77,7 +77,8 @@ def download_args(
     if track is not None and not media_only:
         args.append("--write-subs" if track.kind == "manual" else "--write-auto-subs")
         args += ["--sub-langs", track.key, "--sub-format", "vtt"]
-    args.append(req.url)
+    # "--" ends option parsing: a URL starting with "-" can never become an option.
+    args += ["--", req.url]
     return args
 
 

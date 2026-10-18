@@ -84,7 +84,7 @@ def _option_value(args: list[str], option: str) -> str:
 def test_common_and_base_and_probe_args():
     assert COMMON == ["--ignore-config", "--no-playlist", "--no-mtime"]
     assert base_args(TOOLS) == _base()
-    assert probe_args(URL, TOOLS) == _base() + ["-J", URL]
+    assert probe_args(URL, TOOLS) == _base() + ["-J", "--", URL]
 
 
 def test_download_args_mp4_manual_subs():
@@ -100,6 +100,7 @@ def test_download_args_mp4_manual_subs():
         "pl",
         "--sub-format",
         "vtt",
+        "--",
         URL,
     ]
     assert _option_value(args, "-o") == str(Path("/out/T")) + ".%(ext)s"
@@ -122,6 +123,7 @@ def test_download_args_mp3_auto_subs():
         "pl-orig",
         "--sub-format",
         "vtt",
+        "--",
         URL,
     ]
 
@@ -133,6 +135,18 @@ def test_media_only_has_no_subs():
         assert flag not in args
     assert "--skip-download" not in args
     assert args[-1] == URL
+
+
+def test_option_like_url_is_after_separator():
+    evil = "--exec=touch x"
+    probe = probe_args(evil, TOOLS)
+    assert probe[-2:] == ["--", evil]
+    track = SubtitleTrack(lang="pl", kind="manual", key="pl")
+    for kwargs in ({}, {"media_only": True}, {"note_only": True}):
+        req = DownloadRequest(url=evil, output_dir=Path("/out"))
+        args = download_args(req, _names(), track, TOOLS, **kwargs)
+        assert args[-2:] == ["--", evil]
+        assert args.count("--") == 1
 
 
 def test_output_template_escapes_percent():
