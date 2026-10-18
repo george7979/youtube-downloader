@@ -54,6 +54,12 @@ nietypowej instalacji — `uv sync --reinstall-package youtube-downloader`.
 - Zrzutów ekranu okna pod WSLg nie zrobisz; wygląd sprawdza PO na Windows.
 - `geometry()`/`minsize()` w CustomTkinter są mnożone przez skalowanie Windows (150% na
   laptopach Full HD) — rozmiar okna licz z obszaru roboczego (`gui/placement.py`), nie na sztywno.
+- Testy GUI w CI na Windows: ukryte (`withdraw`) okno zgłasza rozmiar 200×200 — sprawdzaj geometrię,
+  o którą okno prosi (`record_geometry`), nie odczytaną.
+- `CTkEntry` z tekstem zastępczym zwraca `get() == ""`, dopóki pole nie dostanie `<FocusIn>`.
+- Wyłączony `CTkButton` zachowuje `fg_color` — przycisk główny przełączaj przez `set_primary_enabled`.
+- Tk usuwa nazwaną czcionkę razem z jej obiektem Pythona — trzymaj referencję (`self._font_menu`).
+- Testy, które ruszają schowek, muszą go przywrócić: WSLg dzieli schowek z Windows.
 - PyInstaller na Linuksie nie znajduje `libtcl`/`libtk` z Pythona uv — dokłada je `.spec`.
 - Windows `.exe` jest okienkowy (`console=False`): `sys.stdout` bywa `None`, CLI tam nie działa.
 - Skill z `integrations/claude-skill/` kopiuje do `~/.claude/skills/` użytkownik; repo jest

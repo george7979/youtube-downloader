@@ -1009,11 +1009,22 @@ def test_folder_path_opens_the_folder(make_window, monkeypatch, tmp_path):
 
 
 def paste(w, text):
-    """What Ctrl+V in the link field does: focus (CTk then drops its placeholder), then paste."""
+    """What Ctrl+V in the link field does: focus (CTk then drops its placeholder), then paste.
+
+    The developer's clipboard is restored afterwards: WSLg shares it with Windows."""
+    try:
+        saved = w.clipboard_get()
+    except tkinter.TclError:
+        saved = None
     w.clipboard_clear()
     w.clipboard_append(text)
-    w.url_entry._entry.event_generate("<FocusIn>")
-    w.url_entry._entry.event_generate("<<Paste>>")
+    try:
+        w.url_entry._entry.event_generate("<FocusIn>")
+        w.url_entry._entry.event_generate("<<Paste>>")
+    finally:
+        w.clipboard_clear()
+        if saved is not None:
+            w.clipboard_append(saved)
 
 
 def test_pasting_a_link_checks_it(make_window):
