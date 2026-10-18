@@ -1,0 +1,108 @@
+<style>
+  .app{background:#1e1f22;color:#e3e5e8;border-radius:10px;font:13px/1.4 "Segoe UI",system-ui,sans-serif;padding:14px;border:1px solid #333}
+  .app .row{display:flex;gap:8px;align-items:center}
+  .app .in{flex:1;background:#2b2d31;border:1px solid #3a3c42;border-radius:6px;padding:7px 10px;color:#aab}
+  .app .btn{background:#3b82f6;color:#fff;border-radius:6px;padding:7px 14px;font-weight:600;white-space:nowrap}
+  .app .btn.ghost{background:transparent;border:1px solid #4a4d55;color:#cfd2d8;font-weight:500}
+  .app .btn.big{padding:10px;text-align:center;font-size:14px}
+  .app .card{background:#2b2d31;border-radius:8px;padding:10px;margin-top:10px}
+  .app .thumb{background:linear-gradient(135deg,#475569,#1e293b);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:22px}
+  .app .t{font-weight:600;font-size:14px}
+  .app .m{color:#9aa0aa;font-size:12px}
+  .app .lbl{color:#9aa0aa;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  .app .sel{background:#1e1f22;border:1px solid #3a3c42;border-radius:6px;padding:5px 8px;font-size:12px}
+  .app .seg{display:inline-flex;border:1px solid #3a3c42;border-radius:6px;overflow:hidden;font-size:12px}
+  .app .seg span{padding:5px 10px}.app .seg .on{background:#3b82f6;color:#fff}
+  .app .chk{font-size:12px}.app .chk b{color:#3b82f6}
+  .app .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;background:#14532d;color:#86efac;margin-left:4px}
+  .app .tag.auto{background:#713f12;color:#fde68a}
+  .app .bar{height:8px;background:#3a3c42;border-radius:4px;overflow:hidden;margin:6px 0 4px}
+  .app .bar i{display:block;height:100%;width:62%;background:#3b82f6}
+  .app .foot{color:#6b7079;font-size:11px;margin-top:10px;display:flex;justify-content:space-between}
+  .app .rec div{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid #34363c}
+  .app .rec a{color:#60a5fa}
+  .app .stepdim{opacity:.35}
+</style>
+
+<h2>Który układ głównego okna?</h2>
+<p class="subtitle">Wszystkie trzy mają te same funkcje: link → karta filmu → MP4/MP3, jakość, napisy, notatka .md → folder → pobieranie z postępem → ostatnio pobrane. Różnią się układem. Kliknij ten, który Ci leży, i napisz w terminalu, co zmienić.</p>
+
+<div class="options">
+
+<div class="option" data-choice="a" onclick="toggleSelect(this)">
+<div class="letter">A</div>
+<div class="content">
+<h3>Jedna kolumna, z góry na dół</h3>
+<p>Wszystko w jednym przewijanym słupku, czyta się jak formularz. Okno wąskie (~520 px), mieści się obok Obsidiana.</p>
+<div class="app" style="max-width:520px;margin-top:8px">
+  <div class="row"><div class="in">https://youtube.com/watch?v=…</div><div class="btn">Sprawdź</div></div>
+  <div class="card row" style="align-items:flex-start">
+    <div class="thumb" style="width:150px;height:84px">▶</div>
+    <div><div class="t">Jak działa pamięć długotrwała — wykład</div><div class="m">Kanał Nauki · 1:12:40 · 2026-09-30</div><div class="m">Napisy: PL <span class="tag">ręczne</span> EN <span class="tag auto">auto</span></div></div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><div class="seg"><span class="on">MP4</span><span>MP3</span></div><div class="sel">Jakość: 1080p ▾</div></div>
+    <div class="row" style="margin-top:8px;gap:16px"><span class="chk"><b>☑</b> Napisy PL (SRT)</span><span class="chk"><b>☑</b> Notatka .md z metadanymi</span></div>
+    <div class="row" style="margin-top:8px"><div class="in" style="font-size:12px">C:\Users\Jerzy\Downloads</div><div class="btn ghost">Zmień</div><div class="btn ghost">📂</div></div>
+  </div>
+  <div class="card"><div class="btn big">Pobierz</div>
+    <div class="bar"><i></i></div><div class="m">Wideo 62% · 8,4 MB/s · zostało 0:41</div></div>
+  <div class="card rec"><div class="lbl">Ostatnio pobrane</div>
+    <div><span>Jak działa pamięć długotrwała…</span><a>Pokaż plik</a></div>
+    <div><span>Wprowadzenie do Obsidian Bases</span><a>Pokaż plik</a></div></div>
+  <div class="foot"><span>yt-dlp 2026.10.09 · aktualny</span><span>v2.0.0</span></div>
+</div>
+</div></div>
+
+<div class="option" data-choice="b" onclick="toggleSelect(this)">
+<div class="letter">B</div>
+<div class="content">
+<h3>Dwie kolumny: film po lewej, opcje po prawej</h3>
+<p>Duża miniatura i metadane po lewej, wszystkie decyzje po prawej. Okno szersze (~860 px), bez przewijania.</p>
+<div class="app" style="max-width:860px;margin-top:8px">
+  <div class="row"><div class="in">https://youtube.com/watch?v=…</div><div class="btn">Sprawdź</div></div>
+  <div class="row" style="align-items:stretch;gap:10px">
+    <div class="card" style="flex:1.1">
+      <div class="thumb" style="height:150px">▶</div>
+      <div class="t" style="margin-top:8px">Jak działa pamięć długotrwała — wykład</div>
+      <div class="m">Kanał Nauki · 1:12:40 · 2026-09-30</div>
+      <div class="m">Napisy: PL <span class="tag">ręczne</span> EN <span class="tag auto">auto</span></div>
+    </div>
+    <div class="card" style="flex:1">
+      <div class="lbl">Format</div><div class="seg"><span class="on">MP4</span><span>MP3</span></div>
+      <div class="lbl" style="margin-top:8px">Jakość</div><div class="sel">1080p ▾</div>
+      <div class="lbl" style="margin-top:8px">Dodatki</div>
+      <div class="chk"><b>☑</b> Napisy PL (SRT)</div><div class="chk"><b>☑</b> Notatka .md z metadanymi</div>
+      <div class="lbl" style="margin-top:8px">Folder</div>
+      <div class="row"><div class="in" style="font-size:12px">C:\Users\Jerzy\Downloads</div><div class="btn ghost">Zmień</div></div>
+      <div class="btn big" style="margin-top:10px">Pobierz</div>
+      <div class="bar"><i></i></div><div class="m">Wideo 62% · 8,4 MB/s · 0:41</div>
+    </div>
+  </div>
+  <div class="card rec"><div class="lbl">Ostatnio pobrane</div>
+    <div><span>Jak działa pamięć długotrwała…</span><a>Pokaż plik</a></div></div>
+  <div class="foot"><span>yt-dlp 2026.10.09 · aktualny</span><span>v2.0.0</span></div>
+</div>
+</div></div>
+
+<div class="option" data-choice="c" onclick="toggleSelect(this)">
+<div class="letter">C</div>
+<div class="content">
+<h3>Minimalny: na start tylko pole linku</h3>
+<p>Po uruchomieniu widać pole linku i listę ostatnich. Opcje rozwijają się dopiero po „Sprawdź”, a domyślne ustawienia pamięta z poprzedniego razu. Najmniej klikania przy „zawsze to samo”.</p>
+<div class="app" style="max-width:520px;margin-top:8px">
+  <div class="row"><div class="in">https://youtube.com/watch?v=…</div><div class="btn">Sprawdź</div></div>
+  <div class="card row">
+    <div class="thumb" style="width:96px;height:54px;font-size:16px">▶</div>
+    <div style="flex:1"><div class="t">Jak działa pamięć długotrwała — wykład</div><div class="m">1:12:40 · MP4 1080p · napisy PL · notatka .md · <a style="color:#60a5fa">zmień ▾</a></div></div>
+  </div>
+  <div class="row" style="margin-top:8px"><div class="m" style="flex:1">→ C:\Users\Jerzy\Downloads</div><div class="btn">Pobierz</div></div>
+  <div class="bar"><i></i></div><div class="m">Wideo 62% · 8,4 MB/s · zostało 0:41</div>
+  <div class="card rec stepdim" style="opacity:1"><div class="lbl">Ostatnio pobrane</div>
+    <div><span>Wprowadzenie do Obsidian Bases</span><a>Pokaż plik</a></div>
+    <div><span>Rozmowa o agentach AI, cz. 2</span><a>Pokaż plik</a></div></div>
+  <div class="foot"><span>yt-dlp 2026.10.09 · aktualny</span><span>v2.0.0</span></div>
+</div>
+</div></div>
+
+</div>
