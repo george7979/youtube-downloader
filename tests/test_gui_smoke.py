@@ -825,9 +825,8 @@ def test_first_run_retry_after_failure():
     w = create_root(lambda: FirstRunWindow(tools, tool_specs("linux")))
     w.withdraw()
     try:
-        assert w.header_label.cget("text") == (
-            "First run: downloading tools (yt-dlp, ffmpeg, Deno), about 207 MB"
-        )
+        assert w.header_label.cget("text") == "Setting up"
+        assert "about 207 MB" in w.detail_label.cget("text")
         pump(w, lambda: w.retry_button.winfo_manager() == "pack", timeout=3)
         assert w.error_panel.message_label.cget("text") == "No connection to YouTube."
         assert w.size_labels["yt-dlp"].cget("text") == "1.0 / 2.0 MB"
@@ -1007,3 +1006,49 @@ def test_folder_path_opens_the_folder(make_window, monkeypatch, tmp_path):
     w = make_window()
     w.folder_label._label.event_generate("<Button-1>")  # the label CTkLabel draws the text in
     assert opened == [tmp_path]
+
+
+def paste(w, text):
+    """What Ctrl+V in the link field does: focus (CTk then drops its placeholder), then paste."""
+    w.clipboard_clear()
+    w.clipboard_append(text)
+    w.url_entry._entry.event_generate("<FocusIn>")
+    w.url_entry._entry.event_generate("<<Paste>>")
+
+
+def test_pasting_a_link_checks_it(make_window):
+    service = FakeService(result=lecture())
+    w = make_window(service=service)
+    paste(w, "https://youtu.be/VIw16SXObUQ")
+    pump(w, lambda: w.download_button.cget("state") == "normal")
+    assert service.urls == ["https://youtu.be/VIw16SXObUQ"]
+
+    w.url_entry.delete(0, "end")  # pasting the same video again: no second probe
+    paste(w, "https://www.youtube.com/watch?v=VIw16SXObUQ")
+    idle_ticks(w)
+    assert service.urls == ["https://youtu.be/VIw16SXObUQ"]
+
+
+def test_pasting_other_text_does_not_check(make_window):
+    service = FakeService(result=lecture())
+    w = make_window(service=service)
+    paste(w, "just some words")
+    idle_ticks(w)
+    assert service.urls == []
+    assert w.error_panel.winfo_manager() == ""
+
+
+def test_first_run_waiting_bars_show_no_fill():
+    from ytdownloader.gui import theme
+
+    tools = FakeInstaller()
+    w = create_root(lambda: FirstRunWindow(tools, tool_specs("linux")))
+    w.withdraw()
+    try:
+        pump(w, lambda: w.retry_button.winfo_manager() == "pack", timeout=3)
+        deno = w.bars["deno"]
+        assert deno.cget("progress_color") == deno.cget("fg_color")  # never started
+        assert w.bars["yt-dlp"].cget("progress_color") == theme.ACCENT  # bytes arrived
+        assert w.quit_button.cget("fg_color") == "transparent"
+    finally:
+        w.destroy()

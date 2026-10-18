@@ -39,6 +39,11 @@ po stronie YouTube.
     ustawienia, lista ostatnich pobrań, logi); pobrane filmy i notatki zostają zawsze.
     Aktualizacja nową wersją zachowuje ustawienia.
 
+11. Wygląd: jedna wyraźna główna akcja na ekranie (Download; w oknie pierwszego uruchomienia
+    po błędzie — Retry) w kolorze akcentu kojarzącym się z YouTube, ale nie jego markowym
+    (`#C62828`); błędy wyróżnione własnym tłem i ikoną, nie samym kolorem. Wklejony link
+    sprawdza się sam. Makiety: `docs/superpowers/specs/2026-10-18-ui-polish-mockups/index.html`.
+
 ## Poza zakresem
 
 Kolejka i playlisty, logowanie do YouTube, ręczny wybór klientów YouTube, przekodowywanie,

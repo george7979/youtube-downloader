@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 # Logical (unscaled) pixels — CustomTkinter multiplies width and height by the window scaling,
 # so a fixed 780 became 1170 physical px at Windows' 150% and no longer fit a 1080 px screen.
-PREFERRED = (540, 660)  # fits the full layout (video card, three recent downloads)
+PREFERRED = (540, 600)  # fits the full layout while downloading (card, progress, three recent)
 MINIMUM = (480, 420)
 # Title bar and frame drawn by the window manager outside the geometry we set.
 FRAME = 40

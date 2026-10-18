@@ -30,10 +30,15 @@ def test_window_fits_work_area(work, scaling):
     assert p.min_height <= p.height and p.min_width <= p.width
 
 
-def test_full_hd_at_150_percent_shrinks_height():
-    p = fit_window((0, 0, 1920, 1032), 1.5)
+def test_full_hd_at_150_percent_keeps_preferred_size():
+    p = fit_window((0, 0, 1920, 1032), 1.5)  # the PO's laptop: 688 logical px of room
+    assert (p.width, p.height) == PREFERRED
+
+
+def test_small_screen_at_125_percent_shrinks_height():
+    p = fit_window((0, 0, 1366, 728), 1.25)
     assert p.width == PREFERRED[0]
-    assert p.height == 1032 // 1.5 - FRAME  # 648 logical = 972 physical
+    assert p.height == int(728 / 1.25) - FRAME  # 542 logical
     assert p.min_height == MINIMUM[1]
 
 

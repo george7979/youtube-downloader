@@ -97,20 +97,22 @@ engine update may fix.
 
 ## Using the window
 
-1. Paste a YouTube link and click **Check** — you see the title, channel, length and thumbnail.
+1. Paste a YouTube link — the app checks it right away and shows the title, channel, length and
+   thumbnail. For a typed link (or to try again) click **Check**.
 2. Choose **MP4** or **MP3**, the **quality**, and the **subtitles** language (the kind, manual
    or auto, is shown). Tick **Save note with transcript (.md)** — the label says "without transcript" when
    Subtitles is set to None — and, if you want it, **Also save subtitles (.srt)**.
-3. The folder defaults to your system Downloads folder; **Change** picks another one. It is
-   remembered between sessions.
-4. Click **Download**. The status line always shows what is happening (fetching, downloading,
-   merging, writing the note). **Cancel** stops it and removes partial files.
+3. **Save to** shows the folder — your system Downloads folder by default. Click the path to open
+   it; **Change** picks another one. It is remembered between sessions.
+4. Click **Download**. While it runs, a progress bar and a status line show what is happening
+   (fetching, downloading, merging, writing the note); **Cancel** stops it and removes partial
+   files.
 
 If the video is already in the folder the app says so and offers **Show file** or
 **Download again**. If only the MP4 is missing, it fetches the MP4 and leaves your note alone.
 MP4 and MP3 are separate: having the MP4 does not stop an MP3 download of the same video.
 The quality you pick is remembered as a ceiling — a video that only goes up to 720p does not
-lower it for the next one. The last three downloads are listed under "Recent downloads"; **Clear** empties the list
+lower it for the next one. The last three downloads are listed under "Recent"; **Clear** empties the list
 (the files stay on disk).
 
 ## Command line (Linux / WSL)

@@ -59,15 +59,38 @@ UI/CLI --Service.download--> engine.download_args --> Runner.run (yt-dlp, nowa s
 ### Rozmiar okna
 
 CustomTkinter mnoży szerokość i wysokość z `geometry()` przez skalowanie Windows (150% →
-660 px to 990 px fizycznych), a pozycję `+x+y` podaje w pikselach fizycznych.
+600 px to 900 px fizycznych), a pozycję `+x+y` podaje w pikselach fizycznych.
 `gui/placement.py` liczy rozmiar startowy z obszaru roboczego ekranu głównego (Windows:
 `SystemParametersInfoW(SPI_GETWORKAREA)`, czyli bez paska zadań; Linux: ekran minus 48 px na
-panele): preferowane 540×660 logicznych (cały układ z kartą filmu i trzema ostatnimi pobraniami), wysokość przycięta tak, żeby okno z paskiem tytułu
+panele): preferowane 540×600 logicznych (cały układ w trakcie pobierania: karta filmu, postęp,
+trzy ostatnie pobrania), wysokość przycięta tak, żeby okno z paskiem tytułu
 (40 px logicznych) się zmieściło, okno wyśrodkowane. Minimum 480×420 maleje razem z oknem.
 Treść jest w `CTkScrollableFrame`, więc niższe okno przewija się zamiast ucinać; pasek
 przewijania jest ukryty, dopóki wszystko się mieści (`_on_body_scroll`). Okno
 pierwszego uruchomienia startuje tak samo (480×360) i rośnie (`_fit_content`, nigdy nie maleje),
 gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru roboczego.
+
+### Wygląd i zachowanie okna
+
+- **Motyw** (`gui/theme.py`): `apply_theme()` nadpisuje domyślny niebieski CustomTkinter, zanim
+  powstanie jakikolwiek widżet (woła je `MainWindow` i `FirstRunWindow`). Akcent `#C62828`
+  (przycisk główny, pola wyboru, postęp), listy i przełącznik MP4/MP3 neutralne. Kolory to pary
+  (jasny, ciemny), bo okno idzie za trybem systemu.
+- **Hierarchia:** na ekranie jeden wypełniony przycisk — Download (w oknie pierwszego
+  uruchomienia po błędzie: Retry). Drugorzędne obrysowane (`OUTLINE_BUTTON`: Check, Change,
+  Cancel, Quit, Update engine, przyciski dialogu „Already downloaded”, Close w About),
+  pomocnicze tekstowe (`TEXT_BUTTON`: Show file, Clear, ⋯, Show details, Copy). Wyłączony
+  CTkButton zachowuje `fg_color`, więc `set_primary_enabled` przełącza go na wyciszony kolor.
+- **Układ:** folder to wiersz „Save to <ścieżka> (Change)” na dole opcji; kliknięcie ścieżki
+  otwiera folder. Cancel i pasek postępu są spakowane tylko w trakcie pobierania
+  (`_sync_controls`), linia stanu tylko gdy ma tekst (`set_status`), panel błędu ma własne tło,
+  obramowanie i ikonę (`ERROR_BG`, `ERROR_BORDER`).
+- **Auto-Check:** `<<Paste>>` w polu linku woła `_check_pasted` przez `after_idle` (wiązanie
+  widżetu działa przed wstawieniem tekstu przez klasę `Entry`); sprawdza tylko tekst, z którego
+  `parse_video_id` wyciąga ID, i pomija film już pokazany w karcie.
+- **Pierwsze uruchomienie:** nagłówek „Setting up” z jednym zdaniem; pasek narzędzia, które
+  jeszcze czeka, nie ma wypełnienia (`progress_color` = kolor tła paska — przy 0 CTk rysuje
+  okrągłą kropkę akcentu).
 
 ## Moduły `core/`
 

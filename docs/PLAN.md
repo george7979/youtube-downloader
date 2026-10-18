@@ -43,18 +43,15 @@ thinkpadzie). Poprawki po dotychczasowych uwagach PO (sprawdzenie w instalatorze
   czy będzie transkrypt — etykieta zależna od wybranych napisów;
 - przestoje w pobieraniu — po stronie YouTube (co ~10 MB ok. 20 s przerwy, zmiennie w czasie;
   odtworzone poza aplikacją), opis w TECH Known Issues; log zapisuje przerwy ≥ 15 s;
-- okno za wysokie — Recent pokazuje 3 pozycje w zwartych wierszach, okno 660 zamiast 780;
+- okno za wysokie — Recent pokazuje 3 pozycje w zwartych wierszach (dalej: okno 600 po poprawkach wyglądu);
 - brak ikony w Ustawienia → Aplikacje — `DisplayIcon` w instalatorze;
 - „Sign in to confirm you're not a bot” dla każdego filmu w Windows — YouTube oznaczył adres
   IPv6 laptopa; aplikacja łączy się zawsze przez IPv4 (`--force-ipv4`);
-- pole „Run YouTube Downloader” na końcu instalatora (prośba PO).
-
-Następny krok: poprawki wyglądu wybrane przez PO po analizie UI — hierarchia przycisków i własny
-kolor akcentu (`#1E7A68`), zwarty układ (folder w opcjach, postęp tylko w trakcie, „Recent”),
-auto-Check po wklejeniu linku, okno pierwszego uruchomienia. Makiety czekają na akceptację PO
-(kanwa „YouTube Downloader — UI mockups” w Claude Artifacts).
-- „chińskie znaczki” w transkrypcie — błąd programu do odczytu, nie aplikacji (pliki są
-  poprawnym UTF-8; w innym edytorze i w Obsidianie OK — potwierdził PO).
+- pole „Run YouTube Downloader” na końcu instalatora (prośba PO);
+- poprawki wyglądu po analizie UI (makiety zaakceptowane, akcent czerwony `#C62828`):
+  hierarchia przycisków, zwarty układ (okno 600), auto-Check po wklejeniu, okno pierwszego
+  uruchomienia, panel błędu z tłem i ikoną; makiety w
+  `docs/superpowers/specs/2026-10-18-ui-polish-mockups/index.html`.
 
 Uwagi PO → poprawki na `dev`; po akceptacji PR `dev` → `main` i tag `v2.0.0` (za zgodą PO).
 

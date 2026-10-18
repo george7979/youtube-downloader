@@ -43,6 +43,7 @@ from ytdownloader.core.settings import (
     save_settings,
 )
 from ytdownloader.core.tools import ToolManager, should_check_update
+from ytdownloader.core.urls import parse_video_id
 
 from . import system
 from .first_run import size_text
@@ -196,6 +197,8 @@ class MainWindow(ctk.CTk):
         self.url_entry = ctk.CTkEntry(self.url_row, placeholder_text="Paste a YouTube link")
         self.url_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self.url_entry.bind("<Return>", lambda _e: self.check())
+        # The widget binding runs before Tk's class binding inserts the pasted text.
+        self.url_entry.bind("<<Paste>>", lambda _e: self.after_idle(self._check_pasted))
         self.check_button = ctk.CTkButton(
             self.url_row, text="Check", width=80, command=self.check, **OUTLINE_BUTTON
         )
@@ -406,6 +409,13 @@ class MainWindow(ctk.CTk):
         """Download is enabled iff a video is checked and no download is running."""
         ready = self._info is not None and not self.downloading
         set_primary_enabled(self.download_button, ready)
+
+    def _check_pasted(self) -> None:
+        """A pasted YouTube video link is checked right away; other text waits for Check."""
+        video_id = parse_video_id(self.url_entry.get().strip())
+        if video_id is None or (self._info is not None and self._info.id == video_id):
+            return
+        self.check()
 
     def check(self) -> None:
         url = self.url_entry.get().strip()

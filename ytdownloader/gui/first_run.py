@@ -13,6 +13,7 @@ from ytdownloader.core.errors import FriendlyError, friendly
 from ytdownloader.core.tools import OnBytes, ToolManager, ToolSpec
 
 from .placement import fit_window, max_height, work_area
+from .theme import ACCENT, DIM_TEXT, OUTLINE_BUTTON, apply_theme
 from .widgets import ErrorPanel, set_window_icon
 from .worker import UiQueue, cancel_pending_after
 
@@ -36,6 +37,7 @@ class FirstRunWindow(ctk.CTk):
 
     def __init__(self, tools: ToolManager, specs: list[ToolSpec]):
         ctk.set_appearance_mode("system")
+        apply_theme()
         super().__init__()
         self.tools = tools
         self.specs = list(specs)
@@ -55,14 +57,21 @@ class FirstRunWindow(ctk.CTk):
 
         total_mb = sum(spec.approx_mb for spec in self.specs)
         self.header_label = ctk.CTkLabel(
+            self, text="Setting up", font=ctk.CTkFont(size=16, weight="bold"), anchor="w"
+        )
+        self.header_label.pack(fill="x", padx=18, pady=(18, 0))
+        self.detail_label = ctk.CTkLabel(
             self,
-            text=f"First run: downloading tools (yt-dlp, ffmpeg, Deno), about {total_mb} MB",
-            font=ctk.CTkFont(size=14, weight="bold"),
+            text=(
+                f"Downloading yt-dlp, ffmpeg and Deno, about {total_mb} MB. This happens once; "
+                "later the app keeps them up to date on its own."
+            ),
+            text_color=DIM_TEXT,
             wraplength=430,
             justify="left",
             anchor="w",
         )
-        self.header_label.pack(fill="x", padx=16, pady=(16, 10))
+        self.detail_label.pack(fill="x", padx=18, pady=(2, 12))
 
         self.bars: dict[str, ctk.CTkProgressBar] = {}
         self.size_labels: dict[str, ctk.CTkLabel] = {}
@@ -71,7 +80,7 @@ class FirstRunWindow(ctk.CTk):
             row.pack(fill="x", padx=16, pady=4)
             row.grid_columnconfigure(1, weight=1)
             ctk.CTkLabel(row, text=spec.name, width=60, anchor="w").grid(row=0, column=0)
-            bar = ctk.CTkProgressBar(row)
+            bar = ctk.CTkProgressBar(row, height=6)
             bar.set(0)
             bar.grid(row=0, column=1, sticky="ew", padx=8)
             size = ctk.CTkLabel(row, text="Waiting…", width=130, anchor="e")
@@ -81,7 +90,9 @@ class FirstRunWindow(ctk.CTk):
 
         self.buttons = ctk.CTkFrame(self, fg_color="transparent")
         self.buttons.pack(side="bottom", fill="x", padx=16, pady=(8, 16))
-        self.quit_button = ctk.CTkButton(self.buttons, text="Quit", width=80, command=self.quit)
+        self.quit_button = ctk.CTkButton(
+            self.buttons, text="Quit", width=80, command=self.quit, **OUTLINE_BUTTON
+        )
         self.quit_button.pack(side="right")
         self.retry_button = ctk.CTkButton(
             self.buttons, text="Retry", width=80, command=self.start
@@ -98,7 +109,7 @@ class FirstRunWindow(ctk.CTk):
         self.retry_button.pack_forget()
         pending = [spec for spec in self.specs if spec.name not in self._installed]
         for spec in pending:
-            self.bars[spec.name].set(0)
+            self._set_waiting(spec.name, True)
             self.size_labels[spec.name].configure(text="Waiting…")
         self.ui.run_bg(
             lambda: self._install_all(pending), lambda _result: self._on_done(), self._on_error
@@ -120,7 +131,15 @@ class FirstRunWindow(ctk.CTk):
 
         return on_bytes
 
+    def _set_waiting(self, name: str, waiting: bool) -> None:
+        """A waiting tool's bar shows no fill at all: at 0 CTk still draws a round accent nub."""
+        bar = self.bars[name]
+        if waiting:
+            bar.set(0)
+        bar.configure(progress_color=bar.cget("fg_color") if waiting else ACCENT)
+
     def _show_bytes(self, name: str, done: int, total: int | None, text: str) -> None:
+        self._set_waiting(name, False)
         if total:
             self.bars[name].set(min(done / total, 1.0))
             if done >= total:
@@ -129,6 +148,7 @@ class FirstRunWindow(ctk.CTk):
 
     def _mark_installed(self, name: str) -> None:
         self._installed.add(name)
+        self._set_waiting(name, False)
         self.bars[name].set(1.0)
         self.size_labels[name].configure(text="Done")
 
