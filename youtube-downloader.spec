@@ -8,8 +8,10 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
 
-# uv-managed (python-build-standalone) Python on Linux keeps libtcl/libtk next to libpython
-# and _tkinter has no RPATH, so PyInstaller cannot resolve them on its own.
+# Release builds on Linux use a system-style Python (Tk with Xft, see docs/BUILDING.md); there
+# the glob finds nothing and PyInstaller resolves libtk8.6 itself. A local build on uv-managed
+# (python-build-standalone) Python keeps libtcl/libtk next to libpython and _tkinter has no
+# RPATH, so PyInstaller cannot resolve them on its own — that build runs, but without Xft.
 tcltk_binaries = []
 if sys.platform.startswith('linux'):
     libdir = os.path.join(sys.base_prefix, 'lib')

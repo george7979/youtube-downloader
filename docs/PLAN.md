@@ -31,6 +31,11 @@ PO testuje na Windows instalator z ostatniego przebiegu „Build and Release” 
 `windows-installer`) — scenariusze ze spec §11 oraz nowy wygląd. Na Linux/WSL scenariusz 2
 przez skill. Uwagi PO → poprawki na `dev`.
 
+Uwaga PO z Linux/WSL: okno z liter „Y”/„Z” i postrzępionych rogów, menu „⋯” nie znika.
+Poprawione na `dev`: menu (X11), paczka Linux na Pythonie z systemowym Tk z Xft (TECH
+„Pakowanie”). Czeka: przebieg CI z krokiem sprawdzającym Xft i startem okna w kontenerach,
+potem retest PO z `.deb` i z `uv tool install --python /usr/bin/python3`.
+
 ## Backlog
 
 - Wtyczka PO Token (`bgutil-ytdlp-pot-provider`) jako plan B na blokady YouTube.

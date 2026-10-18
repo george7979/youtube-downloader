@@ -277,9 +277,17 @@ samym tytule mogłaby dopiąć notatkę do cudzego pliku. Ponowne pobranie trafi
 - **PyInstaller, tryb onefile, bez yt-dlp** (`youtube-downloader.spec`); dane: `icons/` i
   zasoby `customtkinter`. Wersja pochodzi tylko z `version.py` (hatch `only-include` +
   `cache-keys` w `uv`, żeby edytowalna instalacja nie trzymała starej kopii).
-- **Linux: dołączamy `libtcl*`/`libtk*` ręcznie** (blok `tcltk_binaries` w `.spec`). Python
-  zarządzany przez uv trzyma je obok `libpython`, a `_tkinter` nie ma RPATH, więc PyInstaller
-  ich nie znajduje i zamrożone okno się nie uruchamia.
+- **Linux: Python z systemowym Tk (Xft).** Tk z Pythona uv (python-build-standalone) jest
+  zbudowany bez Xft — widzi tylko bitmapowy font X11 `fixed`, nie wczyta fontu kształtów
+  CustomTkinter, więc zamiast strzałek list i ptaszków pól wyboru są litery „Y” i „Z”, rogi
+  bez wygładzania. Dlatego paczkę Linux buduje Python z `actions/setup-python` (linkuje
+  `libtk8.6` runnera, z Xft) na Ubuntu 22.04 — najstarszym wspieranym, bo plik dziedziczy
+  glibc runnera. Krok CI sprawdza `tkinter.font.families()` (więcej niż `fixed`). Windows
+  i testy CI zostają na Pythonie uv. `.deb` zależy od bibliotek, które PyInstaller zostawia
+  systemowi (`libx11-6`, `libxft2`, `libfontconfig1`, `libxss1`), poleca `fonts-dejavu-core`.
+- **Lokalny build na Pythonie uv:** `.spec` dokłada `libtcl*`/`libtk*` ręcznie (blok
+  `tcltk_binaries`) — Python uv trzyma je obok `libpython`, a `_tkinter` nie ma RPATH. Taki plik
+  działa, ale bez Xft; przy systemowym Pythonie blok nic nie znajduje.
 - **Windows: `console=False`** — plik okienkowy, bez konsoli; stąd CLI tylko na Linuksie/WSL
   (podpolecenie w `.exe` → okno komunikatu i kod 2). Ikona `.ico` (błąd jej wczytania tylko
   trafia do logu), zasoby przez `sys._MEIPASS`.
@@ -294,7 +302,8 @@ samym tytule mogłaby dopiąć notatkę do cudzego pliku. Ponowne pobranie trafi
 - **CI:** `ci.yml` — lint (tylko błędy składni), testy na Ubuntu (przez `xvfb-run`) i Windows;
   `build.yml` — paczki na obu systemach, test instalacji `.deb` na Ubuntu 22.04/24.04 (po
   `dpkg -i` zamrożony plik uruchamia `youtube-downloader tools --json` i musi zwrócić
-  `"ok": true` — to pobiera narzędzia, więc wymaga sieci), na tagu `v*` wydanie GitHub. Oba
+  `"ok": true` — to pobiera narzędzia, więc wymaga sieci; potem okno musi żyć 10 s pod
+  `xvfb-run` — CLI nie ładuje Tk, więc tylko to łapie brak bibliotek X11), na tagu `v*` wydanie GitHub. Oba
   workflow robią `uv sync --locked`. Akcje przypięte do SHA.
 
 ## Testy

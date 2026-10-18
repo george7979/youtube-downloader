@@ -65,7 +65,8 @@ Version: $VERSION
 Architecture: amd64
 Maintainer: Jerzy Maczewski <jerzymaczewski@gmail.com>
 Installed-Size: $INSTALLED_SIZE
-Recommends: ffmpeg
+Depends: libx11-6, libxft2, libfontconfig1, libxss1
+Recommends: ffmpeg, fonts-dejavu-core
 Section: utils
 Priority: optional
 Homepage: https://github.com/george7979/youtube-downloader

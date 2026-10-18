@@ -122,11 +122,15 @@ youtube-downloader          # opens the window
 ### Linux / WSL — from the repository (command line, Claude Code)
 
 ```bash
-uv tool install --managed-python --python 3.12 /path/to/youtube-downloader
-youtube-downloader tools    # checks the setup, downloads missing tools
+sudo apt install python3-tk     # Tk for the window, with smooth fonts
+uv tool install --python /usr/bin/python3 /path/to/youtube-downloader
+youtube-downloader tools        # checks the setup, downloads missing tools
 ```
 
-`--managed-python` matters: a system Python often lacks `tkinter`, which the window needs.
+This needs a system Python 3.12 or newer (Ubuntu 24.04 and later). On older systems use
+`uv tool install --managed-python --python 3.12 /path/to/youtube-downloader` instead: everything
+works, but uv's own Python draws the window with a plain bitmap font and letters in place of
+arrows and check marks. The command line is the same either way.
 
 ### First run
 

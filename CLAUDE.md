@@ -20,7 +20,8 @@ interfejs, README, BUILDING i skill po angielsku; dokumentacja projektowa po pol
 ## Środowisko i uruchamianie
 
 ```bash
-uv sync --managed-python --python 3.12     # uv-managed Python: systemowy nie ma tkinter
+uv sync --managed-python --python 3.12     # testy i CLI; okno na Linuksie bez Xft (niżej)
+uv sync --python /usr/bin/python3          # okno na Linuksie jak u użytkownika (wymaga python3-tk)
 uv run pytest -q                           # testy; GUI wymaga wyświetlacza (WSLg lokalnie, xvfb w CI)
 uv run youtube-downloader                  # okno
 uv run youtube-downloader info <URL>       # CLI: get / info / tools, --json
@@ -45,7 +46,11 @@ nietypowej instalacji — `uv sync --reinstall-package youtube-downloader`.
 
 ## Pułapki sprawdzone w tym projekcie
 
-- Systemowy Python bez `tkinter` → zawsze uv-managed (`--managed-python`).
+- Tk z Pythona uv (python-build-standalone) nie ma Xft: widzi tylko bitmapowy font `fixed`, a
+  CustomTkinter rysuje „Y” zamiast strzałki listy i „Z” zamiast ptaszka. Paczka Linux powstaje
+  na Pythonie z systemowym `libtk8.6` (CI: `setup-python`), okno lokalnie oglądaj na systemowym
+  `python3` z `python3-tk`. Sprawdzian: `tkinter.font.families()` musi zwrócić więcej niż `('fixed',)`.
+  Testy i Windows zostają na Pythonie uv.
 - `zipfile.extractall` gubi bit wykonywalności → `chmod 0o755` po rozpakowaniu.
 - FFmpeg-Builds podmienia pliki wydania `latest` w miejscu co dzień — ffmpeg bierzemy z
   niezmiennego `autobuild-*` (`ToolManager._resolve`); `latest` tylko jako zapas.
@@ -56,7 +61,9 @@ nietypowej instalacji — `uv sync --reinstall-package youtube-downloader`.
   Porównując zachowanie Windows i WSL, sprawdź `api64.ipify.org`, nie tylko IPv4.
 - `-S res:<q>,vcodec:h264,acodec:m4a` — kolejność kluczy ma znaczenie.
 - `%` w `-o` trzeba podwoić; własne `-o` zawsze (yt-dlp zamienia `?` na `？`).
-- Zrzutów ekranu okna pod WSLg nie zrobisz; wygląd sprawdza PO na Windows.
+- Zrzutów ekranu okna pod WSLg nie zrobisz; wygląd sprawdza PO (Windows i Linux).
+- `tk_popup` blokuje na Windows i macOS, a na X11 wraca od razu — `grab_release()` zaraz po nim
+  zostawia menu otwarte na zawsze (`_open_menu`).
 - `geometry()`/`minsize()` w CustomTkinter są mnożone przez skalowanie Windows (150% na
   laptopach Full HD) — rozmiar okna licz z obszaru roboczego (`gui/placement.py`), nie na sztywno.
 - Testy GUI w CI na Windows: ukryte (`withdraw`) okno zgłasza rozmiar 200×200 — sprawdzaj geometrię,
@@ -65,7 +72,8 @@ nietypowej instalacji — `uv sync --reinstall-package youtube-downloader`.
 - Wyłączony `CTkButton` zachowuje `fg_color` — przycisk główny przełączaj przez `set_primary_enabled`.
 - Tk usuwa nazwaną czcionkę razem z jej obiektem Pythona — trzymaj referencję (`self._font_menu`).
 - Testy, które ruszają schowek, muszą go przywrócić: WSLg dzieli schowek z Windows.
-- PyInstaller na Linuksie nie znajduje `libtcl`/`libtk` z Pythona uv — dokłada je `.spec`.
+- PyInstaller na Linuksie nie znajduje `libtcl`/`libtk` z Pythona uv — dokłada je `.spec`
+  (tylko lokalny build na Pythonie uv; wydanie idzie na systemowym Tk).
 - Windows `.exe` jest okienkowy (`console=False`): `sys.stdout` bywa `None`, CLI tam nie działa.
 - Skill z `integrations/claude-skill/` kopiuje do `~/.claude/skills/` użytkownik; repo jest
   źródłem, kopia instalowana to wtórna.

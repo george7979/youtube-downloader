@@ -32,7 +32,30 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
 
-      - name: Install Python 3.12 and dependencies
+      # Linux: uv-managed Python ships Tk without Xft — Tk then sees only the X11 "fixed" font and
+      # CustomTkinter draws letters in place of arrows and check marks. setup-python's build links
+      # the runner's libtk8.6, which has Xft.
+      - name: Set up Python 3.12 (Linux)
+        if: runner.os == 'Linux'
+        id: python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y libtk8.6
+          uv sync --locked --python "${{ steps.python.outputs.python-path }}"
+
+      - name: Check that Tk renders fonts through Xft (Linux)
+        if: runner.os == 'Linux'
+        run: >
+          xvfb-run -a uv run python -c "import tkinter, tkinter.font as f; tkinter.Tk();
+          fam = f.families(); print(len(fam), 'font families'); assert len(fam) > 1, fam"
+
+      - name: Install Python 3.12 and dependencies (Windows)
+        if: runner.os == 'Windows'
         run: uv sync --locked --managed-python --python 3.12
 
       - name: Get version
@@ -105,6 +128,17 @@ jobs:
           out=$(youtube-downloader tools --json)
           echo "$out"
           echo "$out" | grep -q '"ok": true'
+
+      # The CLI never loads Tk; this catches a missing X11/Xft library on a bare system.
+      - name: Window starts on a virtual display
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get install -y xvfb xauth
+          status=0
+          timeout 10 xvfb-run -a youtube-downloader || status=$?
+          echo "exit status $status (124 = still running after 10 s)"
+          test "$status" -eq 124
 
   release:
     name: Create GitHub Release

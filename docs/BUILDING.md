@@ -2,14 +2,26 @@
 
 ## Development environment
 
-The project uses [uv](https://docs.astral.sh/uv/). Use a uv-managed Python: a system Python
-often has no `tkinter`.
+The project uses [uv](https://docs.astral.sh/uv/). A uv-managed Python is the default for
+tests and the command line: a system Python often has no `tkinter`.
 
 ```bash
 git clone https://github.com/george7979/youtube-downloader.git
 cd youtube-downloader
 uv sync --managed-python --python 3.12
 ```
+
+On Linux the uv-managed Python ships a Tk built without Xft: the window then gets only the bitmap
+X11 font `fixed`, and CustomTkinter shows the letters "Y" and "Z" in place of drop-down arrows and
+check marks. To see the window as users do, use a system Python 3.12+ with Tk:
+
+```bash
+sudo apt install python3-tk
+uv sync --python /usr/bin/python3
+uv run python -c "import tkinter, tkinter.font as f; tkinter.Tk(); print(f.families()[:5])"
+```
+
+The check must list real font families, not just `('fixed',)`.
 
 Run the window or the command line from the working tree:
 
@@ -55,7 +67,10 @@ uv run pyinstaller youtube-downloader.spec --clean
 bash installer/linux/build-deb.sh            # version is read from version.py
 ```
 
-Output: `youtube-downloader_VERSION_amd64.deb`. Requires `fakeroot` and `dpkg-dev`.
+Output: `youtube-downloader_VERSION_amd64.deb`. Requires `fakeroot` and `dpkg-dev`. Build it on a
+Python with system Tk (see above); a build on the uv-managed Python runs, but with the plain
+font. CI builds on Ubuntu 22.04 with `actions/setup-python` — the binary inherits the build
+system's glibc, so the oldest supported Ubuntu is the build host.
 
 ### Windows (.exe installer)
 
