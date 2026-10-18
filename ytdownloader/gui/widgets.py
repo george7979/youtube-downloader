@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import tkinter as tk
 import webbrowser
+from collections.abc import Callable
 
 import customtkinter as ctk
 
@@ -17,18 +18,27 @@ ERROR_TEXT = ("#b91c1c", "#f87171")
 DIM_TEXT = ("gray40", "gray60")
 LINK_TEXT = ("#1d4ed8", "#93c5fd")
 WRAP = 420
+ENGINE_FIXABLE = frozenset({"bot_check", "engine_outdated"})  # errors an engine update may fix
 
 
 class ErrorPanel(ctk.CTkFrame):
     """What happened, what to do, and technical details folded under "Show details".
 
     The panel shows itself on `show()` (packed with `pack_opts`) and hides on `clear()`.
+    With `on_update_engine`, errors an engine update may fix also offer an "Update engine" button.
     """
 
-    def __init__(self, master, pack_opts: dict | None = None, **kwargs):
+    def __init__(
+        self,
+        master,
+        pack_opts: dict | None = None,
+        on_update_engine: Callable[[], None] | None = None,
+        **kwargs,
+    ):
         super().__init__(master, **kwargs)
         self._pack_opts = pack_opts or {"fill": "x"}
         self._details = ""
+        self._on_update_engine = on_update_engine
 
         self.message_label = ctk.CTkLabel(
             self,
@@ -42,6 +52,9 @@ class ErrorPanel(ctk.CTkFrame):
         self.message_label.pack(fill="x", padx=10, pady=(8, 0))
         self.hint_label = ctk.CTkLabel(self, text="", wraplength=WRAP, justify="left", anchor="w")
         self.hint_label.pack(fill="x", padx=10)
+        self.update_button = ctk.CTkButton(
+            self, text="Update engine", width=120, height=24, command=self._update_engine
+        )
         self.details_button = ctk.CTkButton(
             self, text="Show details", width=110, height=24, command=self.toggle_details
         )
@@ -68,11 +81,17 @@ class ErrorPanel(ctk.CTkFrame):
         self.details_text.insert("1.0", self._details)
         self.details_text.configure(state="disabled")
         self._collapse()
+        self.update_button.pack_forget()
+        self.details_button.pack_forget()
+        if self._on_update_engine is not None and err.code in ENGINE_FIXABLE:
+            self.update_button.pack(anchor="w", padx=10, pady=(4, 0 if self._details else 8))
         if self._details:
             self.details_button.pack(anchor="w", padx=10, pady=(4, 8))
-        else:
-            self.details_button.pack_forget()
         self.pack(**self._pack_opts)
+
+    def _update_engine(self) -> None:
+        if self._on_update_engine is not None:
+            self._on_update_engine()
 
     def clear(self) -> None:
         self.pack_forget()
@@ -94,8 +113,8 @@ class ErrorPanel(ctk.CTkFrame):
         self.details_button.configure(text="Show details")
 
 
-def ask_already_downloaded(parent, title: str) -> str:
-    """Modal: the video and its note are already in the folder. Returns show | again | cancel."""
+def ask_already_downloaded(parent, title: str, has_note: bool = True) -> str:
+    """Modal: the video (and its note) are already in the folder. Returns show | again | cancel."""
     dialog = ctk.CTkToplevel(parent)
     dialog.title("Already downloaded")
     dialog.resizable(False, False)
@@ -114,7 +133,11 @@ def ask_already_downloaded(parent, title: str) -> str:
     )
     ctk.CTkLabel(
         dialog,
-        text="The video and its note are already in this folder.",
+        text=(
+            "The video and its note are already in this folder."
+            if has_note
+            else "The video is already in this folder."
+        ),
         text_color=DIM_TEXT,
         anchor="w",
     ).pack(fill="x", padx=16, pady=(2, 10))

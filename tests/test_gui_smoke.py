@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -17,6 +18,8 @@ if sys.platform.startswith("linux") and not (
     os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")
 ):
     pytest.skip("no display available", allow_module_level=True)
+
+import tkinter as tk  # noqa: E402
 
 import customtkinter as ctk  # noqa: E402
 
@@ -32,6 +35,8 @@ from ytdownloader.gui import widgets  # noqa: E402
 from ytdownloader.gui.app import MainWindow  # noqa: E402
 from ytdownloader.gui.first_run import FirstRunWindow  # noqa: E402
 from ytdownloader.gui.worker import UiQueue  # noqa: E402
+
+real_fetch_thumbnail = app_mod.fetch_thumbnail  # the autouse fixture replaces it in app_mod
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -405,8 +410,22 @@ def test_download_success_updates_recent_and_status(make_window, tmp_path, monke
     assert saved["recent"][0]["video_id"] == "jNQXAC9IVRw"
     assert saved["recent"][0]["title"] == "Me at the zoo"
     assert saved["recent"][0]["media_path"] == str(result.media_path)
-    assert (saved["mode"], saved["quality"], saved["subs_lang"]) == ("mp4", 240, "de")
+    # 240p was only this video's best: the 1080p preference stays for the next videos.
+    assert (saved["mode"], saved["quality"], saved["subs_lang"]) == ("mp4", 1080, "de")
     assert (saved["save_note"], saved["save_srt"]) == (True, True)
+
+
+@pytest.mark.parametrize(("picked", "stored"), [(None, 1080), ("144p", 144)])
+def test_quality_preference_changes_only_when_picked(make_window, tmp_path, picked, stored):
+    service = FakeService()
+    service.download_results = [done_result(tmp_path)]
+    w = make_window(service=service, settings=Settings(output_dir=str(tmp_path), quality=1080))
+    w.apply_info(zoo())  # best is 240p, so the default selection is 240p
+    if picked:
+        w.quality_menu.set(picked)
+    w.download_button.invoke()
+    pump(w, lambda: status(w).startswith("Done."), timeout=3)
+    assert w.settings.quality == stored
 
 
 def test_download_error_shows_panel_with_details(make_window, tmp_path):
@@ -431,6 +450,25 @@ def test_download_error_shows_panel_with_details(make_window, tmp_path):
     w.download_button.invoke()
     assert panel.winfo_manager() == ""  # a new attempt clears the old error
     pump(w, lambda: status(w).startswith("Done."), timeout=3)
+
+
+@pytest.mark.parametrize(
+    ("code", "offered"), [("engine_outdated", True), ("bot_check", True), ("unavailable", False)]
+)
+def test_error_panel_offers_engine_update(make_window, code, offered):
+    tools = FakeTools()
+    service = FakeService()
+    service.download_results = [friendly(code, details="ERR")]
+    w = make_window(service=service, tools=tools)
+    w.apply_info(zoo())
+    w.download_button.invoke()
+    pump(w, lambda: w.error_panel.winfo_manager() == "pack", timeout=3)
+    button = w.error_panel.update_button
+    assert (button.winfo_manager() == "pack") is offered
+    if offered:
+        button.invoke()
+        pump(w, lambda: w.engine_label.cget("text") == "yt-dlp 2026.10.18", timeout=3)
+        assert tools.updates == 1
 
 
 def test_cancel_shows_cancelled_without_panel(make_window):
@@ -468,7 +506,9 @@ def test_already_downloaded_choices(make_window, tmp_path, monkeypatch, choice):
     asked: list[str] = []
     shown: list[Path] = []
     monkeypatch.setattr(
-        app_mod, "ask_already_downloaded", lambda parent, title: asked.append(title) or choice
+        app_mod,
+        "ask_already_downloaded",
+        lambda parent, title, has_note=True: asked.append(title) or choice,
     )
     monkeypatch.setattr(app_mod.system, "show_file", shown.append)
     service = FakeService()
@@ -545,10 +585,14 @@ def test_download_waits_for_startup_engine_update(make_window, tmp_path, _no_sid
     ("new", "footer"),
     [("2026.09.01", "yt-dlp 2026.09.01 · up to date"), (None, "yt-dlp 2026.09.01 · update failed")],
 )
-def test_startup_update_outcomes(make_window, new, footer):
+def test_startup_update_outcomes(make_window, _no_side_effects, new, footer):
     w = make_window(tools=FakeTools(new=new))
     w.start_engine_status(now=1_000_000.0)
     pump(w, lambda: w.engine_label.cget("text") == footer)
+    # A failed update (e.g. offline) is retried at the next start, not a day later.
+    expected = 0.0 if new is None else 1_000_000.0
+    assert w.settings.last_update_check == expected
+    assert any(s.last_update_check == 1_000_000.0 for s in _no_side_effects) is (new is not None)
 
 
 def test_engine_status_skips_recent_check(make_window, tmp_path):
@@ -592,6 +636,48 @@ def test_update_engine_without_version_reports_failure(make_window):
     failed = "yt-dlp 2026.09.01 · update failed"
     pump(w, lambda: w.engine_label.cget("text") == failed, timeout=3)
     assert w.engine_menu.entrycget(0, "state") == "normal"
+    assert w.settings.last_update_check == 0.0
+
+
+def test_windows_icon_error_is_not_fatal(make_window, monkeypatch):
+    w = make_window()
+    monkeypatch.setattr(app_mod, "sys", SimpleNamespace(platform="win32"))
+
+    def broken_iconbitmap(*args):
+        raise tk.TclError('bitmap "x.ico" not defined')
+
+    monkeypatch.setattr(w, "iconbitmap", broken_iconbitmap)
+    w._set_icon()  # must not raise
+
+
+def test_fetch_thumbnail_rejects_non_http_urls(monkeypatch):
+    def no_network(*args, **kwargs):
+        raise AssertionError("must not open the URL")
+
+    monkeypatch.setattr(app_mod.urllib.request, "urlopen", no_network)
+    for url in ("file:///etc/passwd", "ftp://example.com/x.jpg", "data:image/png;base64,AA=="):
+        with pytest.raises(ValueError):
+            real_fetch_thumbnail(url)
+
+
+def test_fetch_thumbnail_reads_at_most_5_mb(monkeypatch):
+    asked: list[int] = []
+
+    class Huge:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self, size=-1):
+            asked.append(size)
+            return b"x" * size
+
+    monkeypatch.setattr(app_mod.urllib.request, "urlopen", lambda url, timeout: Huge())
+    with pytest.raises(ValueError):
+        real_fetch_thumbnail("https://i.ytimg.com/vi/x/hq.jpg")
+    assert asked == [5 * 1024 * 1024 + 1]
 
 
 class SlowCancelService(FakeService):
@@ -661,6 +747,27 @@ def test_ask_already_downloaded_returns_choice(make_window):
 
     w.after(200, click)
     assert widgets.ask_already_downloaded(w, "Me at the zoo") == "again"
+
+
+@pytest.mark.parametrize(
+    ("has_note", "text"),
+    [
+        (True, "The video and its note are already in this folder."),
+        (False, "The video is already in this folder."),
+    ],
+)
+def test_ask_already_downloaded_text(make_window, has_note, text):
+    w = make_window()
+    seen: list[str] = []
+
+    def read_and_cancel():
+        dialog = next(c for c in w.winfo_children() if isinstance(c, ctk.CTkToplevel))
+        seen.extend(c.cget("text") for c in dialog.winfo_children() if isinstance(c, ctk.CTkLabel))
+        dialog.buttons["cancel"].invoke()
+
+    w.after(200, read_and_cancel)
+    assert widgets.ask_already_downloaded(w, "Me at the zoo", has_note=has_note) == "cancel"
+    assert text in seen
 
 
 class FakeInstaller:

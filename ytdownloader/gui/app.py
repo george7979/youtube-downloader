@@ -10,6 +10,7 @@ import threading
 import time
 import tkinter as tk
 import traceback
+import urllib.parse
 import urllib.request
 from datetime import date
 from pathlib import Path
@@ -53,6 +54,7 @@ log = logging.getLogger(__name__)
 
 THUMB_SIZE = (160, 90)
 THUMB_TIMEOUT_S = 10
+THUMB_MAX_BYTES = 5 * 1024 * 1024
 PLACEHOLDER_RGB = (75, 85, 99)
 DIM_TEXT = ("gray40", "gray60")
 NO_SUBS = "None"
@@ -75,8 +77,12 @@ def _as_friendly(exc: Exception, what: str) -> FriendlyError:
 
 def fetch_thumbnail(url: str) -> Image.Image | None:
     """Download and decode a thumbnail, cropped to THUMB_SIZE. Runs off the UI thread."""
+    if urllib.parse.urlsplit(url).scheme.lower() not in ("http", "https"):
+        raise ValueError(f"not an http(s) thumbnail URL: {url!r}")
     with urllib.request.urlopen(url, timeout=THUMB_TIMEOUT_S) as resp:
-        data = resp.read()
+        data = resp.read(THUMB_MAX_BYTES + 1)
+    if len(data) > THUMB_MAX_BYTES:
+        raise ValueError(f"thumbnail larger than {THUMB_MAX_BYTES} bytes")
     with Image.open(io.BytesIO(data)) as img:
         return ImageOps.fit(img.convert("RGB"), THUMB_SIZE)
 
@@ -175,7 +181,10 @@ class MainWindow(ctk.CTk):
         if sys.platform == "win32":
             ico = resource_path("icons/youtube-downloader.ico")
             if ico.is_file():
-                self.iconbitmap(str(ico))
+                try:
+                    self.iconbitmap(str(ico))
+                except tk.TclError:
+                    log.warning("Could not load window icon %s", ico, exc_info=True)
 
     def _section(self) -> ctk.CTkFrame:
         return ctk.CTkFrame(self.body)
@@ -283,7 +292,9 @@ class MainWindow(ctk.CTk):
         )
         self.status_label.pack(fill="x", padx=10, pady=(0, 8))
         self.error_panel = ErrorPanel(
-            self.download_box, pack_opts={"fill": "x", "padx": 10, "pady": (0, 10)}
+            self.download_box,
+            pack_opts={"fill": "x", "padx": 10, "pady": (0, 10)},
+            on_update_engine=self.update_engine,
         )
 
     def _build_recent(self) -> None:
@@ -530,13 +541,13 @@ class MainWindow(ctk.CTk):
         self.progress_bar.set(1.0)
         name = result.media_path.name if result.media_path else result.title
         parts = [f"Done. Saved {name}", *result.warnings]
-        if not self._remember(req, result):
+        if not self._remember(req, info, result):
             parts.append("Settings could not be saved.")
         self.set_status(" · ".join(parts))
         self.refresh_recent()
 
     def _ask_already(self, req: DownloadRequest, info: VideoInfo, result: DownloadResult) -> None:
-        choice = ask_already_downloaded(self, result.title)
+        choice = ask_already_downloaded(self, result.title, has_note=result.note_path is not None)
         if choice == "again":
             self._cancel = threading.Event()
             self.cancel_button.configure(state="normal")
@@ -557,11 +568,14 @@ class MainWindow(ctk.CTk):
         self.set_status("Download failed.")
         self.error_panel.show(error)
 
-    def _remember(self, req: DownloadRequest, result: DownloadResult) -> bool:
+    def _remember(self, req: DownloadRequest, info: VideoInfo, result: DownloadResult) -> bool:
         """Persist the options of a successful download and add it to Recent downloads."""
         s = self.settings
         s.mode = req.mode
-        s.quality = req.quality
+        # The stored quality is a ceiling: a 720p-max video must not lower it for later videos.
+        default = _default_height(info.heights, s.quality) if info.heights else s.quality
+        if req.quality != default:
+            s.quality = req.quality
         if req.subs not in (SUBS_NONE, SUBS_DEFAULT):
             s.subs_lang = req.subs
         s.save_note = req.save_note
@@ -649,13 +663,14 @@ class MainWindow(ctk.CTk):
             log.warning("yt-dlp update failed", exc_info=exc)
         if new is None:
             if exc is None:
-                log.warning("yt-dlp update failed: no version reported after the update")
+                log.warning("yt-dlp update failed (offline, or yt-dlp -U exited with an error)")
+            # Not stored: the next start tries again instead of waiting a day.
             self._show_engine("update failed")
         else:
             self._ytdlp_version = new
             self._show_engine("updated" if new != old else "up to date")
-        self.settings.last_update_check = now
-        self._save_settings()
+            self.settings.last_update_check = now
+            self._save_settings()
         self._set_engine_busy(False)
 
     def update_engine(self) -> None:
@@ -686,7 +701,7 @@ class MainWindow(ctk.CTk):
     def _on_engine_updated(self, versions: tuple[str | None, str | None]) -> None:
         _old, new = versions
         if new is None:
-            log.warning("Engine update failed: no yt-dlp version reported after the update")
+            log.warning("Engine update failed: yt-dlp -U failed or yt-dlp does not run")
             self._show_engine("update failed")
         else:
             self._ytdlp_version = new
