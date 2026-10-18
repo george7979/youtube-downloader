@@ -39,6 +39,14 @@ def test_clean_auto_has_no_repeats():
     joined = " ".join(c.text for c in cues)
     phrase = "Zbigniew Trybuła, dyrektor Instytutu Fizyki Molekularnej Polskiej Akademii Nauk"
     assert joined.count(phrase) == 1
+    assert cues[0].start == 8.76
+    assert cues[0].text == "Witam serdecznie wszystkich państwa."
+    expected = (
+        "Witam serdecznie wszystkich państwa. Zbigniew Trybuła, dyrektor Instytutu "
+        "Fizyki Molekularnej Polskiej Akademii Nauk, a jednocześnie kierownik naukowy "
+        "warsztatów Lato z Helen. Proszę państwa, dzisiaj pierwszy dzień"
+    ).split()
+    assert joined.split()[: len(expected)] == expected
     assert "<c>" not in joined and "00:00" not in joined
     for a, b in zip(cues, cues[1:]):
         assert a.text != b.text
@@ -66,3 +74,14 @@ def test_to_srt():
         "1\n00:00:01,200 --> 00:00:03,360\nAll right\n\n"
         "2\n01:01:01,500 --> 01:01:02,000\nSecond\n\n"
     )
+
+
+def test_whitespace_only_payload_line_keeps_cue():
+    cues = parse_vtt("WEBVTT\n\n00:00:01.000 --> 00:00:02.000\n \nhello\n")
+    assert cues == [Cue(1.0, 2.0, "hello")]
+    assert parse_vtt(_read("auto_pl.vtt"))[0].start == 8.76
+
+
+def test_first_paragraph_of_auto_captions_starts_at_first_cue():
+    paras = to_paragraphs(clean_auto(parse_vtt(_read("auto_pl.vtt"))), [])
+    assert paras[0].start == 8.76

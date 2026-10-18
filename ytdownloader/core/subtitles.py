@@ -42,7 +42,7 @@ def _clean_line(line: str) -> str:
 
 def parse_vtt(text: str) -> list[Cue]:
     cues: list[Cue] = []
-    for block in re.split(r"\n\s*\n", text.lstrip("﻿").replace("\r\n", "\n").replace("\r", "\n")):
+    for block in re.split(r"\n\n+",text.lstrip("﻿").replace("\r\n", "\n").replace("\r", "\n")):
         lines = block.strip("\n").split("\n")
         if not lines or lines[0].startswith(_SKIP_BLOCKS):
             continue
