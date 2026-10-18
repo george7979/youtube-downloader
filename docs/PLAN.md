@@ -23,7 +23,8 @@
   w akcencie `#C62828`, zwarty układ, auto-Check po wklejeniu, nowe okno pierwszego
   uruchomienia.
 - Zamknięcie: akceptacja PO na Windows i Linux/WSL (spec §11), potem PR `dev` → `main` i tag
-  `v2.0.0` (za zgodą PO).
+  `v2.0.0` (za zgodą PO). Na GitHubie wisi stary lekki tag `v2.0.0` (`fc52839`, 2025-08-17,
+  bez wydania) — przed nowym tagiem trzeba go usunąć z remote'u (za zgodą PO).
 
 ## Bieżący krok
 
@@ -34,8 +35,7 @@ przez skill. Uwagi PO → poprawki na `dev`.
 Uwaga PO z Linux/WSL: okno z liter „Y”/„Z” i postrzępionych rogów, menu „⋯” nie znika.
 Poprawione na `dev`: menu (X11), paczka Linux na Pythonie z systemowym Tk z Xft (TECH
 „Pakowanie”); CI i budowanie zielone (przebieg 39162447294: 20 rodzin fontów w Tk, okno żyje
-10 s w kontenerach 22.04 i 24.04). Czeka retest PO z `.deb` (artefakt `linux-deb`) i z
-`uv tool install --python /usr/bin/python3`.
+10 s w kontenerach 22.04 i 24.04); retest PO na Linuksie zaliczony (ikony i czcionki dobre).
 
 ## Backlog
 
