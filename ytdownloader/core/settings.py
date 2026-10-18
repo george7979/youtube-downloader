@@ -37,24 +37,53 @@ def _default_path() -> Path:
     return paths.config_dir() / "settings.json"
 
 
-def _pick(cls, data: dict) -> dict:
-    names = {f.name for f in fields(cls)}
-    return {k: v for k, v in data.items() if k in names}
+def _is_str_or_none(v) -> bool:
+    return v is None or isinstance(v, str)
+
+
+def _is_pos_int(v) -> bool:
+    return isinstance(v, int) and not isinstance(v, bool) and v > 0
+
+
+def _is_number(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+_VALIDATORS = {
+    "output_dir": _is_str_or_none,
+    "mode": lambda v: v in ("mp4", "mp3"),
+    "quality": _is_pos_int,
+    "subs_lang": _is_str_or_none,
+    "save_note": lambda v: isinstance(v, bool),
+    "save_srt": lambda v: isinstance(v, bool),
+    "last_update_check": _is_number,
+}
+
+
+def _parse_recent(raw) -> list[RecentItem]:
+    if not isinstance(raw, list):
+        return []
+    items = []
+    for r in raw:
+        if not isinstance(r, dict):
+            continue
+        vals = {f.name: r.get(f.name) for f in fields(RecentItem)}
+        if all(isinstance(v, str) for v in vals.values()):
+            items.append(RecentItem(**vals))
+    return items[:MAX_RECENT]
 
 
 def load_settings(path: Path | None = None) -> Settings:
     path = path or _default_path()
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(data, dict):
-            return Settings()
-        values = _pick(Settings, data)
-        values["recent"] = [
-            RecentItem(**_pick(RecentItem, r)) for r in values.get("recent", [])
-        ]
-        return Settings(**values)
-    except (OSError, ValueError, TypeError):
+    except (OSError, ValueError):
         return Settings()
+    if not isinstance(data, dict):
+        return Settings()
+    values = {k: data[k] for k, ok in _VALIDATORS.items() if k in data and ok(data[k])}
+    values["last_update_check"] = float(values.get("last_update_check", 0.0))
+    return Settings(**values, recent=_parse_recent(data.get("recent")))
 
 
 def save_settings(s: Settings, path: Path | None = None) -> None:

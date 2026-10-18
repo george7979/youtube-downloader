@@ -79,3 +79,42 @@ def test_default_path_uses_config_dir(tmp_path, monkeypatch):
     settings.save_settings(Settings(quality=360))
     assert (tmp_path / "settings.json").is_file()
     assert settings.load_settings().quality == 360
+
+
+def _load(tmp_path, data):
+    p = tmp_path / "s.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    return settings.load_settings(p)
+
+
+def test_non_dict_top_level_gives_defaults(tmp_path):
+    assert _load(tmp_path, []) == Settings()
+
+
+def test_malformed_recent_entries_are_skipped(tmp_path):
+    good = {"video_id": "a", "title": "T", "media_path": "/m", "downloaded": "2026-10-18"}
+    for bad in ("abc", 5, {"a": 1}, None):
+        assert _load(tmp_path, {"recent": bad}).recent == []
+    s = _load(tmp_path, {"recent": [1, "x", None, {"video_id": "z"}, {**good, "title": 3}, good]})
+    assert s.recent == [RecentItem(**good)]
+
+
+def test_wrong_scalar_types_reset_individually(tmp_path):
+    s = _load(
+        tmp_path,
+        {
+            "quality": "abc",
+            "mode": 5,
+            "save_note": "yes",
+            "save_srt": 1,
+            "output_dir": 7,
+            "subs_lang": ["pl"],
+            "last_update_check": "x",
+        },
+    )
+    assert s == Settings()
+    assert _load(tmp_path, {"mode": "mkv", "quality": -5}) == Settings()
+    assert _load(tmp_path, {"quality": True}).quality == 1080
+    # valid fields survive next to an invalid one
+    s = _load(tmp_path, {"quality": "abc", "mode": "mp3", "last_update_check": 3})
+    assert (s.mode, s.quality, s.last_update_check) == ("mp3", 1080, 3.0)
