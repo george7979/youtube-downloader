@@ -493,14 +493,21 @@ def test_already_downloaded_choices(make_window, tmp_path, monkeypatch, choice):
 
 def test_check_during_download_keeps_the_running_request(make_window, tmp_path):
     service = FakeService(result=lecture())
+    service.events = [Status("Merging into MP4…")]
     service.download_gate = threading.Event()
     service.download_results = [done_result(tmp_path)]
     w = make_window(service=service)
     w.apply_info(zoo())
     w.download_button.invoke()
+    pump(w, lambda: status(w) == "Merging into MP4…", timeout=3)
 
-    check_and_wait(w, "https://youtu.be/VIw16SXObUQ")
-    assert w.title_label.cget("text") == lecture().title
+    w.url_entry.delete(0, "end")
+    w.url_entry.insert(0, "https://youtu.be/VIw16SXObUQ")
+    w.check()
+    assert status(w) == "Merging into MP4…"  # the download owns the status line
+    pump(w, lambda: w.title_label.cget("text") == lecture().title, timeout=3)
+    idle_ticks(w)
+    assert status(w) == "Merging into MP4…"
     assert w.download_button.cget("state") == "disabled"
     assert w.url_entry.cget("state") == "normal"
 
@@ -576,6 +583,73 @@ def test_update_engine_refused_while_downloading(make_window, tmp_path):
     assert w.download_button.cget("state") == "normal"
     pump(w, lambda: w.engine_label.cget("text") == "yt-dlp 2026.10.18", timeout=3)
     assert tools.updates == 1
+
+
+def test_update_engine_without_version_reports_failure(make_window):
+    w = make_window(tools=FakeTools(new=None))
+    w._ytdlp_version = "2026.09.01"
+    w.update_engine()
+    failed = "yt-dlp 2026.09.01 · update failed"
+    pump(w, lambda: w.engine_label.cget("text") == failed, timeout=3)
+    assert w.engine_menu.entrycget(0, "state") == "normal"
+
+
+class SlowCancelService(FakeService):
+    """download() blocks until cancelled, then takes a while to stop (kill tree, delete partials)."""
+
+    def __init__(self):
+        super().__init__()
+        self.cleaned_up = False
+
+    def download(self, req, info, sink, cancel, remembered_lang=None):
+        self.download_calls.append((req, info, remembered_lang))
+        sink(Progress(0.1, "Downloading video 10%"))
+        assert cancel.wait(5), "download was never cancelled"
+        time.sleep(0.5)
+        self.cleaned_up = True
+        raise friendly("cancelled")
+
+
+def test_closing_mid_download_waits_for_cleanup(monkeypatch, tmp_path):
+    from ytdownloader.core import logsetup
+    from ytdownloader.core import service as service_mod
+    from ytdownloader.core import settings as settings_mod
+    from ytdownloader.core import tools as tools_mod
+
+    service = SlowCancelService()
+    fake_tools = FakeTools()
+    fake_tools.missing = lambda: []
+    monkeypatch.setattr(sys, "excepthook", sys.excepthook)  # run() installs its own hooks
+    monkeypatch.setattr(threading, "excepthook", threading.excepthook)
+    monkeypatch.setattr(logsetup, "setup_logging", lambda: tmp_path / "app.log")
+    monkeypatch.setattr(tools_mod, "ToolManager", lambda: fake_tools)
+    monkeypatch.setattr(service_mod, "Service", lambda tools: service)
+    monkeypatch.setattr(
+        settings_mod,
+        "load_settings",
+        lambda path=None: Settings(output_dir=str(tmp_path), last_update_check=time.time()),
+    )
+
+    def mainloop(self):
+        def start():
+            self.apply_info(zoo())
+            self.download_button.invoke()
+            wait_for_progress()
+
+        def wait_for_progress():
+            if self.status_label.cget("text") == "Downloading video 10%":
+                self.destroy()  # the user closes the window mid-download
+            else:
+                self.after(20, wait_for_progress)
+
+        self.after(50, start)
+        ctk.CTk.mainloop(self)
+
+    monkeypatch.setattr(MainWindow, "mainloop", mainloop)
+
+    assert gui_mod.run() == 0
+    assert len(service.download_calls) == 1
+    assert service.cleaned_up  # run() waited for the cancelled download to finish
 
 
 def test_ask_already_downloaded_returns_choice(make_window):

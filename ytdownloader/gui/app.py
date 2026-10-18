@@ -129,6 +129,8 @@ class MainWindow(ctk.CTk):
         self.downloading = False
         self._cancel: threading.Event | None = None
         self._pending: tuple[DownloadRequest, VideoInfo] | None = None
+        self._download_idle = threading.Event()  # clear while service.download() runs
+        self._download_idle.set()
         self._indeterminate = False
         self._engine_busy = False  # startup update or "Update engine" in progress
         self._ytdlp_version: str | None = None
@@ -344,7 +346,10 @@ class MainWindow(ctk.CTk):
         seq = self._check_seq
         self._clear_info()
         self.error_panel.clear()
-        self.set_status("Fetching video info…")
+        # During a download the status line belongs to it (e.g. "Merging into MP4…" has no
+        # further events); the card and options still show the Check's result.
+        if not self.downloading:
+            self.set_status("Fetching video info…")
         self.ui.run_bg(
             lambda: self.service.probe(url),
             lambda info: self._on_check_ok(seq, info),
@@ -355,7 +360,8 @@ class MainWindow(ctk.CTk):
         if seq != self._check_seq:
             return
         self.apply_info(info)
-        self.set_status("Ready.")
+        if not self.downloading:
+            self.set_status("Ready.")
 
     def _on_check_err(self, seq: int, exc: Exception) -> None:
         if seq != self._check_seq:
@@ -478,11 +484,20 @@ class MainWindow(ctk.CTk):
         remembered = self.settings.subs_lang
         self.set_status("Starting download…")
 
+        idle = self._download_idle
+        idle.clear()
+
         def sink(event: Status | Progress) -> None:  # worker thread
             self.ui.post(lambda: self._on_event(event, cancel))
 
+        def work() -> DownloadResult:  # worker thread
+            try:
+                return self.service.download(req, info, sink, cancel, remembered)
+            finally:
+                idle.set()  # set from the worker: the UI queue may no longer run at exit
+
         self.ui.run_bg(
-            lambda: self.service.download(req, info, sink, cancel, remembered),
+            work,
             lambda result: self._on_download_ok(req, info, result),
             self._on_download_err,
         )
@@ -670,10 +685,14 @@ class MainWindow(ctk.CTk):
 
     def _on_engine_updated(self, versions: tuple[str | None, str | None]) -> None:
         _old, new = versions
-        self._ytdlp_version = new or self._ytdlp_version
-        self._show_engine()
-        self.settings.last_update_check = time.time()
-        self._save_settings()
+        if new is None:
+            log.warning("Engine update failed: no yt-dlp version reported after the update")
+            self._show_engine("update failed")
+        else:
+            self._ytdlp_version = new
+            self._show_engine()
+            self.settings.last_update_check = time.time()
+            self._save_settings()
         self._set_engine_busy(False)
 
     def _on_engine_update_failed(self, exc: Exception) -> None:
@@ -767,8 +786,14 @@ class MainWindow(ctk.CTk):
 
     # --- lifecycle -----------------------------------------------------------
 
+    def wait_for_download(self, timeout: float) -> bool:
+        """Block until no service.download() is running (thread-safe); False on timeout."""
+        return self._download_idle.wait(timeout)
+
     def destroy(self) -> None:
-        if self._cancel is not None:  # closing mid-download stops yt-dlp too
+        # Closing mid-download cancels it: the engine kills the yt-dlp/ffmpeg tree and the
+        # service deletes partial files. run() waits for that via wait_for_download().
+        if self._cancel is not None:
             self._cancel.set()
         self.ui.close()
         cancel_pending_after(self)

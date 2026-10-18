@@ -11,6 +11,7 @@ from tkinter import messagebox
 log = logging.getLogger(__name__)
 
 CRASH_TITLE = "Something went wrong"
+DOWNLOAD_STOP_TIMEOUT = 5.0  # seconds to wait at exit for a cancelled download to clean up
 
 
 class CrashReporter:
@@ -119,4 +120,8 @@ def _run(reporter: CrashReporter) -> int:
     reporter.attach(window)
     window.start_engine_status()
     window.mainloop()
+    # Closing the window cancelled a running download; give the engine time to kill the
+    # yt-dlp/ffmpeg tree and the service time to delete partial files before the process ends.
+    if not window.wait_for_download(DOWNLOAD_STOP_TIMEOUT):
+        log.warning("Download still stopping after %s s; exiting anyway", DOWNLOAD_STOP_TIMEOUT)
     return 0
