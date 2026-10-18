@@ -37,10 +37,11 @@ from ytdownloader.gui.app import MainWindow  # noqa: E402
 from ytdownloader.gui.first_run import FirstRunWindow  # noqa: E402
 from ytdownloader.gui.worker import UiQueue  # noqa: E402
 
-# Creating many Tk roots in one process occasionally fails on the Windows CI runner while Tcl
-# initialises ("Can't find a usable init.tcl", "invalid command name tcl_findLibrary") — an
-# environmental flake, not an app defect (the app creates a single root). Retry only those.
-_TCL_INIT_ERRORS = ("init.tcl", "tcl_findLibrary")
+# Creating many Tk roots in one process occasionally fails on the Windows CI runner while
+# Tcl/Tk read their library scripts ("Can't find a usable init.tcl" / "tk.tcl", "invalid command
+# name tcl_findLibrary") — an environmental flake, not an app defect (the app creates a single
+# root). Retry only Tcl/Tk initialisation failures.
+_TCL_INIT_ERRORS = ("Can't find a usable", "tcl_findLibrary")
 
 
 def create_root(factory):
