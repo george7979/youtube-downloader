@@ -30,6 +30,9 @@ def base_args(tools: ToolPaths) -> list[str]:
     return [
         str(tools.yt_dlp),
         *COMMON,
+        # A frozen yt-dlp.exe would otherwise write to a pipe in the ANSI code page.
+        "--encoding",
+        "utf-8",
         "--js-runtimes",
         f"deno:{tools.deno}",
         "--ffmpeg-location",
@@ -227,6 +230,7 @@ class Runner:
             stderr=subprocess.PIPE,
             encoding="utf-8",
             errors="replace",
+            env={**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
             **kwargs,
         )
 

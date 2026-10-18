@@ -28,8 +28,8 @@ def _emit(stream, lines: list[str]) -> None:
 
 
 def main() -> None:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    # No reconfigure of stdout/stderr: like a frozen yt-dlp.exe, the output encoding
+    # must come from the environment the runner sets (PYTHONIOENCODING / PYTHONUTF8).
     lines = Path(sys.argv[1]).read_text(encoding="utf-8").splitlines()
     mode = sys.argv[2] if len(sys.argv) > 2 else ""
 

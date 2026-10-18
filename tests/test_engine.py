@@ -50,6 +50,8 @@ def _base() -> list[str]:
         "--ignore-config",
         "--no-playlist",
         "--no-mtime",
+        "--encoding",
+        "utf-8",
         "--js-runtimes",
         f"deno:{Path('/t/deno')}",
         "--ffmpeg-location",
@@ -272,6 +274,23 @@ def test_runner_feeds_stderr_lines_and_returns_stderr_text():
     assert err.splitlines() == err_lines
     assert [line for line in lines if line.startswith("YTPP")] == err_lines
     assert [line for line in lines if not line.startswith("YTPP")] == out_lines
+
+
+def test_runner_passes_non_ascii_lines_intact(tmp_path):
+    fixture = tmp_path / "lines.txt"
+    fixture.write_text("YTDL {}\nFILE /OUT/Zażółć gęślą.mp4\n", encoding="utf-8")
+    lines: list[str] = []
+    rc, _ = Runner().run([sys.executable, str(FAKE), str(fixture)], lines.append, threading.Event())
+    assert rc == 0
+    assert lines == ["YTDL {}", "FILE /OUT/Zażółć gęślą.mp4"]
+
+
+def test_runner_forces_utf8_in_child_environment():
+    lines: list[str] = []
+    code = "import os; print(os.environ['PYTHONUTF8'], os.environ['PYTHONIOENCODING'])"
+    rc, _ = Runner().run([sys.executable, "-c", code], lines.append, threading.Event())
+    assert rc == 0
+    assert lines == ["1 utf-8"]
 
 
 def _alive(pid: int) -> bool:
