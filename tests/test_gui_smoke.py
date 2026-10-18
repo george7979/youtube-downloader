@@ -18,11 +18,19 @@ if sys.platform.startswith("linux") and not (
 ):
     pytest.skip("no display available", allow_module_level=True)
 
+import customtkinter as ctk  # noqa: E402
+
+from ytdownloader import gui as gui_mod  # noqa: E402
 from ytdownloader.core.errors import friendly  # noqa: E402
+from ytdownloader.core.models import DownloadResult, Progress, Status  # noqa: E402
 from ytdownloader.core.probe import info_from_json  # noqa: E402
 from ytdownloader.core.settings import RecentItem, Settings  # noqa: E402
+from ytdownloader.core.settings import save_settings as real_save_settings  # noqa: E402
+from ytdownloader.core.tools import tool_specs  # noqa: E402
 from ytdownloader.gui import app as app_mod  # noqa: E402
+from ytdownloader.gui import widgets  # noqa: E402
 from ytdownloader.gui.app import MainWindow  # noqa: E402
+from ytdownloader.gui.first_run import FirstRunWindow  # noqa: E402
 from ytdownloader.gui.worker import UiQueue  # noqa: E402
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -32,12 +40,22 @@ def lecture():
     return info_from_json(json.loads((FIXTURES / "info_lecture.json").read_text(encoding="utf-8")))
 
 
+def zoo():
+    return info_from_json(json.loads((FIXTURES / "info_zoo.json").read_text(encoding="utf-8")))
+
+
 class FakeService:
     def __init__(self, result=None, error=None):
         self.result = result
         self.error = error
         self.gate: threading.Event | None = None  # when set, probe blocks until released
         self.urls: list[str] = []
+        # download(): emits `events`, optionally blocks on `download_gate` (or cancel), then
+        # returns `download_results` in order (an Exception in the list is raised instead).
+        self.events: list = []
+        self.download_gate: threading.Event | None = None
+        self.download_results: list = []
+        self.download_calls: list = []
 
     def probe(self, url):
         self.urls.append(url)
@@ -47,9 +65,44 @@ class FakeService:
             raise self.error
         return self.result
 
+    def download(self, req, info, sink, cancel, remembered_lang=None):
+        self.download_calls.append((req, info, remembered_lang))
+        for event in self.events:
+            sink(event)
+        if self.download_gate is not None:
+            deadline = time.monotonic() + 5
+            while not (self.download_gate.is_set() or cancel.is_set()):
+                assert time.monotonic() < deadline, "test never released the download"
+                time.sleep(0.01)
+        if cancel.is_set():
+            raise friendly("cancelled")
+        outcome = self.download_results.pop(0)
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
 
 class FakeTools:
-    pass
+    """Only what the engine-status tests need; `gate` holds update_ytdlp until released."""
+
+    def __init__(self, old="2026.09.01", new="2026.10.18"):
+        self.old = old
+        self.new = new
+        self.gate: threading.Event | None = None
+        self.updates = 0
+
+    def ytdlp_version(self):
+        return self.old
+
+    def update_ytdlp(self):
+        self.updates += 1
+        if self.gate is not None:
+            assert self.gate.wait(5), "test never released the update"
+        return self.old, self.new
+
+    def update_all(self, on_bytes_for):
+        on_bytes_for("deno")(1_000_000, 2_000_000)
+        return self.update_ytdlp()
 
 
 @pytest.fixture(autouse=True)
@@ -65,9 +118,9 @@ def _no_side_effects(monkeypatch):
 def make_window(tmp_path):
     windows: list[MainWindow] = []
 
-    def build(service=None, settings=None):
+    def build(service=None, settings=None, tools=None):
         settings = settings or Settings(output_dir=str(tmp_path))
-        w = MainWindow(service or FakeService(), FakeTools(), settings)
+        w = MainWindow(service or FakeService(), tools or FakeTools(), settings)
         w.withdraw()
         windows.append(w)
         return w
@@ -158,7 +211,8 @@ def test_failed_check_disarms_previous_video(make_window):
     service.error = friendly("unavailable")
     check_and_wait(w, "https://youtu.be/otherVideo1")
 
-    assert w.status_label.cget("text") == "This video is not publicly available."
+    assert w.error_panel.winfo_manager() == "pack"
+    assert w.error_panel.message_label.cget("text") == "This video is not publicly available."
     assert w.download_button.cget("state") == "disabled"
     assert w.card.winfo_manager() == ""
     assert w.selected_request().url != lecture().url
@@ -231,7 +285,9 @@ def test_check_error_shows_friendly_message(make_window):
     w.url_entry.insert(0, "not a link")
     w.check()
     pump(w, lambda: w.status_label.cget("text") != "Fetching video info…")
-    assert w.status_label.cget("text") == "This doesn't look like a YouTube video link."
+    assert w.error_panel.message_label.cget("text") == (
+        "This doesn't look like a YouTube video link."
+    )
     assert w.download_button.cget("state") == "disabled"
 
 
@@ -282,3 +338,311 @@ def test_uiqueue_runs_callbacks_on_main_thread(make_window):
     assert seen["ok"] == main
     assert seen["err_thread"] == main
     assert isinstance(seen["err"], ValueError)
+
+
+# --- download flow, error panel, first run, engine status --------------------------------
+
+
+def status(w):
+    return w.status_label.cget("text")
+
+
+def idle_ticks(w, n=10):
+    for _ in range(n):
+        w.update()
+        time.sleep(0.01)
+
+
+def done_result(tmp_path, already=False, warnings=()):
+    info = zoo()
+    media = tmp_path / f"{info.title} [{info.id}].mp4"
+    media.write_bytes(b"x")
+    return DownloadResult(
+        video_id=info.id,
+        title=info.title,
+        media_path=media,
+        note_path=tmp_path / f"{info.title} [{info.id}].md",
+        srt_path=None,
+        transcript="none",
+        already_exists=already,
+        warnings=list(warnings),
+    )
+
+
+def test_download_success_updates_recent_and_status(make_window, tmp_path, monkeypatch):
+    settings_file = tmp_path / "settings.json"
+    monkeypatch.setattr(
+        app_mod, "save_settings", lambda s, path=None: real_save_settings(s, settings_file)
+    )
+    service = FakeService()
+    service.events = [
+        Progress(None, "Downloading video"),
+        Progress(0.5, "Downloading video 50% · 2.0 MB/s"),
+        Status("Merging into MP4…"),
+        Status("Writing note…"),
+    ]
+    result = done_result(tmp_path, warnings=["No subtitles were downloaded."])
+    service.download_results = [result]
+    w = make_window(service=service, settings=Settings(output_dir=str(tmp_path), subs_lang="pl"))
+    w.apply_info(zoo())
+    w.subs_menu.set("de (manual)")
+    w.srt_var.set(True)
+
+    w.download_button.invoke()
+    assert w.download_button.cget("state") == "disabled"
+    assert w.cancel_button.cget("state") == "normal"
+    pump(w, lambda: status(w).startswith("Done."), timeout=3)
+
+    assert status(w) == f"Done. Saved {result.media_path.name} · No subtitles were downloaded."
+    assert w.recent_labels[0].cget("text") == "Me at the zoo"
+    assert w.download_button.cget("state") == "normal"
+    assert w.cancel_button.cget("state") == "disabled"
+    assert w.error_panel.winfo_manager() == ""
+    req, info, remembered = service.download_calls[0]
+    assert (req.url, req.subs, info.id, remembered) == (zoo().url, "de", "jNQXAC9IVRw", "pl")
+
+    saved = json.loads(settings_file.read_text(encoding="utf-8"))
+    assert saved["recent"][0]["video_id"] == "jNQXAC9IVRw"
+    assert saved["recent"][0]["title"] == "Me at the zoo"
+    assert saved["recent"][0]["media_path"] == str(result.media_path)
+    assert (saved["mode"], saved["quality"], saved["subs_lang"]) == ("mp4", 240, "de")
+    assert (saved["save_note"], saved["save_srt"]) == (True, True)
+
+
+def test_download_error_shows_panel_with_details(make_window, tmp_path):
+    service = FakeService()
+    service.download_results = [friendly("bot_check", details="ERR LINE"), done_result(tmp_path)]
+    w = make_window(service=service)
+    w.apply_info(zoo())
+    w.download_button.invoke()
+    pump(w, lambda: w.error_panel.winfo_manager() == "pack", timeout=3)
+
+    panel = w.error_panel
+    assert panel.message_label.cget("text") == "YouTube is blocking this request."
+    assert "VPN" in panel.hint_label.cget("text")
+    assert "ERR LINE" in panel.details_text.get("1.0", "end")
+    assert panel.details_box.winfo_manager() == ""
+    panel.details_button.invoke()
+    assert panel.details_box.winfo_manager() == "pack"
+    panel.copy_button.invoke()
+    assert w.clipboard_get() == "ERR LINE"
+    assert w.download_button.cget("state") == "normal"
+
+    w.download_button.invoke()
+    assert panel.winfo_manager() == ""  # a new attempt clears the old error
+    pump(w, lambda: status(w).startswith("Done."), timeout=3)
+
+
+def test_cancel_shows_cancelled_without_panel(make_window):
+    service = FakeService()
+    service.events = [Progress(0.1, "Downloading video 10%")]
+    service.download_gate = threading.Event()
+    w = make_window(service=service)
+    w.apply_info(zoo())
+    w.download_button.invoke()
+    pump(w, lambda: status(w) == "Downloading video 10%", timeout=3)
+
+    w.cancel_button.invoke()
+    assert status(w) == "Cancelling…"
+    pump(w, lambda: status(w) == "Cancelled.", timeout=3)
+    assert w.error_panel.winfo_manager() == ""
+    assert w.download_button.cget("state") == "normal"
+    assert w.cancel_button.cget("state") == "disabled"
+
+
+def test_unexpected_worker_exception_reaches_panel(make_window):
+    service = FakeService()
+    service.download_results = [RuntimeError("kaboom")]
+    w = make_window(service=service)
+    w.apply_info(zoo())
+    w.download_button.invoke()
+    pump(w, lambda: w.error_panel.winfo_manager() == "pack", timeout=3)
+    assert w.error_panel.message_label.cget("text") == "Something went wrong."
+    details = w.error_panel.details_text.get("1.0", "end")
+    assert "Traceback" in details
+    assert "RuntimeError: kaboom" in details
+
+
+@pytest.mark.parametrize("choice", ["again", "show", "cancel"])
+def test_already_downloaded_choices(make_window, tmp_path, monkeypatch, choice):
+    asked: list[str] = []
+    shown: list[Path] = []
+    monkeypatch.setattr(
+        app_mod, "ask_already_downloaded", lambda parent, title: asked.append(title) or choice
+    )
+    monkeypatch.setattr(app_mod.system, "show_file", shown.append)
+    service = FakeService()
+    existing = done_result(tmp_path, already=True)
+    service.download_results = [existing, done_result(tmp_path)]
+    w = make_window(service=service, settings=Settings(output_dir=str(tmp_path), subs_lang="pl"))
+    w.apply_info(zoo())
+    w.subs_menu.set("None")
+    w.download_button.invoke()
+
+    if choice == "again":
+        pump(w, lambda: status(w).startswith("Done."), timeout=3)
+        assert [call[0].force for call in service.download_calls] == [False, True]
+        assert w.settings.subs_lang == "pl"  # "None" keeps the remembered language
+    else:
+        pump(w, lambda: status(w) == "Already downloaded.", timeout=3)
+        assert len(service.download_calls) == 1
+        assert shown == ([existing.media_path] if choice == "show" else [])
+    assert asked == ["Me at the zoo"]
+    assert w.download_button.cget("state") == "normal"
+
+
+def test_check_during_download_keeps_the_running_request(make_window, tmp_path):
+    service = FakeService(result=lecture())
+    service.download_gate = threading.Event()
+    service.download_results = [done_result(tmp_path)]
+    w = make_window(service=service)
+    w.apply_info(zoo())
+    w.download_button.invoke()
+
+    check_and_wait(w, "https://youtu.be/VIw16SXObUQ")
+    assert w.title_label.cget("text") == lecture().title
+    assert w.download_button.cget("state") == "disabled"
+    assert w.url_entry.cget("state") == "normal"
+
+    service.download_gate.set()
+    pump(w, lambda: status(w).startswith("Done."), timeout=3)
+    req, info, _ = service.download_calls[0]
+    assert (req.url, info.id) == (zoo().url, "jNQXAC9IVRw")
+    assert w.settings.recent[0].video_id == "jNQXAC9IVRw"
+    assert w.download_button.cget("state") == "normal"  # the lecture is checked and ready
+
+
+def test_download_waits_for_startup_engine_update(make_window, tmp_path, _no_side_effects):
+    tools = FakeTools()
+    tools.gate = threading.Event()
+    service = FakeService()
+    service.download_results = [done_result(tmp_path)]
+    w = make_window(service=service, tools=tools)
+    w.start_engine_status(now=1_000_000.0)
+    pump(w, lambda: w.engine_label.cget("text") == "yt-dlp 2026.09.01 · checking for updates…")
+
+    w.apply_info(zoo())
+    w.download_button.invoke()
+    assert status(w) == "Waiting for engine update to finish…"
+    idle_ticks(w)
+    assert service.download_calls == []
+
+    tools.gate.set()
+    pump(w, lambda: status(w).startswith("Done."), timeout=3)
+    assert w.engine_label.cget("text") == "yt-dlp 2026.10.18 · updated"
+    assert w.settings.last_update_check == 1_000_000.0
+    assert any(s.last_update_check == 1_000_000.0 for s in _no_side_effects)
+
+
+@pytest.mark.parametrize(
+    ("new", "footer"),
+    [("2026.09.01", "yt-dlp 2026.09.01 · up to date"), (None, "yt-dlp 2026.09.01 · update failed")],
+)
+def test_startup_update_outcomes(make_window, new, footer):
+    w = make_window(tools=FakeTools(new=new))
+    w.start_engine_status(now=1_000_000.0)
+    pump(w, lambda: w.engine_label.cget("text") == footer)
+
+
+def test_engine_status_skips_recent_check(make_window, tmp_path):
+    tools = FakeTools()
+    settings = Settings(output_dir=str(tmp_path), last_update_check=100.0)
+    w = make_window(tools=tools, settings=settings)
+    w.start_engine_status(now=200.0)
+    pump(w, lambda: w.engine_label.cget("text") == "yt-dlp 2026.09.01")
+    idle_ticks(w)
+    assert tools.updates == 0
+
+
+def test_update_engine_refused_while_downloading(make_window, tmp_path):
+    tools = FakeTools()
+    service = FakeService()
+    service.download_gate = threading.Event()
+    service.download_results = [done_result(tmp_path)]
+    w = make_window(service=service, tools=tools)
+    w.apply_info(zoo())
+    w.download_button.invoke()
+    assert w.engine_menu.entrycget(0, "state") == "disabled"
+    w.update_engine()
+    assert status(w) == "Can't update the engine while a download is running."
+    idle_ticks(w)
+    assert tools.updates == 0
+
+    service.download_gate.set()
+    pump(w, lambda: status(w).startswith("Done."), timeout=3)
+    assert w.engine_menu.entrycget(0, "state") == "normal"
+    w.update_engine()
+    assert w.engine_label.cget("text").startswith("Updating engine…")
+    assert w.download_button.cget("state") == "normal"
+    pump(w, lambda: w.engine_label.cget("text") == "yt-dlp 2026.10.18", timeout=3)
+    assert tools.updates == 1
+
+
+def test_ask_already_downloaded_returns_choice(make_window):
+    w = make_window()
+
+    def click():
+        dialog = next(c for c in w.winfo_children() if isinstance(c, ctk.CTkToplevel))
+        dialog.buttons["again"].invoke()
+
+    w.after(200, click)
+    assert widgets.ask_already_downloaded(w, "Me at the zoo") == "again"
+
+
+class FakeInstaller:
+    """ToolManager stand-in: the first install raises, every later one succeeds."""
+
+    def __init__(self):
+        self.calls: list[str] = []
+        self.fail_next = True
+
+    def install(self, spec, on_bytes):
+        self.calls.append(spec.name)
+        on_bytes(0, 2_000_000)
+        on_bytes(1_000_000, 2_000_000)
+        if self.fail_next:
+            self.fail_next = False
+            raise friendly("network", details="connection reset")
+        on_bytes(2_000_000, 2_000_000)
+
+
+def test_first_run_retry_after_failure():
+    tools = FakeInstaller()
+    w = FirstRunWindow(tools, tool_specs("linux"))
+    w.withdraw()
+    try:
+        assert w.header_label.cget("text") == (
+            "First run: downloading tools (yt-dlp, ffmpeg, Deno), about 207 MB"
+        )
+        pump(w, lambda: w.retry_button.winfo_manager() == "pack", timeout=3)
+        assert w.error_panel.message_label.cget("text") == "No connection to YouTube."
+        assert w.size_labels["yt-dlp"].cget("text") == "1.0 / 2.0 MB"
+        assert w.ok is False
+
+        w.retry_button.invoke()
+        pump(w, lambda: w.ok, timeout=3)
+        assert tools.calls == ["yt-dlp", "yt-dlp", "ffmpeg", "deno"]
+        assert w.retry_button.winfo_manager() == ""
+        assert w.error_panel.winfo_manager() == ""
+    finally:
+        w.destroy()
+
+
+def test_crash_reporter_shows_log_path(make_window, monkeypatch, tmp_path):
+    shown: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        gui_mod.messagebox, "showerror", lambda title, message, **kw: shown.append((title, message))
+    )
+    reporter = gui_mod.CrashReporter(tmp_path / "app.log")
+    w = make_window()
+    reporter.attach(w)
+    try:
+        raise ValueError("boom")
+    except ValueError:
+        w.report_callback_exception(*sys.exc_info())
+    assert shown[0][0] == "Something went wrong"
+    assert str(tmp_path / "app.log") in shown[0][1]
+
+    no_log = gui_mod.CrashReporter(None, "Permission denied")
+    assert "could not be created" in no_log.message()
+    assert "Permission denied" in no_log.message()

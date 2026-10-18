@@ -11,6 +11,18 @@ from typing import TypeVar
 T = TypeVar("T")
 
 
+def cancel_pending_after(root) -> None:
+    """Cancel every pending `after` callback of a Tk root before it is destroyed.
+
+    CustomTkinter keeps its own `after` loops (DPI scaling, redraws); left alone they fire into
+    a destroyed window ("invalid command name …" on stderr). Only the timers are cancelled:
+    `root.after_cancel` would also delete callback commands owned by child widgets (e.g.
+    CTkTextbox), whose own destroy then fails with "can't delete Tcl command".
+    """
+    for after_id in root.tk.splitlist(root.tk.call("after", "info")):
+        root.tk.call("after", "cancel", after_id)
+
+
 class UiQueue:
     def __init__(self, root, interval_ms: int = 80):
         self._root = root

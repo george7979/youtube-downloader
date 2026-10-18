@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import dataclasses
 import io
 import logging
 import sys
+import threading
+import time
 import tkinter as tk
+import traceback
 import urllib.request
+from datetime import date
 from pathlib import Path
 from tkinter import filedialog
 
@@ -14,11 +19,15 @@ import customtkinter as ctk
 from PIL import Image, ImageOps
 
 from ytdownloader import __version__
+from ytdownloader.core import paths
 from ytdownloader.core.errors import FriendlyError, friendly
 from ytdownloader.core.models import (
     SUBS_DEFAULT,
     SUBS_NONE,
     DownloadRequest,
+    DownloadResult,
+    Progress,
+    Status,
     SubtitleTrack,
     VideoInfo,
 )
@@ -26,11 +35,19 @@ from ytdownloader.core.note import format_ts
 from ytdownloader.core.paths import resource_path
 from ytdownloader.core.probe import pick_track
 from ytdownloader.core.service import Service
-from ytdownloader.core.settings import Settings, resolve_output_dir, save_settings
-from ytdownloader.core.tools import ToolManager
+from ytdownloader.core.settings import (
+    RecentItem,
+    Settings,
+    add_recent,
+    resolve_output_dir,
+    save_settings,
+)
+from ytdownloader.core.tools import ToolManager, should_check_update
 
 from . import system
-from .worker import UiQueue
+from .first_run import size_text
+from .widgets import ErrorPanel, ask_already_downloaded, show_about
+from .worker import UiQueue, cancel_pending_after
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +57,20 @@ PLACEHOLDER_RGB = (75, 85, 99)
 DIM_TEXT = ("gray40", "gray60")
 NO_SUBS = "None"
 MODES = {"MP4": "mp4", "MP3": "mp3"}
+MENU_UPDATE = 0  # index of "Update engine" in the footer menu
+
+
+def _traceback_text(exc: BaseException) -> str:
+    return "".join(traceback.format_exception(exc))
+
+
+def _as_friendly(exc: Exception, what: str) -> FriendlyError:
+    """Known errors pass through; anything else is logged and becomes `unknown` + traceback."""
+    if isinstance(exc, FriendlyError):
+        log.warning("%s failed [%s]: %s", what, exc.code, exc.details)
+        return exc
+    log.error("%s failed", what, exc_info=exc)
+    return friendly("unknown", details=_traceback_text(exc))
 
 
 def fetch_thumbnail(url: str) -> Image.Image | None:
@@ -93,7 +124,14 @@ class MainWindow(ctk.CTk):
         self._info: VideoInfo | None = None
         self._tracks_by_label: dict[str, SubtitleTrack] = {}
         self._check_seq = 0
-        self.downloading = False  # Task 13 sets this while a download runs
+        # A download "runs" from the click until its result is handled — also while it waits
+        # for an engine update (`_pending`) and while the already-downloaded dialog is open.
+        self.downloading = False
+        self._cancel: threading.Event | None = None
+        self._pending: tuple[DownloadRequest, VideoInfo] | None = None
+        self._indeterminate = False
+        self._engine_busy = False  # startup update or "Update engine" in progress
+        self._ytdlp_version: str | None = None
         self._thumb_image: ctk.CTkImage | None = None
         self.recent_labels: list[ctk.CTkLabel] = []
 
@@ -220,11 +258,16 @@ class MainWindow(ctk.CTk):
     def _build_download(self) -> None:
         self.download_box = self._section()
         self.download_box.pack(fill="x", pady=(0, 8))
-        # Task 13 wires the command (download flow).
+        buttons = ctk.CTkFrame(self.download_box, fg_color="transparent")
+        buttons.pack(fill="x", padx=10, pady=(10, 6))
         self.download_button = ctk.CTkButton(
-            self.download_box, text="Download", height=36, state="disabled"
+            buttons, text="Download", height=36, state="disabled", command=self.download
         )
-        self.download_button.pack(fill="x", padx=10, pady=(10, 6))
+        self.download_button.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self.cancel_button = ctk.CTkButton(
+            buttons, text="Cancel", width=90, height=36, state="disabled", command=self.cancel
+        )
+        self.cancel_button.pack(side="right")
         self.progress_bar = ctk.CTkProgressBar(self.download_box)
         self.progress_bar.set(0)
         self.progress_bar.pack(fill="x", padx=10, pady=(0, 4))
@@ -237,6 +280,9 @@ class MainWindow(ctk.CTk):
             wraplength=440,
         )
         self.status_label.pack(fill="x", padx=10, pady=(0, 8))
+        self.error_panel = ErrorPanel(
+            self.download_box, pack_opts={"fill": "x", "padx": 10, "pady": (0, 10)}
+        )
 
     def _build_recent(self) -> None:
         self.recent_box = self._section()
@@ -250,15 +296,30 @@ class MainWindow(ctk.CTk):
     def _build_footer(self) -> None:
         self.footer = ctk.CTkFrame(self, fg_color="transparent")
         self.footer.pack(side="bottom", fill="x", padx=16, pady=(4, 8))
-        # Task 13 fills the engine label (yt-dlp version and update state).
         self.engine_label = ctk.CTkLabel(
-            self.footer, text="", font=self._font_small, text_color=DIM_TEXT
+            self.footer, text="yt-dlp", font=self._font_small, text_color=DIM_TEXT
         )
         self.engine_label.pack(side="left")
+        self.menu_button = ctk.CTkButton(
+            self.footer, text="⋯", width=32, height=24, command=self._open_menu
+        )
+        self.menu_button.pack(side="right", padx=(8, 0))
         self.version_label = ctk.CTkLabel(
             self.footer, text=f"v{__version__}", font=self._font_small, text_color=DIM_TEXT
         )
         self.version_label.pack(side="right")
+        self.engine_menu = tk.Menu(self, tearoff=False)
+        self.engine_menu.add_command(label="Update engine", command=self.update_engine)
+        self.engine_menu.add_command(label="Open log folder", command=self.open_log_folder)
+        self.engine_menu.add_command(label="About", command=self.about)
+
+    def _open_menu(self) -> None:
+        x = self.menu_button.winfo_rootx()
+        y = self.menu_button.winfo_rooty() - self.engine_menu.winfo_reqheight()
+        try:
+            self.engine_menu.tk_popup(x, y)
+        finally:
+            self.engine_menu.grab_release()
 
     # --- status --------------------------------------------------------------
 
@@ -266,7 +327,9 @@ class MainWindow(ctk.CTk):
         self.status_label.configure(text=text)
 
     def show_error(self, error: FriendlyError) -> None:
-        self.set_status(error.message)
+        if not self.downloading:  # a running download keeps its own status line
+            self.set_status("")
+        self.error_panel.show(error)
 
     # --- check flow ----------------------------------------------------------
 
@@ -280,6 +343,7 @@ class MainWindow(ctk.CTk):
         self._check_seq += 1
         seq = self._check_seq
         self._clear_info()
+        self.error_panel.clear()
         self.set_status("Fetching video info…")
         self.ui.run_bg(
             lambda: self.service.probe(url),
@@ -296,10 +360,7 @@ class MainWindow(ctk.CTk):
     def _on_check_err(self, seq: int, exc: Exception) -> None:
         if seq != self._check_seq:
             return
-        if not isinstance(exc, FriendlyError):
-            log.error("Check failed", exc_info=exc)
-            exc = friendly("unknown", details=repr(exc))
-        self.show_error(exc)
+        self.show_error(_as_friendly(exc, "Check"))
 
     def apply_info(self, info: VideoInfo) -> None:
         self._info = info
@@ -383,6 +444,276 @@ class MainWindow(ctk.CTk):
             save_srt=self.srt_var.get(),
         )
 
+    # --- download flow -------------------------------------------------------
+
+    def download(self) -> None:
+        if self._info is None or self.downloading:
+            return
+        # Captured now: a Check during the download replaces `_info` and the options.
+        req, info = self.selected_request(), self._info
+        self.error_panel.clear()
+        self.downloading = True
+        self._cancel = threading.Event()
+        self._sync_controls()
+        self._reset_progress()
+        if self._engine_busy:
+            self._pending = (req, info)
+            self.set_status("Waiting for engine update to finish…")
+            return
+        self._run_download(req, info)
+
+    def cancel(self) -> None:
+        if not self.downloading or self._cancel is None:
+            return
+        self._cancel.set()
+        self.cancel_button.configure(state="disabled")
+        if self._pending is not None:  # still waiting for the engine: nothing to stop
+            self._finish_download()
+            self.set_status("Cancelled.")
+            return
+        self.set_status("Cancelling…")
+
+    def _run_download(self, req: DownloadRequest, info: VideoInfo) -> None:
+        cancel = self._cancel
+        remembered = self.settings.subs_lang
+        self.set_status("Starting download…")
+
+        def sink(event: Status | Progress) -> None:  # worker thread
+            self.ui.post(lambda: self._on_event(event, cancel))
+
+        self.ui.run_bg(
+            lambda: self.service.download(req, info, sink, cancel, remembered),
+            lambda result: self._on_download_ok(req, info, result),
+            self._on_download_err,
+        )
+
+    def _on_event(self, event: Status | Progress, cancel: threading.Event) -> None:
+        if cancel.is_set():  # keep "Cancelling…" until the run ends
+            return
+        self.set_status(event.text)
+        if isinstance(event, Progress):
+            if event.fraction is None:
+                if not self._indeterminate:
+                    self._indeterminate = True
+                    self.progress_bar.configure(mode="indeterminate")
+                    self.progress_bar.start()
+            else:
+                self._stop_indeterminate()
+                self.progress_bar.set(event.fraction)
+
+    def _on_download_ok(
+        self, req: DownloadRequest, info: VideoInfo, result: DownloadResult
+    ) -> None:
+        self._stop_indeterminate()
+        if result.already_exists:
+            self.progress_bar.set(0)
+            self.cancel_button.configure(state="disabled")
+            # Out of the UI-queue drain: the modal dialog runs a nested event loop.
+            self.after(0, lambda: self._ask_already(req, info, result))
+            return
+        self._finish_download()
+        self.progress_bar.set(1.0)
+        name = result.media_path.name if result.media_path else result.title
+        parts = [f"Done. Saved {name}", *result.warnings]
+        if not self._remember(req, result):
+            parts.append("Settings could not be saved.")
+        self.set_status(" · ".join(parts))
+        self.refresh_recent()
+
+    def _ask_already(self, req: DownloadRequest, info: VideoInfo, result: DownloadResult) -> None:
+        choice = ask_already_downloaded(self, result.title)
+        if choice == "again":
+            self._cancel = threading.Event()
+            self.cancel_button.configure(state="normal")
+            self._run_download(dataclasses.replace(req, force=True), info)
+            return
+        self._finish_download()
+        self.set_status("Already downloaded.")
+        if choice == "show" and result.media_path is not None:
+            system.show_file(result.media_path)
+
+    def _on_download_err(self, exc: Exception) -> None:
+        self._finish_download()
+        self._reset_progress()
+        if isinstance(exc, FriendlyError) and exc.code == "cancelled":
+            self.set_status("Cancelled.")
+            return
+        error = _as_friendly(exc, "Download")
+        self.set_status("Download failed.")
+        self.error_panel.show(error)
+
+    def _remember(self, req: DownloadRequest, result: DownloadResult) -> bool:
+        """Persist the options of a successful download and add it to Recent downloads."""
+        s = self.settings
+        s.mode = req.mode
+        s.quality = req.quality
+        if req.subs not in (SUBS_NONE, SUBS_DEFAULT):
+            s.subs_lang = req.subs
+        s.save_note = req.save_note
+        s.save_srt = req.save_srt
+        if result.media_path is not None:
+            add_recent(
+                s,
+                RecentItem(
+                    video_id=result.video_id,
+                    title=result.title,
+                    media_path=str(result.media_path),
+                    downloaded=date.today().isoformat(),
+                ),
+            )
+        return self._save_settings()
+
+    def _save_settings(self) -> bool:
+        try:
+            save_settings(self.settings)
+        except OSError:
+            log.warning("Could not save settings", exc_info=True)
+            return False
+        return True
+
+    def _finish_download(self) -> None:
+        self.downloading = False
+        self._cancel = None
+        self._pending = None
+        self._sync_controls()
+
+    def _sync_controls(self) -> None:
+        self.update_download_button()
+        self.cancel_button.configure(state="normal" if self.downloading else "disabled")
+        can_update = not (self.downloading or self._engine_busy)
+        self.engine_menu.entryconfigure(MENU_UPDATE, state="normal" if can_update else "disabled")
+
+    def _reset_progress(self) -> None:
+        self._stop_indeterminate()
+        self.progress_bar.set(0)
+
+    def _stop_indeterminate(self) -> None:
+        if self._indeterminate:
+            self._indeterminate = False
+            self.progress_bar.stop()
+            self.progress_bar.configure(mode="determinate")
+
+    # --- engine status -------------------------------------------------------
+
+    def start_engine_status(self, now: float | None = None) -> None:
+        """Show the yt-dlp version; once a day also update yt-dlp in the background."""
+        now = time.time() if now is None else now
+        check = should_check_update(self.settings.last_update_check, now)
+        if check:
+            self._set_engine_busy(True)
+        self.ui.run_bg(
+            self.tools.ytdlp_version,
+            lambda version: self._on_version(version, check, now),
+            lambda exc: self._on_version(None, check, now, exc),
+        )
+
+    def _on_version(
+        self, version: str | None, check: bool, now: float, exc: Exception | None = None
+    ) -> None:
+        if exc is not None:
+            log.warning("Could not read the yt-dlp version", exc_info=exc)
+        self._ytdlp_version = version
+        if not check:
+            self._show_engine()
+            return
+        self._show_engine("checking for updates…")
+        self.ui.run_bg(
+            self.tools.update_ytdlp,
+            lambda versions: self._on_startup_update(versions, now),
+            lambda err: self._on_startup_update(None, now, err),
+        )
+
+    def _on_startup_update(
+        self,
+        versions: tuple[str | None, str | None] | None,
+        now: float,
+        exc: Exception | None = None,
+    ) -> None:
+        old, new = versions if versions is not None else (self._ytdlp_version, None)
+        if exc is not None:
+            log.warning("yt-dlp update failed", exc_info=exc)
+        if new is None:
+            if exc is None:
+                log.warning("yt-dlp update failed: no version reported after the update")
+            self._show_engine("update failed")
+        else:
+            self._ytdlp_version = new
+            self._show_engine("updated" if new != old else "up to date")
+        self.settings.last_update_check = now
+        self._save_settings()
+        self._set_engine_busy(False)
+
+    def update_engine(self) -> None:
+        if self.downloading:
+            self.set_status("Can't update the engine while a download is running.")
+            return
+        if self._engine_busy:
+            return
+        self._set_engine_busy(True)
+        self.engine_label.configure(text="Updating engine…")
+        self.ui.run_bg(
+            lambda: self.tools.update_all(self._engine_bytes_for),
+            self._on_engine_updated,
+            self._on_engine_update_failed,
+        )
+
+    def _engine_bytes_for(self, name: str):
+        last = [""]
+
+        def on_bytes(done: int, total: int | None) -> None:  # worker thread
+            text = f"Updating engine… {name} {size_text(done, total)}"
+            if text != last[0]:
+                last[0] = text
+                self.ui.post(lambda: self.engine_label.configure(text=text))
+
+        return on_bytes
+
+    def _on_engine_updated(self, versions: tuple[str | None, str | None]) -> None:
+        _old, new = versions
+        self._ytdlp_version = new or self._ytdlp_version
+        self._show_engine()
+        self.settings.last_update_check = time.time()
+        self._save_settings()
+        self._set_engine_busy(False)
+
+    def _on_engine_update_failed(self, exc: Exception) -> None:
+        details = exc.details if isinstance(exc, FriendlyError) else _traceback_text(exc)
+        log.warning("Engine update failed: %s", details)
+        self._show_engine("update failed")
+        self.error_panel.show(
+            FriendlyError(
+                "update_failed",
+                "Engine update failed.",
+                "Check your internet connection and try again.",
+                details,
+            )
+        )
+        self._set_engine_busy(False)
+
+    def _show_engine(self, state: str | None = None) -> None:
+        text = f"yt-dlp {self._ytdlp_version or '(version unknown)'}"
+        self.engine_label.configure(text=f"{text} · {state}" if state else text)
+
+    def _set_engine_busy(self, busy: bool) -> None:
+        self._engine_busy = busy
+        self._sync_controls()
+        if not busy and self._pending is not None:
+            req, info = self._pending
+            self._pending = None
+            self._run_download(req, info)
+
+    def open_log_folder(self) -> None:
+        try:
+            folder = paths.log_dir()
+        except OSError as exc:
+            log.warning("Log folder not available", exc_info=True)
+            self.set_status(f"Can't open the log folder: {exc}")
+            return
+        system.open_folder(folder)
+
+    def about(self) -> None:
+        show_about(self, __version__, self._ytdlp_version)
+
     # --- folder --------------------------------------------------------------
 
     def _show_output_dir(self) -> None:
@@ -437,9 +768,8 @@ class MainWindow(ctk.CTk):
     # --- lifecycle -----------------------------------------------------------
 
     def destroy(self) -> None:
+        if self._cancel is not None:  # closing mid-download stops yt-dlp too
+            self._cancel.set()
         self.ui.close()
-        # CustomTkinter keeps its own `after` loops (DPI scaling, redraws); cancel them so they
-        # do not fire into a destroyed window ("invalid command name …" on stderr).
-        for after_id in self.tk.splitlist(self.tk.call("after", "info")):
-            self.after_cancel(after_id)
+        cancel_pending_after(self)
         super().destroy()
