@@ -157,12 +157,15 @@ def _extract_tar(archive: Path, patterns: tuple[str, ...], dest: Path) -> None:
         for member in tf:
             if not _matches(member.name, patterns):
                 continue
-            member = tarfile.data_filter(member, str(dest))  # rejects unsafe members
+            # Validate the ORIGINAL name: newer tarfile.data_filter releases normalize
+            # `a/../b` to `b`, which would hide the traversal from our own check.
+            target = _flat_target(member.name, dest)
+            member = tarfile.data_filter(member, str(dest))  # rejects links, devices, absolute paths
             if not member.isfile():
                 continue
             src = tf.extractfile(member)
             assert src is not None
-            with src, open(_flat_target(member.name, dest), "wb") as out:
+            with src, open(target, "wb") as out:
                 shutil.copyfileobj(src, out, CHUNK)
 
 

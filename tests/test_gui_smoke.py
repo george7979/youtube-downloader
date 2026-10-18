@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import threading
+import tkinter
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -125,7 +126,16 @@ def make_window(tmp_path):
 
     def build(service=None, settings=None, tools=None):
         settings = settings or Settings(output_dir=str(tmp_path))
-        w = MainWindow(service or FakeService(), tools or FakeTools(), settings)
+        # Creating many Tk roots in one process occasionally fails on the Windows CI runner
+        # with "Can't find a usable init.tcl" (environmental flake, not an app defect).
+        for attempt in range(3):
+            try:
+                w = MainWindow(service or FakeService(), tools or FakeTools(), settings)
+                break
+            except tkinter.TclError as exc:
+                if "init.tcl" not in str(exc) or attempt == 2:
+                    raise
+                time.sleep(0.2)
         w.withdraw()
         windows.append(w)
         return w

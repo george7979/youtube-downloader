@@ -1,6 +1,7 @@
 import hashlib
 import io
 import os
+import posixpath
 import socket
 import stat
 import subprocess
@@ -488,3 +489,26 @@ def test_update_all_failed_self_update_keeps_working_ytdlp(tmp_path):
     tm.install = lambda spec, on_bytes: installed.append(spec.name)
     assert tm.update_all(lambda name: (lambda d, t: None)) == ("2026.08.19", None)
     assert installed == ["ffmpeg", "deno"]
+
+
+def test_tar_rejects_traversal_even_if_data_filter_normalizes_name(tmp_path, monkeypatch):
+    """Newer tarfile.data_filter releases normalize `a/../b` to `b`; our check must not rely on it."""
+    real = tarfile.data_filter
+
+    def normalizing(member, dest_path):
+        member = real(member, dest_path)
+        return member.replace(name=posixpath.normpath(member.name), deep=False)
+
+    monkeypatch.setattr(tarfile, "data_filter", normalizing)
+    root = tmp_path / "tools"
+    spec = _spec("linux", "ffmpeg")
+    net = FakeNet(spec, _tar_xz({"x/bin/ffmpeg": b"ffmpeg", "x/bin/../ffprobe/../bin/ffprobe": b"evil"}))
+    tm = ToolManager(root=root, platform="linux", fetch=net.fetch, fetch_text=net.fetch_text,
+                     which=_no_which, run=FakeRun({}))
+    with pytest.raises(FriendlyError) as exc:
+        tm.install(spec, lambda d, t: None)
+    assert exc.value.code == "tools_missing"
+    assert "unsafe archive member" in exc.value.details
+    assert not (root / "ffmpeg").exists()
+    assert _files_outside(root) == []
+    assert _leftovers(root) == []

@@ -262,9 +262,9 @@ def test_tools_json_shape(tmp_path, capsys):
     assert json.loads(out) == {
         "ok": True,
         "tools": {
-            "yt-dlp": {"path": "/t/yt-dlp", "version": "2026.01.01"},
-            "ffmpeg": {"path": "/t/ffmpeg"},
-            "deno": {"path": "/t/deno"},
+            "yt-dlp": {"path": str(Path("/t/yt-dlp")), "version": "2026.01.01"},
+            "ffmpeg": {"path": str(Path("/t/ffmpeg"))},
+            "deno": {"path": str(Path("/t/deno"))},
         },
         "updated": None,
     }
