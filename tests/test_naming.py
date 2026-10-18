@@ -141,3 +141,36 @@ def test_note_video_id_huge_file_cut_inside_multibyte(tmp_path):
     head = f"---\nurl: https://www.youtube.com/watch?v={VID}\n---\n"
     note.write_text(head + "ą" * 10000, encoding="utf-8")
     assert note_video_id(note) == VID
+
+
+@pytest.mark.parametrize("ch", ["Ж", "漢", "🚀", "a"])
+def test_safe_filename_byte_cap(ch):
+    name = safe_filename(ch * 150 + ".")
+    assert len(name.encode("utf-8")) <= 200
+    assert len(name) <= 150
+    assert not name.endswith((".", " "))
+
+
+def test_safe_filename_byte_cap_cuts_on_char_boundary_and_restrips():
+    name = safe_filename("Ж" * 99 + " " + "Ж" * 20)
+    assert name == "Ж" * 99
+    emoji = safe_filename("🚀 " * 100)
+    assert len(emoji.encode("utf-8")) <= 200
+    assert not emoji.endswith(" ")
+
+
+def test_plan_reports_unrecognised_suffixed_note(tmp_path):
+    make_note(tmp_path / "T.md", OTHER)
+    unrecognised = tmp_path / f"T [{VID}].md"
+    unrecognised.write_text("user text, no frontmatter\n", encoding="utf-8")
+    plan = plan_names(tmp_path, "T", VID, "mp4")
+    assert plan.note == unrecognised
+    assert plan.existing_note == unrecognised
+
+
+def test_plan_reports_unrecognised_suffixed_media(tmp_path):
+    make_note(tmp_path / "T.md", OTHER)
+    media = tmp_path / f"T [{VID}].mp4"
+    media.write_bytes(b"x")
+    plan = plan_names(tmp_path, "T", VID, "mp4")
+    assert plan.existing_media == media

@@ -27,10 +27,17 @@ _REPLACEMENTS = {
 _WS_RE = re.compile(r"\s+")
 _URL_RE = re.compile(r"^url:\s*(\S+)\s*$")
 _HEAD_BYTES = 4096
+_MAX_BYTES = 200
 
 
 def _strip(text: str) -> str:
     return text.strip().rstrip(" .")
+
+
+def _cap(text: str, max_len: int) -> str:
+    text = text[:max_len]
+    text = text.encode("utf-8", "ignore")[:_MAX_BYTES].decode("utf-8", "ignore")
+    return _strip(text)
 
 
 def safe_filename(title: str, max_len: int = 150) -> str:
@@ -38,11 +45,11 @@ def safe_filename(title: str, max_len: int = 150) -> str:
     text = "".join(_REPLACEMENTS.get(ch, ch) for ch in text)
     text = "".join("_" if ord(ch) < 0x20 or ord(ch) == 0x7F else ch for ch in text)
     text = _strip(_WS_RE.sub(" ", text))
-    text = _strip(text[:max_len])
+    text = _cap(text, max_len)
     if not text:
         return "video"
     if text.split(".", 1)[0].strip().upper() in _RESERVED:
-        text = _strip(("_" + text)[:max_len])
+        text = _cap("_" + text, max_len)
     return text
 
 
@@ -106,10 +113,18 @@ def plan_names(folder: Path, title: str, video_id: str, media_ext: str) -> NameP
         if (folder / f"{base}.{media_ext}").exists() or (folder / f"{base}.md").exists():
             base = f"{base} [{video_id}]"
 
+    media = folder / f"{base}.{media_ext}"
+    note = folder / f"{base}.md"
+    # Never leave an existing target unreported (e.g. an unrecognised note).
+    if existing_note is None and note.is_file():
+        existing_note = note
+    if media.is_file():
+        existing_media = media
+
     return NamePlan(
         base=base,
-        media=folder / f"{base}.{media_ext}",
-        note=folder / f"{base}.md",
+        media=media,
+        note=note,
         existing_media=existing_media,
         existing_note=existing_note,
     )
