@@ -237,7 +237,7 @@ czyta i zapisuje `last_update_check`), więc nigdy nie dotykają prawdziwych ust
 
 ## Known Issues
 
-Znane, jeszcze niepoprawione. Pierwsze cztery grupy są widoczne dla użytkownika albo ryzykowne.
+Znane, jeszcze niepoprawione. Pierwsze pięć grup jest widocznych dla użytkownika albo ryzykowne.
 
 **Aktualizacja narzędzi**
 - `missing()` sprawdza yt-dlp tylko po istnieniu pliku: uszkodzony plik naprawia dopiero
@@ -247,6 +247,14 @@ Znane, jeszcze niepoprawione. Pierwsze cztery grupy są widoczne dla użytkownik
   aktualizacje; awaria między dwoma `rename` może zgubić ostatnią dobrą kopię; sumy pobierane
   są dopiero po całym archiwum.
 - „Check” podczas „Update engine” nie jest serializowane.
+- Błąd zapisu na dysk albo zmieniona nazwa pliku w wydaniu (HTTP 404) podczas instalacji
+  narzędzi jest pokazywany jako `network` („No connection…”).
+- `tools --update` bez `--json` przy nieudanej aktualizacji wypisuje `… -> None`.
+
+**Klasyfikacja błędów**
+- `engine_outdated` dopasowuje też ostrzeżenia (`WARNING: … nsig extraction failed`), więc
+  przy jednoczesnym prawdziwym błędzie (zerwane połączenie, prywatny film) podpowiedź może
+  wskazywać aktualizację silnika zamiast właściwej przyczyny.
 
 **Anulowanie i CLI**
 - Ctrl+C w trakcie instalacji narzędzi i dobowej aktualizacji yt-dlp w CLI nie jest
@@ -258,6 +266,10 @@ Znane, jeszcze niepoprawione. Pierwsze cztery grupy są widoczne dla użytkownik
 **Okno**
 - Zamknięcie okna przy otwartym dialogu „Already downloaded” może zgłosić `TclError`;
   anulowanie w momencie zwrotu `already_exists` bywa pokazane jako dialog.
+- Przycisk „Update engine” w panelu błędu nie jest wyłączany w trakcie pobierania; kliknięcie
+  jest odrzucane, ale komunikat nadpisuje linię statusu pobierania.
+- „Download again” dla filmu zapisanego jako `Tytuł [ID].mp4` bez notatki zapisuje drugi plik
+  `Tytuł.mp4`.
 
 **Notatka i nazwy**
 - Pusty opis daje trzy puste linie.
@@ -272,6 +284,8 @@ Znane, jeszcze niepoprawione. Pierwsze cztery grupy są widoczne dla użytkownik
 - Wczytana lista „recent” nie jest przycinana do 5; `last_update_check` z absurdalną liczbą
   może rzucić `OverflowError`, `NaN`/`inf` są przyjmowane.
 - `setup_logging` przy ponownym wywołaniu ignoruje zmienioną ścieżkę i poziom.
+- Uszkodzony `settings.json`: CLI zapisując czas sprawdzenia aktualizacji nadpisuje go
+  ustawieniami domyślnymi (wybrany folder i preferencje okna przepadają).
 
 **CI i testy**
 - Lint tylko błędów składni; `RMDir` w NSIS bez warunku; zamrożony plik Windows nie jest
