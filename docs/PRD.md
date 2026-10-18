@@ -32,13 +32,13 @@ po stronie YouTube.
    z `[ID]` — sam `Tytuł.mp4` bez notatki nie jest uznawany za ten film); istniejąca notatka
    nigdy nie jest nadpisywana.
 7. Nieinteraktywne CLI z wynikiem JSON dla Claude Code; Claude zawsze pyta o folder.
-8. Lista 3 ostatnich pobrań w oknie (zwarta — nie dominuje okna), z ręcznym czyszczeniem (pliki zostają).
+8. Lista 3 ostatnich pobrań w oknie (zwarta — nie dominuje okna), z ręcznym czyszczeniem
+   (pliki zostają).
 9. Chwilowa odmowa YouTube (HTTP 403) jest ponawiana automatycznie raz, bez udziału
    użytkownika.
 10. Deinstalacja na Windows usuwa wszystko, co aplikacja trzyma w profilu (narzędzia,
     ustawienia, lista ostatnich pobrań, logi); pobrane filmy i notatki zostają zawsze.
     Aktualizacja nową wersją zachowuje ustawienia.
-
 11. Wygląd: jedna wyraźna główna akcja na ekranie (Download; w oknie pierwszego uruchomienia
     po błędzie — Retry) w kolorze akcentu kojarzącym się z YouTube, ale nie jego markowym
     (`#C62828`); błędy wyróżnione własnym tłem i ikoną, nie samym kolorem. Wklejony link
@@ -48,6 +48,9 @@ po stronie YouTube.
 
 Kolejka i playlisty, logowanie do YouTube, ręczny wybór klientów YouTube, przekodowywanie,
 macOS, serwer MCP, tłumaczenia UI, serwisy inne niż YouTube, historia pobrań.
+
+Zasady działania widoczne dla użytkownika (aktualizacje narzędzi, wybór napisów, budowa
+transkryptu, nazwy plików i ponowne pobranie) opisuje `README.md` → „How it works”.
 
 ## Kryteria akceptacji
 

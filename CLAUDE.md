@@ -8,9 +8,14 @@ interfejs, README, BUILDING i skill po angielsku; dokumentacja projektowa po pol
 
 - `docs/PRD.md` — co i dlaczego · `docs/PLAN.md` — etapy i bieżący krok · `docs/TECH.md` —
   architektura, narzędzia, fakty o yt-dlp, znane problemy
-- `docs/BUILDING.md` — środowisko, paczki, wydanie · `README.md` — dla użytkownika
-- `docs/superpowers/specs/2026-10-18-v2-design.md` — projekt z decyzjami PO (D1–D14)
+- `docs/BUILDING.md` — środowisko, paczki, wydanie · `README.md` — dla użytkownika, w tym
+  „How it works”: zasady działania (aktualizacje, wybór napisów, transkrypt, nazwy, ponowne
+  pobranie) — zmiana tych zasad w kodzie = aktualizacja README w tym samym commicie
+- `docs/superpowers/specs/2026-10-18-v2-design.md` — projekt z decyzjami PO (D1–D14);
+  `…/2026-10-18-ui-polish-mockups/index.html` — zaakceptowane makiety wyglądu (statyczny HTML)
 - Stan projektu trzymaj w PLAN.md, nie tutaj.
+- Przykłady w README, makietach i zrzutach: tylko dane zastępcze (`Video title`, `VIDEO_ID`);
+  zrzut okna bez filmu i z pustą listą Recent.
 
 ## Środowisko i uruchamianie
 

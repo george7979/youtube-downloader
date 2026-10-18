@@ -71,7 +71,7 @@ Output: `installer\windows\youtube-downloader-VERSION-setup.exe`. Requires NSIS 
 GitHub Actions (`build.yml`) builds both packages on every push to `dev`/`main` and uploads them
 as artifacts; a `v*` tag additionally creates a GitHub Release.
 
-1. Bump the version on `dev` (it lives only in `version.py`):
+1. Bump the version on `dev` (it lives only in `version.py`; CI passes it to the installer):
    ```bash
    ./build-tools/version-manager.sh bump patch   # or minor / major
    ```
@@ -108,8 +108,17 @@ ytdownloader/
     note.py              #   the Markdown note
     service.py           #   the one entry point for GUI and CLI
   gui/                   # CustomTkinter window
-    app.py  first_run.py  widgets.py  worker.py  system.py
+    app.py               #   main window
+    first_run.py         #   tool download on the first start
+    widgets.py           #   error panel, dialogs, window icon
+    theme.py             #   colours and button styles
+    placement.py         #   window size and position from the screen's work area
+    worker.py            #   background work, results back on the Tk thread
+    system.py            #   open a folder, show a file
 
+icons/                   # app icon (.ico, PNG sizes)
+pics/                    # screenshots for the README
+docs/                    # PRD, PLAN, TECH (Polish), BUILDING; superpowers/ = design archive
 installer/
   linux/build-deb.sh     # .deb packaging
   windows/installer.nsi  # NSIS installer

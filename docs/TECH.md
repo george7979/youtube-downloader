@@ -2,7 +2,9 @@
 
 Stan faktyczny kodu. Co i dlaczego: `PRD.md`; kiedy i na jakim etapie: `PLAN.md`; decyzje
 projektowe z uzasadnieniem: `docs/superpowers/specs/2026-10-18-v2-design.md`; budowanie
-paczek i wydania: `BUILDING.md`.
+paczek i wydania: `BUILDING.md`. Logikę działania opisaną dla użytkownika (narzędzia i
+aktualizacje, wybór napisów, transkrypt, nazwy i ponowne pobranie) trzyma `README.md` → „How it
+works” — przy zmianie tych zasad w kodzie aktualizuj oba dokumenty.
 
 ## Architektura
 
@@ -91,6 +93,19 @@ gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru r
 - **Pierwsze uruchomienie:** nagłówek „Setting up” z jednym zdaniem; pasek narzędzia, które
   jeszcze czeka, nie ma wypełnienia (`progress_color` = kolor tła paska — przy 0 CTk rysuje
   okrągłą kropkę akcentu).
+
+## Moduły `gui/`
+
+| Moduł | Odpowiedzialność |
+|---|---|
+| `__init__.py` | `run()`: logi, `CrashReporter` (hooki wyjątków → okno ze ścieżką logu), okno pierwszego uruchomienia, potem główne; przy zamknięciu czeka do 5 s na anulowane pobieranie |
+| `app.py` | `MainWindow`: link → karta filmu → opcje (z „Save to”) → Download → Recent → stopka z menu `⋯` |
+| `first_run.py` | `FirstRunWindow`: instalacja narzędzi z paskiem na narzędzie, Retry, rośnie do panelu błędu |
+| `widgets.py` | `ErrorPanel`, dialog „Already downloaded”, About, `set_window_icon` |
+| `theme.py` | kolory i style przycisków, `apply_theme`, `set_primary_enabled` |
+| `placement.py` | rozmiar i położenie okna z obszaru roboczego ekranu |
+| `worker.py` | `UiQueue`: praca w tle, wyniki do wątku Tk przez `after` |
+| `system.py` | otwarcie folderu, pokazanie pliku w Eksploratorze |
 
 ## Moduły `core/`
 
@@ -213,8 +228,8 @@ Zweryfikowane na prawdziwych uruchomieniach (fixtury w `tests/fixtures/`).
 - **`--print` wycisza yt-dlp** — zawsze dodajemy `--progress` (i `--newline`).
 - **`--force-ipv4` zawsze** (w `COMMON`): YouTube potrafi oznaczyć adres IPv6 („Sign in to
   confirm you're not a bot” dla każdego filmu), podczas gdy IPv4 tej samej maszyny działa —
-  sprawdzone 2026-10-18 na laptopie PO: ten sam `yt-dlp.exe` i to samo łącze, bez `-4` blokada,
-  z `-4` pobiera. Świadomie: sieć bez IPv4 nie połączy się z YouTube (błąd `network`).
+  ten sam `yt-dlp.exe` i to samo łącze: bez `-4` blokada, z `-4` pobiera. Świadomie: sieć bez
+  IPv4 nie połączy się z YouTube (błąd `network`).
 - **Własne szablony postępu:** `--progress-template "download:YTDL %(progress)j"` i
   `"postprocess:YTPP %(progress)j"`; wartości z `--print`: `before_dl:CODEC %(vcodec)s`
   (ostrzeżenie „No H.264…”, gdy kodek nie zaczyna się od `avc1`) i `after_move:FILE
@@ -271,7 +286,9 @@ samym tytule mogłaby dopiąć notatkę do cudzego pliku. Ponowne pobranie trafi
 - **NSIS** (`installer/windows/installer.nsi`): instalacja do Program Files, skróty, wpis
   odinstalowania z `DisplayIcon` (bez niego Ustawienia → Aplikacje pokazują pustą ikonę), ikona
   aplikacji także na instalatorze i deinstalatorze; na ostatniej stronie zaznaczone pole „Run
-  YouTube Downloader” — start przez `explorer.exe`, czyli bez uprawnień administratora instalatora; wersja z `/DAPP_VERSION` (domyślnie zgodna z `version.py`).
+  YouTube Downloader” — start przez `explorer.exe`, czyli bez uprawnień administratora instalatora.
+  Wersja z `/DAPP_VERSION`: CI podaje ją z `version.py`; domyślna w skrypcie służy tylko
+  budowaniu ręcznemu.
 - **`.deb`** (`installer/linux/build-deb.sh`): jeden plik `/usr/bin/youtube-downloader`, ikony,
   plik `.desktop`; `Recommends: ffmpeg`; wersja z `version.py`.
 - **CI:** `ci.yml` — lint (tylko błędy składni), testy na Ubuntu (przez `xvfb-run`) i Windows;
@@ -291,14 +308,13 @@ czyta i zapisuje `last_update_check`), więc nigdy nie dotykają prawdziwych ust
 
 ## Known Issues
 
-Znane, jeszcze niepoprawione. Pierwsze sześć grup jest widocznych dla użytkownika albo ryzykownych.
+Znane, jeszcze niepoprawione; najpierw te widoczne dla użytkownika.
 
 **Pobieranie z YouTube**
 - Przestoje: YouTube co pewien czas wstrzymuje wydanie każdego 10-MB kawałka strumienia
   (yt-dlp pobiera YouTube w kawałkach `http_chunk_size`) na ok. 20 s — film 60 MB schodzi wtedy
-  w 2–4 min zamiast kilkunastu sekund. Odtworzone 2026-10-18 na tym samym łączu i z tymi samymi
-  argumentami: raz 9–33 s, raz 220 s — zależy od chwili (serwer/klient YouTube), nie od
-  aplikacji ani łącza. W `app.log` widać to jako serię „no output for ~20 s” co ~10 MB. Bez
+  w 2–4 min zamiast kilkunastu sekund. Na tym samym łączu i z tymi samymi argumentami raz
+  9–33 s, raz 220 s — zależy od chwili (serwer/klient YouTube), nie od aplikacji ani łącza. W `app.log` widać to jako serię „no output for ~20 s” co ~10 MB. Bez
   obejścia; do zbadania przy kolejnym wystąpieniu z `-v` (który klient YouTube i serwer `rr…`).
 
 **Aktualizacja narzędzi**
@@ -343,8 +359,8 @@ Znane, jeszcze niepoprawione. Pierwsze sześć grup jest widocznych dla użytkow
 - Pusty plik `.vtt` daje pusty `.srt`.
 
 **Ustawienia i logi**
-- Wczytana lista „recent” nie jest przycinana do 5; `last_update_check` z absurdalną liczbą
-  może rzucić `OverflowError`, `NaN`/`inf` są przyjmowane.
+- `last_update_check` z absurdalną liczbą może rzucić `OverflowError`, `NaN`/`inf` są
+  przyjmowane.
 - `setup_logging` przy ponownym wywołaniu ignoruje zmienioną ścieżkę i poziom.
 - Uszkodzony `settings.json`: CLI zapisując czas sprawdzenia aktualizacji nadpisuje go
   ustawieniami domyślnymi (wybrany folder i preferencje okna przepadają).
@@ -369,5 +385,5 @@ Znane, jeszcze niepoprawione. Pierwsze sześć grup jest widocznych dla użytkow
   na stderr; skill i README to opisują.
 - Świadomie: goły `Tytuł.mp4` bez notatki nie jest uznawany za ten sam film (patrz wyżej).
 - Świadomie: yt-dlp z kanału stabilnego, nie nightly.
-- Świadomie: aplikacja nie prowadzi historii pobrań — „Recent downloads” to trzy ostatnie
-  pozycji w ustawieniach, a stan „już pobrano” wynika z plików w folderze.
+- Świadomie: aplikacja nie prowadzi historii pobrań — „Recent” to trzy ostatnie
+  pozycje w ustawieniach, a stan „już pobrano” wynika z plików w folderze.
