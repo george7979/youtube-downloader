@@ -9,9 +9,12 @@ import webbrowser
 from collections.abc import Callable
 
 import customtkinter as ctk
+from PIL import Image, ImageDraw
 
 from ytdownloader.core.errors import FriendlyError
 from ytdownloader.core.paths import resource_path
+
+from .theme import DIM_TEXT, ERROR_BG, ERROR_BORDER, ERROR_TEXT, OUTLINE_BUTTON, TEXT_BUTTON
 
 log = logging.getLogger(__name__)
 
@@ -35,11 +38,23 @@ def set_window_icon(root: tk.Tk) -> None:
                 log.warning("Could not load window icon %s", ico, exc_info=True)
 
 REPO_URL = "https://github.com/george7979/youtube-downloader"
-ERROR_TEXT = ("#b91c1c", "#f87171")
-DIM_TEXT = ("gray40", "gray60")
 LINK_TEXT = ("#1d4ed8", "#93c5fd")
 WRAP = 420
 ENGINE_FIXABLE = frozenset({"bot_check", "engine_outdated", "forbidden"})  # errors an engine update may fix
+
+
+def _error_icon() -> ctk.CTkImage:
+    """A circled exclamation mark in the error colour, drawn at 2x for sharp HiDPI rendering."""
+
+    def draw(colour: str) -> Image.Image:
+        img = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+        pen = ImageDraw.Draw(img)
+        pen.ellipse((2, 2, 29, 29), outline=colour, width=3)
+        pen.line((16, 8, 16, 19), fill=colour, width=3)
+        pen.ellipse((14, 22, 18, 26), fill=colour)
+        return img
+
+    return ctk.CTkImage(light_image=draw(ERROR_TEXT[0]), dark_image=draw(ERROR_TEXT[1]), size=(16, 16))
 
 
 class ErrorPanel(ctk.CTkFrame):
@@ -57,29 +72,42 @@ class ErrorPanel(ctk.CTkFrame):
         on_layout: Callable[[], None] | None = None,
         **kwargs,
     ):
+        kwargs.setdefault("fg_color", ERROR_BG)
+        kwargs.setdefault("border_width", 1)
+        kwargs.setdefault("border_color", ERROR_BORDER)
         super().__init__(master, **kwargs)
         self._pack_opts = pack_opts or {"fill": "x"}
         self._on_layout = on_layout  # called after the panel grows (shown, details expanded)
         self._details = ""
         self._on_update_engine = on_update_engine
 
+        self.message_row = ctk.CTkFrame(self, fg_color="transparent")
+        self.message_row.pack(fill="x", padx=10, pady=(8, 0))
+        ctk.CTkLabel(self.message_row, text="", image=_error_icon(), width=16).pack(
+            side="left", padx=(0, 8)
+        )
         self.message_label = ctk.CTkLabel(
-            self,
+            self.message_row,
             text="",
             font=ctk.CTkFont(size=13, weight="bold"),
             text_color=ERROR_TEXT,
-            wraplength=WRAP,
+            wraplength=WRAP - 24,
             justify="left",
             anchor="w",
         )
-        self.message_label.pack(fill="x", padx=10, pady=(8, 0))
+        self.message_label.pack(side="left", fill="x", expand=True)
         self.hint_label = ctk.CTkLabel(self, text="", wraplength=WRAP, justify="left", anchor="w")
         self.hint_label.pack(fill="x", padx=10)
         self.update_button = ctk.CTkButton(
-            self, text="Update engine", width=120, height=24, command=self._update_engine
+            self,
+            text="Update engine",
+            width=120,
+            height=26,
+            command=self._update_engine,
+            **OUTLINE_BUTTON,
         )
         self.details_button = ctk.CTkButton(
-            self, text="Show details", width=110, height=24, command=self.toggle_details
+            self, text="Show details", width=96, height=24, command=self.toggle_details, **TEXT_BUTTON
         )
         self.details_button.pack(anchor="w", padx=10, pady=(4, 8))
 
@@ -87,7 +115,7 @@ class ErrorPanel(ctk.CTkFrame):
         self.details_text = ctk.CTkTextbox(self.details_box, height=120, wrap="word")
         self.details_text.pack(fill="x")
         self.copy_button = ctk.CTkButton(
-            self.details_box, text="Copy", width=72, height=24, command=self.copy_details
+            self.details_box, text="Copy", width=56, height=24, command=self.copy_details, **TEXT_BUTTON
         )
         self.copy_button.pack(anchor="e", pady=(4, 0))
 
@@ -96,7 +124,7 @@ class ErrorPanel(ctk.CTkFrame):
         self.message_label.configure(text=err.message)
         self.hint_label.configure(text=err.hint)
         if err.hint:
-            self.hint_label.pack(fill="x", padx=10, after=self.message_label)
+            self.hint_label.pack(fill="x", padx=10, after=self.message_row)
         else:
             self.hint_label.pack_forget()
         self.details_text.configure(state="normal")
@@ -174,11 +202,16 @@ def ask_already_downloaded(parent, title: str, has_note: bool = True) -> str:
     row = ctk.CTkFrame(dialog, fg_color="transparent")
     row.pack(fill="x", padx=16, pady=(0, 14))
     dialog.buttons = {
-        "show": ctk.CTkButton(row, text="Show file", width=96, command=lambda: pick("show")),
-        "again": ctk.CTkButton(
-            row, text="Download again", width=120, command=lambda: pick("again")
+        # No filled button: neither choice is the obvious next step.
+        "show": ctk.CTkButton(
+            row, text="Show file", width=96, command=lambda: pick("show"), **OUTLINE_BUTTON
         ),
-        "cancel": ctk.CTkButton(row, text="Cancel", width=80, command=lambda: pick("cancel")),
+        "again": ctk.CTkButton(
+            row, text="Download again", width=120, command=lambda: pick("again"), **OUTLINE_BUTTON
+        ),
+        "cancel": ctk.CTkButton(
+            row, text="Cancel", width=72, command=lambda: pick("cancel"), **TEXT_BUTTON
+        ),
     }
     for button in dialog.buttons.values():
         button.pack(side="left", padx=(0, 8))
@@ -210,6 +243,6 @@ def show_about(parent, app_version: str, ytdlp_version: str | None) -> None:
     link = ctk.CTkLabel(dialog, text=REPO_URL, text_color=LINK_TEXT, cursor="hand2", anchor="w")
     link.pack(fill="x", padx=16, pady=(2, 10))
     link.bind("<Button-1>", lambda _e: webbrowser.open(REPO_URL))
-    ctk.CTkButton(dialog, text="Close", width=80, command=dialog.destroy).pack(
+    ctk.CTkButton(dialog, text="Close", width=80, command=dialog.destroy, **OUTLINE_BUTTON).pack(
         anchor="e", padx=16, pady=(0, 14)
     )

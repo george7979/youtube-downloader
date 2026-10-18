@@ -47,6 +47,7 @@ from ytdownloader.core.tools import ToolManager, should_check_update
 from . import system
 from .first_run import size_text
 from .placement import fit_window, work_area
+from .theme import DIM_TEXT, OUTLINE_BUTTON, TEXT_BUTTON, apply_theme, set_primary_enabled
 from .widgets import ErrorPanel, ask_already_downloaded, set_window_icon, show_about
 from .worker import UiQueue, cancel_pending_after
 
@@ -56,7 +57,6 @@ THUMB_SIZE = (160, 90)
 THUMB_TIMEOUT_S = 10
 THUMB_MAX_BYTES = 5 * 1024 * 1024
 PLACEHOLDER_RGB = (75, 85, 99)
-DIM_TEXT = ("gray40", "gray60")
 NO_SUBS = "None"
 NOTE_LABELS = {True: "Save note with transcript (.md)", False: "Save note without transcript (.md)"}
 MENU_FONT_SIZE = 12  # points
@@ -123,6 +123,7 @@ def _default_height(heights: list[int], wanted: int) -> int:
 class MainWindow(ctk.CTk):
     def __init__(self, service: Service, tools: ToolManager, settings: Settings):
         ctk.set_appearance_mode("system")
+        apply_theme()
         super().__init__()
         self.service = service
         self.tools = tools
@@ -151,9 +152,11 @@ class MainWindow(ctk.CTk):
         self.geometry(f"{place.width}x{place.height}+{place.x}+{place.y}")
         set_window_icon(self)
 
-        self._font_title = ctk.CTkFont(size=14, weight="bold")
+        self._font_title = ctk.CTkFont(size=15, weight="bold")
         self._font_small = ctk.CTkFont(size=12)
-        self._font_heading = ctk.CTkFont(size=11, weight="bold")
+        self._font_heading = ctk.CTkFont(size=12, weight="bold")
+        self._font_primary = ctk.CTkFont(size=15, weight="bold")
+        self._font_link = ctk.CTkFont(underline=True)
 
         self._build_footer()
         self.body = ctk.CTkScrollableFrame(self, fg_color="transparent")
@@ -164,7 +167,6 @@ class MainWindow(ctk.CTk):
         self._build_url_row()
         self._build_card()
         self._build_options()
-        self._build_folder_row()
         self._build_download()
         self._build_recent()
 
@@ -194,7 +196,9 @@ class MainWindow(ctk.CTk):
         self.url_entry = ctk.CTkEntry(self.url_row, placeholder_text="Paste a YouTube link")
         self.url_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self.url_entry.bind("<Return>", lambda _e: self.check())
-        self.check_button = ctk.CTkButton(self.url_row, text="Check", width=80, command=self.check)
+        self.check_button = ctk.CTkButton(
+            self.url_row, text="Check", width=80, command=self.check, **OUTLINE_BUTTON
+        )
         self.check_button.pack(side="left")
 
     def _build_card(self) -> None:
@@ -250,41 +254,64 @@ class MainWindow(ctk.CTk):
             checks, text="Also save subtitles (.srt)", variable=self.srt_var
         )
         self.srt_check.pack(side="left")
+        self._build_folder_row(row=3)
 
         self._reset_options()
         self._on_mode_change(mode)
         self.options.pack(fill="x", pady=(0, 8))
 
-    def _build_folder_row(self) -> None:
-        self.folder_row = self._section()
-        self.folder_row.pack(fill="x", pady=(0, 8))
-        self.folder_label = ctk.CTkLabel(self.folder_row, text="", anchor="w")
-        self.folder_label.pack(side="left", fill="x", expand=True, padx=10, pady=10)
-        self.open_folder_button = ctk.CTkButton(
-            self.folder_row, text="Open folder", width=96, command=self.open_folder
+    def _build_folder_row(self, row: int) -> None:
+        """'Save to <path> [Change]' at the bottom of the options; the path opens the folder."""
+        ctk.CTkFrame(self.options, height=1, fg_color=("gray78", "gray26")).grid(
+            row=row, column=0, columnspan=2, sticky="ew", padx=10
         )
-        self.open_folder_button.pack(side="right", padx=(0, 10))
+        self.folder_row = ctk.CTkFrame(self.options, fg_color="transparent")
+        self.folder_row.grid(row=row + 1, column=0, columnspan=2, sticky="ew", padx=10, pady=(6, 10))
+        ctk.CTkLabel(self.folder_row, text="Save to", text_color=DIM_TEXT).pack(
+            side="left", padx=(0, 8)
+        )
         self.change_button = ctk.CTkButton(
-            self.folder_row, text="Change", width=72, command=self.change_folder
+            self.folder_row,
+            text="Change",
+            width=72,
+            height=28,
+            command=self.change_folder,
+            **OUTLINE_BUTTON,
         )
-        self.change_button.pack(side="right", padx=(0, 6))
+        self.change_button.pack(side="right")
+        self.folder_label = ctk.CTkLabel(
+            self.folder_row, text="", anchor="w", cursor="hand2", font=self._font_link
+        )
+        self.folder_label.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self.folder_label.bind("<Button-1>", lambda _e: self.open_folder())
 
     def _build_download(self) -> None:
-        self.download_box = self._section()
+        # Children, top to bottom: the buttons row (always), the progress bar (only while a
+        # download runs), the status line (only when it has text), the error panel (on error).
+        self.download_box = ctk.CTkFrame(self.body, fg_color="transparent")
         self.download_box.pack(fill="x", pady=(0, 8))
-        buttons = ctk.CTkFrame(self.download_box, fg_color="transparent")
-        buttons.pack(fill="x", padx=10, pady=(10, 6))
+        self.download_row = ctk.CTkFrame(self.download_box, fg_color="transparent")
+        self.download_row.pack(fill="x")
         self.download_button = ctk.CTkButton(
-            buttons, text="Download", height=36, state="disabled", command=self.download
+            self.download_row,
+            text="Download",
+            height=42,
+            font=self._font_primary,
+            command=self.download,
         )
-        self.download_button.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        set_primary_enabled(self.download_button, False)
+        self.download_button.pack(side="left", fill="x", expand=True)
         self.cancel_button = ctk.CTkButton(
-            buttons, text="Cancel", width=90, height=36, state="disabled", command=self.cancel
+            self.download_row,
+            text="Cancel",
+            width=96,
+            height=42,
+            state="disabled",
+            command=self.cancel,
+            **OUTLINE_BUTTON,
         )
-        self.cancel_button.pack(side="right")
-        self.progress_bar = ctk.CTkProgressBar(self.download_box)
+        self.progress_bar = ctk.CTkProgressBar(self.download_box, height=6)
         self.progress_bar.set(0)
-        self.progress_bar.pack(fill="x", padx=10, pady=(0, 4))
         self.status_label = ctk.CTkLabel(
             self.download_box,
             text="",
@@ -293,35 +320,32 @@ class MainWindow(ctk.CTk):
             justify="left",
             wraplength=440,
         )
-        self.status_label.pack(fill="x", padx=10, pady=(0, 8))
         self.error_panel = ErrorPanel(
             self.download_box,
-            pack_opts={"fill": "x", "padx": 10, "pady": (0, 10)},
+            pack_opts={"fill": "x", "pady": (8, 0)},
             on_update_engine=self.update_engine,
         )
 
     def _build_recent(self) -> None:
-        self.recent_box = self._section()
+        self.recent_box = ctk.CTkFrame(self.body, fg_color="transparent")
         self.recent_box.pack(fill="x", pady=(0, 8))
         header = ctk.CTkFrame(self.recent_box, fg_color="transparent")
-        header.pack(fill="x", padx=10, pady=(8, 2))
-        ctk.CTkLabel(
-            header, text="RECENT DOWNLOADS", font=self._font_heading, text_color=DIM_TEXT
-        ).pack(side="left")
+        header.pack(fill="x", padx=4)
+        ctk.CTkLabel(header, text="Recent", font=self._font_heading, text_color=DIM_TEXT).pack(
+            side="left"
+        )
         self.clear_recent_button = ctk.CTkButton(
             header,
             text="Clear",
-            width=56,
+            width=48,
             height=22,
             font=self._font_small,
-            fg_color="transparent",
-            border_width=1,
-            text_color=DIM_TEXT,
             command=self.clear_recent,
+            **TEXT_BUTTON,
         )
         self.clear_recent_button.pack(side="right")
         self.recent_rows = ctk.CTkFrame(self.recent_box, fg_color="transparent")
-        self.recent_rows.pack(fill="x", padx=10, pady=(0, 8))
+        self.recent_rows.pack(fill="x", padx=4)
 
     def _build_footer(self) -> None:
         self.footer = ctk.CTkFrame(self, fg_color="transparent")
@@ -331,7 +355,7 @@ class MainWindow(ctk.CTk):
         )
         self.engine_label.pack(side="left")
         self.menu_button = ctk.CTkButton(
-            self.footer, text="⋯", width=32, height=24, command=self._open_menu
+            self.footer, text="⋯", width=32, height=24, command=self._open_menu, **TEXT_BUTTON
         )
         self.menu_button.pack(side="right", padx=(8, 0))
         self.version_label = ctk.CTkLabel(
@@ -365,6 +389,11 @@ class MainWindow(ctk.CTk):
 
     def set_status(self, text: str) -> None:
         self.status_label.configure(text=text)
+        if not text:
+            self.status_label.pack_forget()
+        elif not self.status_label.winfo_manager():
+            anchor = self.progress_bar if self.progress_bar.winfo_manager() else self.download_row
+            self.status_label.pack(fill="x", pady=(6, 0), after=anchor)
 
     def show_error(self, error: FriendlyError) -> None:
         if not self.downloading:  # a running download keeps its own status line
@@ -376,7 +405,7 @@ class MainWindow(ctk.CTk):
     def update_download_button(self) -> None:
         """Download is enabled iff a video is checked and no download is running."""
         ready = self._info is not None and not self.downloading
-        self.download_button.configure(state="normal" if ready else "disabled")
+        set_primary_enabled(self.download_button, ready)
 
     def check(self) -> None:
         url = self.url_entry.get().strip()
@@ -399,7 +428,7 @@ class MainWindow(ctk.CTk):
             return
         self.apply_info(info)
         if not self.downloading:
-            self.set_status("Ready.")
+            self.set_status("")
 
     def _on_check_err(self, seq: int, exc: Exception) -> None:
         if seq != self._check_seq:
@@ -642,6 +671,13 @@ class MainWindow(ctk.CTk):
     def _sync_controls(self) -> None:
         self.update_download_button()
         self.cancel_button.configure(state="normal" if self.downloading else "disabled")
+        # Cancel and the progress bar exist only while a download runs.
+        if self.downloading and not self.cancel_button.winfo_manager():
+            self.cancel_button.pack(side="right", padx=(8, 0))
+            self.progress_bar.pack(fill="x", pady=(8, 0), after=self.download_row)
+        elif not self.downloading and self.cancel_button.winfo_manager():
+            self.cancel_button.pack_forget()
+            self.progress_bar.pack_forget()
         can_update = not (self.downloading or self._engine_busy)
         self.engine_menu.entryconfigure(MENU_UPDATE, state="normal" if can_update else "disabled")
 
@@ -824,11 +860,12 @@ class MainWindow(ctk.CTk):
             ctk.CTkButton(
                 row,
                 text="Show file",
-                width=80,
+                width=72,
                 height=24,
                 font=self._font_small,
                 state="normal" if present else "disabled",
                 command=lambda p=path: system.show_file(p),
+                **TEXT_BUTTON,
             ).pack(side="right")
             self.recent_labels.append(label)
         self.clear_recent_button.configure(state="normal" if self.settings.recent else "disabled")

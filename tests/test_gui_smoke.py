@@ -260,8 +260,8 @@ def test_download_disabled_while_check_in_flight(make_window):
     assert w.check_button.cget("state") == "normal"
 
     service.gate.set()
-    pump(w, lambda: w.status_label.cget("text") == "Ready.")
-    assert w.download_button.cget("state") == "normal"
+    pump(w, lambda: w.download_button.cget("state") == "normal")
+    assert w.status_label.cget("text") == ""
 
 
 def test_download_stays_disabled_while_downloading(make_window):
@@ -297,7 +297,8 @@ def test_check_success_fills_card(make_window):
     w.url_entry.insert(0, "https://youtu.be/VIw16SXObUQ")
     w.check()
     assert w.status_label.cget("text") == "Fetching video info…"
-    pump(w, lambda: w.status_label.cget("text") == "Ready.")
+    pump(w, lambda: w.download_button.cget("state") == "normal")
+    assert w.status_label.winfo_manager() == ""  # nothing to say once the card is shown
     assert service.urls == ["https://youtu.be/VIw16SXObUQ"]
     assert w.title_label.cget("text") == lecture().title
     assert w.download_button.cget("state") == "normal"
@@ -971,3 +972,38 @@ def test_scrollbar_only_when_content_overflows(make_window):
     assert bar.winfo_manager() == "grid"
     w._on_body_scroll("0.0", "1.0")
     assert bar.winfo_manager() == ""
+
+
+def test_download_is_the_only_filled_button(make_window):
+    from ytdownloader.gui import theme
+
+    w = make_window()
+    assert w.download_button.cget("fg_color") == theme.ACCENT_MUTED  # disabled until checked
+    w.apply_info(lecture())
+    assert w.download_button.cget("fg_color") == theme.ACCENT
+    for button in (w.check_button, w.change_button, w.cancel_button, w.clear_recent_button):
+        assert button.cget("fg_color") == "transparent"
+
+
+def test_progress_and_cancel_only_while_downloading(make_window, tmp_path):
+    service = FakeService()
+    service.download_results = [done_result(tmp_path)]
+    w = make_window(service=service)
+    w.apply_info(zoo())
+    assert w.progress_bar.winfo_manager() == "" and w.cancel_button.winfo_manager() == ""
+    assert w.status_label.winfo_manager() == ""
+
+    w.download_button.invoke()
+    assert w.progress_bar.winfo_manager() == "pack" and w.cancel_button.winfo_manager() == "pack"
+    pump(w, lambda: status(w).startswith("Done."), timeout=3)
+
+    assert w.progress_bar.winfo_manager() == "" and w.cancel_button.winfo_manager() == ""
+    assert w.status_label.winfo_manager() == "pack"  # the result stays readable
+
+
+def test_folder_path_opens_the_folder(make_window, monkeypatch, tmp_path):
+    opened = []
+    monkeypatch.setattr(app_mod.system, "open_folder", lambda path: opened.append(path))
+    w = make_window()
+    w.folder_label._label.event_generate("<Button-1>")  # the label CTkLabel draws the text in
+    assert opened == [tmp_path]
