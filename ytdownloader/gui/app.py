@@ -93,7 +93,7 @@ class MainWindow(ctk.CTk):
         self._info: VideoInfo | None = None
         self._tracks_by_label: dict[str, SubtitleTrack] = {}
         self._check_seq = 0
-        self._details_shown = False
+        self.downloading = False  # Task 13 sets this while a download runs
         self._thumb_image: ctk.CTkImage | None = None
         self.recent_labels: list[ctk.CTkLabel] = []
 
@@ -199,7 +199,9 @@ class MainWindow(ctk.CTk):
         self.srt_check = ctk.CTkCheckBox(checks, text="Also save .srt", variable=self.srt_var)
         self.srt_check.pack(side="left")
 
+        self._reset_options()
         self._on_mode_change(mode)
+        self.options.pack(fill="x", pady=(0, 8))
 
     def _build_folder_row(self) -> None:
         self.folder_row = self._section()
@@ -268,10 +270,16 @@ class MainWindow(ctk.CTk):
 
     # --- check flow ----------------------------------------------------------
 
+    def update_download_button(self) -> None:
+        """Download is enabled iff a video is checked and no download is running."""
+        ready = self._info is not None and not self.downloading
+        self.download_button.configure(state="normal" if ready else "disabled")
+
     def check(self) -> None:
         url = self.url_entry.get().strip()
         self._check_seq += 1
         seq = self._check_seq
+        self._clear_info()
         self.set_status("Fetching video info…")
         self.ui.run_bg(
             lambda: self.service.probe(url),
@@ -316,11 +324,24 @@ class MainWindow(ctk.CTk):
         self.subs_menu.configure(values=[NO_SUBS, *self._tracks_by_label])
         self.subs_menu.set(track.label() if track else NO_SUBS)
 
-        if not self._details_shown:
+        if not self.card.winfo_manager():
             self.card.pack(fill="x", pady=(0, 8), after=self.url_row)
-            self.options.pack(fill="x", pady=(0, 8), after=self.card)
-            self._details_shown = True
-        self.download_button.configure(state="normal")
+        self.update_download_button()
+
+    def _clear_info(self) -> None:
+        """Forget the checked video so nothing can target it: hide the card, reset options."""
+        self._info = None
+        self.card.pack_forget()
+        self._reset_options()
+        self.update_download_button()
+
+    def _reset_options(self) -> None:
+        default = f"{self.settings.quality}p"
+        self.quality_menu.configure(values=[default])
+        self.quality_menu.set(default)
+        self._tracks_by_label = {}
+        self.subs_menu.configure(values=[NO_SUBS])
+        self.subs_menu.set(NO_SUBS)
 
     def _set_thumbnail(self, img: Image.Image) -> None:
         self._thumb_image = ctk.CTkImage(light_image=img, dark_image=img, size=THUMB_SIZE)

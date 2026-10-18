@@ -36,10 +36,13 @@ class FakeService:
     def __init__(self, result=None, error=None):
         self.result = result
         self.error = error
+        self.gate: threading.Event | None = None  # when set, probe blocks until released
         self.urls: list[str] = []
 
     def probe(self, url):
         self.urls.append(url)
+        if self.gate is not None:
+            assert self.gate.wait(5), "test never released the probe"
         if self.error is not None:
             raise self.error
         return self.result
@@ -125,6 +128,73 @@ def test_mp3_mode_disables_quality(make_window):
 def test_download_disabled_before_check(make_window):
     w = make_window()
     assert w.download_button.cget("state") == "disabled"
+
+
+def test_fresh_window_shows_options_but_not_card(make_window):
+    w = make_window(settings=Settings(quality=1080))
+    assert w.options.winfo_manager() == "pack"
+    assert w.card.winfo_manager() == ""
+    assert w.quality_menu.cget("values") == ["1080p"]
+    assert w.quality_menu.get() == "1080p"
+    assert w.subs_menu.cget("values") == ["None"]
+    assert w.subs_menu.get() == "None"
+    w.apply_info(lecture())
+    assert w.card.winfo_manager() == "pack"
+
+
+def check_and_wait(w, url):
+    w.url_entry.delete(0, "end")
+    w.url_entry.insert(0, url)
+    w.check()
+    pump(w, lambda: w.status_label.cget("text") != "Fetching video info…")
+
+
+def test_failed_check_disarms_previous_video(make_window):
+    service = FakeService(result=lecture())
+    w = make_window(service=service)
+    check_and_wait(w, "https://youtu.be/VIw16SXObUQ")
+    assert w.download_button.cget("state") == "normal"
+
+    service.error = friendly("unavailable")
+    check_and_wait(w, "https://youtu.be/otherVideo1")
+
+    assert w.status_label.cget("text") == "This video is not publicly available."
+    assert w.download_button.cget("state") == "disabled"
+    assert w.card.winfo_manager() == ""
+    assert w.selected_request().url != lecture().url
+    assert w.url_entry.cget("state") == "normal"
+    assert w.check_button.cget("state") == "normal"
+
+
+def test_download_disabled_while_check_in_flight(make_window):
+    service = FakeService(result=lecture())
+    w = make_window(service=service)
+    check_and_wait(w, "https://youtu.be/VIw16SXObUQ")
+    assert w.download_button.cget("state") == "normal"
+
+    service.gate = threading.Event()
+    w.check()
+    for _ in range(10):
+        w.update()
+        time.sleep(0.01)
+    assert w.download_button.cget("state") == "disabled"
+    assert w.card.winfo_manager() == ""
+    assert w.selected_request().url == "https://youtu.be/VIw16SXObUQ"  # entry text, not old info
+    assert w.check_button.cget("state") == "normal"
+
+    service.gate.set()
+    pump(w, lambda: w.status_label.cget("text") == "Ready.")
+    assert w.download_button.cget("state") == "normal"
+
+
+def test_download_stays_disabled_while_downloading(make_window):
+    w = make_window()
+    w.downloading = True
+    w.apply_info(lecture())
+    assert w.download_button.cget("state") == "disabled"
+    w.downloading = False
+    w.update_download_button()
+    assert w.download_button.cget("state") == "normal"
 
 
 def test_recent_missing_file_greyed(make_window, tmp_path):
