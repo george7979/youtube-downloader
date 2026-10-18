@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 import tkinter as tk
 import webbrowser
 from collections.abc import Callable
@@ -10,8 +11,28 @@ from collections.abc import Callable
 import customtkinter as ctk
 
 from ytdownloader.core.errors import FriendlyError
+from ytdownloader.core.paths import resource_path
 
 log = logging.getLogger(__name__)
+
+
+def set_window_icon(root: tk.Tk) -> None:
+    """The app icon on a root window. On Windows CustomTkinter puts its own icon on every CTk
+    root shortly after creation unless iconbitmap() was called, so the .ico is set there too."""
+    png = resource_path("icons/youtube-downloader-32.png")
+    if png.is_file():
+        try:
+            root._app_icon = tk.PhotoImage(master=root, file=str(png))  # keep a reference
+            root.iconphoto(True, root._app_icon)
+        except tk.TclError:
+            log.warning("Could not load window icon %s", png, exc_info=True)
+    if sys.platform == "win32":
+        ico = resource_path("icons/youtube-downloader.ico")
+        if ico.is_file():
+            try:
+                root.iconbitmap(str(ico))
+            except tk.TclError:
+                log.warning("Could not load window icon %s", ico, exc_info=True)
 
 REPO_URL = "https://github.com/george7979/youtube-downloader"
 ERROR_TEXT = ("#b91c1c", "#f87171")

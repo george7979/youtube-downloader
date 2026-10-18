@@ -660,13 +660,26 @@ def test_update_engine_without_version_reports_failure(make_window):
 
 def test_windows_icon_error_is_not_fatal(make_window, monkeypatch):
     w = make_window()
-    monkeypatch.setattr(app_mod, "sys", SimpleNamespace(platform="win32"))
+    monkeypatch.setattr(widgets, "sys", SimpleNamespace(platform="win32"))
 
     def broken_iconbitmap(*args):
         raise tk.TclError('bitmap "x.ico" not defined')
 
     monkeypatch.setattr(w, "iconbitmap", broken_iconbitmap)
-    w._set_icon()  # must not raise
+    widgets.set_window_icon(w)  # must not raise
+
+
+def test_first_run_window_sets_app_icon(monkeypatch):
+    import ytdownloader.gui.first_run as first_run_mod
+
+    calls = []
+    monkeypatch.setattr(first_run_mod, "set_window_icon", lambda root: calls.append(root))
+    w = create_root(lambda: FirstRunWindow(FakeInstaller(), tool_specs("linux")))
+    w.withdraw()
+    try:
+        assert calls == [w]
+    finally:
+        w.destroy()
 
 
 def test_fetch_thumbnail_rejects_non_http_urls(monkeypatch):

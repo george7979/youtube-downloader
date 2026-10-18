@@ -5,7 +5,6 @@ from __future__ import annotations
 import dataclasses
 import io
 import logging
-import sys
 import threading
 import time
 import tkinter as tk
@@ -34,7 +33,6 @@ from ytdownloader.core.models import (
     VideoInfo,
 )
 from ytdownloader.core.note import format_ts
-from ytdownloader.core.paths import resource_path
 from ytdownloader.core.probe import pick_track
 from ytdownloader.core.service import Service
 from ytdownloader.core.settings import (
@@ -49,7 +47,7 @@ from ytdownloader.core.tools import ToolManager, should_check_update
 from . import system
 from .first_run import size_text
 from .placement import fit_window, work_area
-from .widgets import ErrorPanel, ask_already_downloaded, show_about
+from .widgets import ErrorPanel, ask_already_downloaded, set_window_icon, show_about
 from .worker import UiQueue, cancel_pending_after
 
 log = logging.getLogger(__name__)
@@ -151,7 +149,7 @@ class MainWindow(ctk.CTk):
         place = fit_window(work_area(self), self._get_window_scaling())
         self.minsize(place.min_width, place.min_height)
         self.geometry(f"{place.width}x{place.height}+{place.x}+{place.y}")
-        self._set_icon()
+        set_window_icon(self)
 
         self._font_title = ctk.CTkFont(size=14, weight="bold")
         self._font_small = ctk.CTkFont(size=12)
@@ -177,22 +175,6 @@ class MainWindow(ctk.CTk):
         self.refresh_recent()
 
     # --- building ------------------------------------------------------------
-
-    def _set_icon(self) -> None:
-        png = resource_path("icons/youtube-downloader-32.png")
-        if png.is_file():
-            try:
-                self._icon = tk.PhotoImage(master=self, file=str(png))
-                self.iconphoto(True, self._icon)
-            except tk.TclError:
-                log.warning("Could not load window icon %s", png, exc_info=True)
-        if sys.platform == "win32":
-            ico = resource_path("icons/youtube-downloader.ico")
-            if ico.is_file():
-                try:
-                    self.iconbitmap(str(ico))
-                except tk.TclError:
-                    log.warning("Could not load window icon %s", ico, exc_info=True)
 
     def _on_body_scroll(self, first: str, last: str) -> None:
         bar = self.body._scrollbar

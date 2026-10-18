@@ -13,7 +13,7 @@ from ytdownloader.core.errors import FriendlyError, friendly
 from ytdownloader.core.tools import OnBytes, ToolManager, ToolSpec
 
 from .placement import fit_window, max_height, work_area
-from .widgets import ErrorPanel
+from .widgets import ErrorPanel, set_window_icon
 from .worker import UiQueue, cancel_pending_after
 
 log = logging.getLogger(__name__)
@@ -44,6 +44,7 @@ class FirstRunWindow(ctk.CTk):
         self._installed: set[str] = set()
 
         self.title(f"YouTube Downloader {__version__}")
+        set_window_icon(self)
         place = fit_window(
             work_area(self), self._get_window_scaling(), preferred=(480, 360), minimum=(420, 300)
         )
