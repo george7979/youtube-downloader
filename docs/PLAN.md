@@ -22,9 +22,11 @@
 
 ## Bieżący krok
 
-PO: (1) za jego zgodą push `dev`; (2) CI buduje instalator Windows i `.deb` jako artefakty;
-(3) PO instaluje wersję na Windows i przechodzi siedem scenariuszy ze spec §11, a na
-Linux/WSL scenariusz 2 z zainstalowanym skillem. Uwagi PO → poprawki na `dev`.
+`dev` wypchnięty, CI zielone (testy Ubuntu i Windows, budowanie, test `.deb` na 22.04/24.04).
+PO pobiera artefakt `windows-installer` z ostatniego przebiegu „Build and Release” na `dev`,
+instaluje i przechodzi siedem scenariuszy ze spec §11; na Linux/WSL scenariusz 2 przez skill
+(CLI i skill zainstalowane na thinkpadzie). Uwagi PO → poprawki na `dev`; po akceptacji PR
+`dev` → `main` i tag `v2.0.0` (za zgodą PO).
 
 ## Backlog
 
