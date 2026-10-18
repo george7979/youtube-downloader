@@ -1,33 +1,34 @@
-# youtube-downloader.spec
+# youtube-downloader.spec — one-file build of the GUI + CLI.
+# yt-dlp is NOT bundled: the app downloads the official yt-dlp binary on first run.
+import glob
 import os
-from PyInstaller.utils.hooks import collect_data_files
+import sys
+
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
 
-ctk_datas = collect_data_files('customtkinter')
+# uv-managed (python-build-standalone) Python on Linux keeps libtcl/libtk next to libpython
+# and _tkinter has no RPATH, so PyInstaller cannot resolve them on its own.
+tcltk_binaries = []
+if sys.platform.startswith('linux'):
+    libdir = os.path.join(sys.base_prefix, 'lib')
+    tcltk_binaries = [
+        (path, '.')
+        for pattern in ('libtcl*.so*', 'libtk*.so*')
+        for path in glob.glob(os.path.join(libdir, pattern))
+    ]
 
 a = Analysis(
     ['launcher.py'],
     pathex=['.'],
-    binaries=[],
+    binaries=tcltk_binaries,
     datas=[
         ('icons', 'icons'),
-        *ctk_datas,
+        *collect_data_files('customtkinter'),
     ],
     hiddenimports=[
-        'customtkinter',
-        'core.downloader',
-        'core.utils',
-        'core.translations',
-        'ui.gui',
-        'ui.cli',
-        'yt_dlp',
-        'yt_dlp.extractor',
-        'tkinter',
-        'tkinter.ttk',
-        'tkinter.filedialog',
-        'tkinter.messagebox',
-        'PIL',
+        *collect_submodules('ytdownloader'),
         'PIL._tkinter_finder',
     ],
     hookspath=[],
@@ -55,5 +56,5 @@ exe = EXE(
     runtime_tmpdir=None,
     console=False,
     target_arch=None,
-    icon='icons/youtube-downloader-32.png' if os.path.exists('icons/youtube-downloader-32.png') else None,
+    icon='icons/youtube-downloader.ico' if sys.platform == 'win32' else None,
 )

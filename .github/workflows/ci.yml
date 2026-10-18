@@ -8,34 +8,35 @@ on:
 
 jobs:
   test:
-    name: Tests and Code Quality
-    runs-on: ubuntu-latest
+    name: Tests — ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pytest flake8 mypy
+      - name: Install Python 3.12 and dependencies
+        run: uv sync --managed-python --python 3.12
 
       - name: Lint (syntax errors only)
-        run: |
-          flake8 core/ ui/ launcher.py version.py \
-            --count --select=E9,F63,F7,F82 --show-source --statistics
+        run: >
+          uv run --with flake8 flake8 ytdownloader/ tests/ launcher.py version.py
+          --count --select=E9,F63,F7,F82 --show-source --statistics
 
-      - name: Type check
-        run: mypy core/ ui/ launcher.py version.py --ignore-missing-imports || true
+      - name: Run tests (Linux, virtual display)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a uv run pytest -q
 
-      - name: Run tests
-        run: python -m pytest tests/ -v
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: uv run pytest -q
 
   security:
     name: Security Scan
@@ -57,21 +58,3 @@ jobs:
             exit 1
           fi
           echo "Security scan passed"
-
-  structure:
-    name: Validate Project Structure
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check required files
-        run: |
-          for f in launcher.py version.py requirements.txt core/downloader.py ui/gui.py; do
-            if [ ! -f "$f" ]; then
-              echo "Missing required file: $f"
-              exit 1
-            fi
-          done
-          echo "Project structure OK"

@@ -26,24 +26,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
 
-      - name: Install dependencies
-        run: pip install yt-dlp customtkinter "pyinstaller>=6.0" pillow
+      - name: Install Python 3.12 and dependencies
+        run: uv sync --managed-python --python 3.12
 
       - name: Get version
         id: version
         shell: bash
         run: |
-          VERSION=$(python3 -c "from version import __version__; print(__version__)")
+          VERSION=$(uv run python -c "from version import __version__; print(__version__)")
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build binary (PyInstaller)
-        run: pyinstaller youtube-downloader.spec --clean
+        run: uv run pyinstaller youtube-downloader.spec --clean
 
       - name: Build .deb package (Linux)
         if: runner.os == 'Linux'
@@ -80,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ubuntu: ['20.04', '22.04', '24.04']
+        ubuntu: ['22.04', '24.04']
     container:
       image: ubuntu:${{ matrix.ubuntu }}
     steps:
@@ -129,12 +126,14 @@ jobs:
             ## YouTube Downloader v${{ steps.version.outputs.VERSION }}
 
             ### Linux (Debian/Ubuntu)
-            Pobierz `.deb` i zainstaluj: `sudo dpkg -i youtube-downloader_VERSION_amd64.deb`
+            Download the `.deb` and install it: `sudo apt install ./youtube-downloader_${{ steps.version.outputs.VERSION }}_amd64.deb`
 
             ### Windows
-            Pobierz `youtube-downloader-VERSION-setup.exe` i uruchom instalator.
+            Download `youtube-downloader-${{ steps.version.outputs.VERSION }}-setup.exe` and run the installer.
 
-            Przetestowano: Ubuntu 20.04 / 22.04 / 24.04 LTS, Windows 10/11
+            On first run the app downloads yt-dlp and Deno (and ffmpeg on Windows, or on Linux when no system ffmpeg is installed).
+
+            Install tested on Ubuntu 22.04 / 24.04 LTS.
 
             ---
-            Uzytkownik odpowiada za legalnosc pobieranych tresci.
+            You are responsible for the legality of the content you download.

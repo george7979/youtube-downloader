@@ -1,12 +1,12 @@
 ; YouTube Downloader NSIS Installer
-; Usage: makensis /DAPP_VERSION=1.2.0 installer\windows\installer.nsi
+; Usage: makensis /DAPP_VERSION=2.0.0 installer\windows\installer.nsi
 ; Run from project root after PyInstaller build
 
 ; Change compiler working directory to repo root (script lives in installer\windows\)
 !cd "..\.."
 
 !ifndef APP_VERSION
-  !define APP_VERSION "1.2.0"
+  !define APP_VERSION "2.0.0"
 !endif
 
 !define APP_NAME      "YouTube Downloader"
@@ -31,7 +31,7 @@ SetCompressor /SOLID lzma
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
-!insertmacro MUI_LANGUAGE "Polish"
+!insertmacro MUI_LANGUAGE "English"
 
 Section "Main" SecMain
   SetOutPath "$INSTDIR"
@@ -65,4 +65,10 @@ Section "Uninstall"
   Delete "$DESKTOP\YouTube Downloader.lnk"
 
   DeleteRegKey HKLM "${REG_KEY}"
+
+  ; Remove downloaded tools (yt-dlp, ffmpeg, Deno); keep settings and logs.
+  ; The uninstaller runs elevated, so $LOCALAPPDATA is the profile of the account it runs as;
+  ; if a standard user elevated with another account's credentials, their own tools stay.
+  SetShellVarContext current
+  RMDir /r "$LOCALAPPDATA\YouTube Downloader\tools"
 SectionEnd

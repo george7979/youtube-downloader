@@ -23,10 +23,13 @@ dev = ["pytest>=8", "pyinstaller>=6.10"]
 path = "version.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["ytdownloader"]
+# only-include (not force-include): the editable install then maps the working tree via .pth
+# and never keeps a stale copy of version.py in site-packages.
+only-include = ["ytdownloader", "version.py"]
 
-[tool.hatch.build.targets.wheel.force-include]
-"version.py" = "version.py"
+[tool.uv]
+# Rebuild the editable install's metadata when the version changes.
+cache-keys = [{ file = "pyproject.toml" }, { file = "version.py" }]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
