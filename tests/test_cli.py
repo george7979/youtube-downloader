@@ -1,3 +1,4 @@
+import dataclasses
 import json
 from pathlib import Path
 
@@ -182,3 +183,104 @@ def test_main_routes_subcommands(monkeypatch):
     assert entry.main(["info", "x", "--json"]) == 0
     assert entry.main(["--help"]) == 0
     assert seen == [["info", "x", "--json"], ["--help"]]
+
+
+# --- logging fallback and the tools command ---------------------------------
+
+
+def test_logging_failure_still_emits_json(tmp_path, monkeypatch, capsys):
+    def boom():
+        raise PermissionError("read-only profile")
+
+    monkeypatch.setattr(cli, "setup_logging", boom)
+    assert run(["info", "u", "--json"], FakeService(tmp_path)) == 0
+    out = capsys.readouterr().out
+    assert out.count("\n") == 1 and json.loads(out)["ok"] is True
+
+
+class FakeToolManager:
+    def __init__(self, missing=(), fail=None):
+        self._missing = list(missing)
+        self.fail = fail
+        self.installed = []
+        self.version = "2026.01.01"
+
+    def missing(self):
+        return list(self._missing)
+
+    def install(self, spec, on_bytes):
+        self.installed.append(spec.name)
+        on_bytes(50, 100)
+        on_bytes(100, 100)
+        self._missing.remove(spec)
+
+    def paths(self):
+        from ytdownloader.core.tools import ToolPaths
+
+        return ToolPaths(Path("/t/yt-dlp"), Path("/t/ffmpeg"), Path("/t/deno"))
+
+    def ytdlp_version(self):
+        if self.fail:
+            raise self.fail
+        return self.version
+
+    def update_all(self, on_bytes_for):
+        old, self.version = self.version, "2026.02.02"
+        return old, self.version
+
+
+class ToolsService:
+    def __init__(self, tools):
+        self.tools = tools
+
+
+@pytest.fixture
+def temp_settings(tmp_path, monkeypatch):
+    from ytdownloader.core import settings as settings_module
+
+    path = tmp_path / "cfg" / "settings.json"
+    monkeypatch.setattr(settings_module, "_default_path", lambda: path)
+    return path
+
+
+def test_tools_json_shape(tmp_path, capsys):
+    assert run(["tools", "--json"], ToolsService(FakeToolManager())) == 0
+    out = capsys.readouterr().out
+    assert out.count("\n") == 1
+    assert json.loads(out) == {
+        "ok": True,
+        "tools": {
+            "yt-dlp": {"path": "/t/yt-dlp", "version": "2026.01.01"},
+            "ffmpeg": {"path": "/t/ffmpeg"},
+            "deno": {"path": "/t/deno"},
+        },
+        "updated": None,
+    }
+
+
+def test_tools_update_reports_versions_and_saves_check_time(temp_settings, capsys):
+    from ytdownloader.core import settings as settings_module
+
+    assert run(["tools", "--update", "--json"], ToolsService(FakeToolManager())) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["updated"] == {"from": "2026.01.01", "to": "2026.02.02"}
+    assert settings_module.load_settings(temp_settings).last_update_check > 0
+
+
+def test_tools_installs_missing_with_progress_on_stderr(capsys):
+    spec = dataclasses.make_dataclass("Spec", ["name"])("ffmpeg")
+    tools = FakeToolManager(missing=[spec])
+    assert run(["tools", "--json"], ToolsService(tools)) == 0
+    captured = capsys.readouterr()
+    assert tools.installed == ["ffmpeg"]
+    assert "Installing ffmpeg… 50%" in captured.err
+    assert captured.out.count("\n") == 1 and json.loads(captured.out)["ok"] is True
+
+
+def test_tools_unexpected_exception_is_unknown_error(capsys):
+    tools = FakeToolManager(fail=RuntimeError("kaput"))
+    assert run(["tools", "--json"], ToolsService(tools)) == 1
+    out = capsys.readouterr().out
+    assert out.count("\n") == 1
+    error = json.loads(out)["error"]
+    assert error["code"] == "unknown" and "kaput" in error["details"]

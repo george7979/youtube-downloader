@@ -299,7 +299,11 @@ def main(argv: list[str], service_factory: Callable[[], Service] | None = None) 
     parser = _build_parser()
     args = parser.parse_args(argv)  # argparse exits with 2 on usage errors
     _utf8_stdout()
-    setup_logging()
+    try:
+        setup_logging()
+    except OSError as exc:  # unwritable profile: log to stderr only, still emit our output
+        logging.basicConfig(level=logging.INFO, stream=sys.stderr)
+        log.warning("File logging disabled: %s", exc)
     as_json = bool(getattr(args, "json", False))
     try:
         service = service_factory() if service_factory else Service(ToolManager())
