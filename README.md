@@ -235,6 +235,8 @@ youtube-downloader tools [--update] [--json]
 - `get` downloads and writes the note. `--audio` = MP3; `--subs pl` picks a language (manual
   before automatic), `--subs none` skips captions; without `--subs` the default rules above apply
   (no remembered language). An existing video + note is reported and skipped unless `--force`.
+  `--subs pl` on a video that is already here with its note writes `Title.pl.md` next to it
+  instead — the JSON's `note` points to that file and `transcript` is `youtube-<kind>-pl`.
 - `info` shows metadata, heights and caption tracks without downloading.
 - `tools` shows tool paths and versions; `--update` works like **Update engine**.
 - It never asks questions and never uses the window's folder — pass `--out` every time. `get` and

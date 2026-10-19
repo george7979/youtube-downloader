@@ -191,12 +191,14 @@ def _run_get(service: Service, args: argparse.Namespace, cancel: threading.Event
         raise friendly("write_failed", details=str(exc)) from exc
     _install_missing(service.tools)
     _daily_engine_update(service.tools)
+    subs = _subs_value(args.subs)
     req = DownloadRequest(
         url=args.url,
         output_dir=out,
         mode="mp3" if args.audio else "mp4",
         quality=args.quality,
-        subs=_subs_value(args.subs),
+        subs=subs,
+        add_transcript=subs not in (SUBS_DEFAULT, SUBS_NONE),
         save_note=not args.no_note,
         save_srt=args.srt,
         force=args.force,

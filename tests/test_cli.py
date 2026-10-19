@@ -185,6 +185,20 @@ def test_subs_flag_mapping(tmp_path):
     assert subs_for("--subs", "pl") == "pl"
 
 
+def test_explicit_subs_ask_to_add_a_transcript(tmp_path):
+    service = FakeService(tmp_path)
+    run(["get", "u", "--out", str(tmp_path), "--subs", "pl"], service)
+    assert service.requests[0].add_transcript is True
+
+
+@pytest.mark.parametrize("subs", [None, "none"])
+def test_default_or_none_subs_do_not_add(tmp_path, subs):
+    service = FakeService(tmp_path)
+    extra = [] if subs is None else ["--subs", subs]
+    run(["get", "u", "--out", str(tmp_path), *extra], service)
+    assert service.requests[0].add_transcript is False
+
+
 def test_flags_map_to_request(tmp_path):
     service = FakeService(tmp_path)
     run(
