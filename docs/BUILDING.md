@@ -51,6 +51,15 @@ Without any display the GUI tests skip themselves; the rest still run.
 - `main` — stable, only updated via PR from `dev`
 - Never commit directly to `main`
 
+GitHub enforces this with two repository rulesets (Settings → Rules):
+
+- **`main`:** changes only through a pull request (merge commit, no approval needed — there
+  is one maintainer), which can be merged only once these checks pass: `Tests — ubuntu-latest`,
+  `Tests — windows-latest`, `Build — ubuntu-22.04`, `Build — windows-latest`,
+  `Test .deb on Ubuntu 22.04`, `Test .deb on Ubuntu 24.04`, `Security Scan`. No force push, no
+  deletion. Renaming a job in the workflows means updating this list in the ruleset.
+- **Tags `v*`:** can be created, but not deleted or moved — a release tag is final.
+
 ```
 work on dev -> push -> CI green -> PR to main -> merge -> tag
 ```

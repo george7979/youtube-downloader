@@ -41,6 +41,10 @@ Brak — v2.0.0 wydana. Kolejna praca: pozycja z backlogu albo uwaga użytkownik
 - Podpis cyfrowy instalatora i `.exe` na Windows — certyfikat czeka na aktywację po stronie PO
   (link w mailu PO). Potem: podpis w budowaniu, README bez uwagi „not digitally signed”, wydanie
   v2.0.1.
+- Opis wydania z pliku: `CHANGELOG.md` w repo, z którego `build.yml` bierze sekcję wersji do
+  opisu wydania na GitHubie (dziś stały szablon, „What's new” v2.0.0 dopisane ręcznie). Przy v2.0.1.
+- Dependabot tylko dla akcji GitHuba (`.github/dependabot.yml`, `github-actions`, co miesiąc,
+  `target-branch: dev`); poprawki bezpieczeństwa bibliotek nadal ręcznie na `dev` z alertów.
 - Język dokumentów projektowych — otwarte, PO nie jest przekonany. Stała zasada: dokumentacja dla
   użytkownika (README, BUILDING, skill, interfejs) po angielsku. Rozważany wariant: CKM (PRD, PLAN,
   TECH) po angielsku, robocze pliki `docs/superpowers/` po polsku. Do decyzji PO, nie przed podpisem.
