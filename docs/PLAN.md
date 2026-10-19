@@ -34,7 +34,9 @@
 
 ## Bieżący krok
 
-Brak — v2.0.0 wydana. Kolejna praca: pozycja z backlogu albo uwaga użytkownika, na `dev`.
+Zgłoszenie #10 — za małe okno na Linuksie z gęstym ekranem (TECH → Known Issues → Okno).
+Czeka na dane z Chromebooka PO (co widzi Tk i X: `tk scaling`, `Xft.dpi`, `GDK_SCALE`); potem
+ręczne skalowanie i, jeśli dane pozwolą, wykrywanie automatyczne. Wydanie razem z v2.0.1.
 
 ## Backlog
 
