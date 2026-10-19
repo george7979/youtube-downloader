@@ -139,6 +139,10 @@ that file.
 video are two rows (**Show file**, **Clear** — files stay on disk). The footer shows the engine
 version; the **⋯** menu has **Update engine**, **Open log folder** and **About**.
 
+**Size** (Linux, in the **⋯** menu): **Auto** follows the scale your desktop announces to other
+apps; pick 100–200% if the window is still too small or too large. The choice is remembered and
+applies at once. On Windows the window follows the Windows display scaling.
+
 ## How it works
 
 ### Tools and updates
@@ -311,6 +315,7 @@ bug report. The command line returns the same `code`.
 
 - **Log:** ⋯ → **Open log folder**. It records yt-dlp warnings, pauses over 15 s and total time
   — attach it to reports about slow downloads.
+- **Window too small or too large (Linux):** ⋯ → **Size**.
 - **Linux app won't start:** `sudo apt reinstall youtube-downloader`; dependency errors:
   `sudo apt-get install -f`.
 

@@ -126,3 +126,13 @@ def test_wrong_scalar_types_reset_individually(tmp_path):
     # valid fields survive next to an invalid one
     s = _load(tmp_path, {"quality": "abc", "mode": "mp3", "last_update_check": 3})
     assert (s.mode, s.quality, s.last_update_check) == ("mp3", 1080, 3.0)
+
+
+def test_ui_scale_roundtrip_and_validation(tmp_path):
+    assert Settings().ui_scale is None
+    assert _load(tmp_path, {"ui_scale": 1.5}).ui_scale == 1.5
+    assert _load(tmp_path, {"ui_scale": 2}).ui_scale == 2.0
+    assert isinstance(_load(tmp_path, {"ui_scale": 2}).ui_scale, float)
+    assert _load(tmp_path, {"ui_scale": None}).ui_scale is None
+    for bad in ("2", True, 0.5, 3.5, [2]):
+        assert _load(tmp_path, {"ui_scale": bad}).ui_scale is None

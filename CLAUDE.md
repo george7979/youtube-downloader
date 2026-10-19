@@ -69,6 +69,10 @@ nietypowej instalacji — `uv sync --reinstall-package youtube-downloader`.
   zostawia menu otwarte na zawsze (`_open_menu`).
 - `geometry()`/`minsize()` w CustomTkinter są mnożone przez skalowanie Windows (150% na
   laptopach Full HD) — rozmiar okna licz z obszaru roboczego (`gui/placement.py`), nie na sztywno.
+- CustomTkinter na Linuksie przyjmuje skalowanie 1 bez względu na ekran — skalę podaje
+  `gui/scaling.py` (`ui_factor`, `apply` przed pierwszym oknem, `sync_tk` po każdym). Korzeń
+  `CTk` nie ma `_get_widget_scaling` (tylko skalowanie okna) — pytaj `ScalingTracker.get_widget_scaling(root)`.
+  Testy zmieniające skalę muszą ją przywrócić (`ctk.set_widget_scaling(1.0)`, `set_window_scaling(1.0)`).
 - Testy GUI w CI na Windows: ukryte (`withdraw`) okno zgłasza rozmiar 200×200 — sprawdzaj geometrię,
   o którą okno prosi (`record_geometry`), nie odczytaną.
 - `CTkEntry` z tekstem zastępczym zwraca `get() == ""`, dopóki pole nie dostanie `<FocusIn>`.

@@ -1139,8 +1139,62 @@ def test_footer_menu_uses_larger_font(make_window):
     # The configured size: X servers without scalable fonts (WSLg's "fixed") round the actual one.
     font = tkfont.nametofont(str(w.engine_menu.cget("font")), root=w)
     assert font.cget("size") == app_mod.MENU_FONT_SIZE >= 12
-    labels = [w.engine_menu.entrycget(i, "label").strip() for i in range(3)]
-    assert labels == ["Update engine", "Open log folder", "About"]
+    assert menu_labels(w, "command") == ["Update engine", "Open log folder", "About"]
+
+
+def menu_labels(w, kind: str, menu=None) -> list[str]:
+    menu = menu or w.engine_menu
+    return [
+        menu.entrycget(i, "label").strip()
+        for i in range(menu.index("end") + 1)
+        if menu.type(i) == kind
+    ]
+
+
+@pytest.fixture
+def auto_scale_1(monkeypatch):
+    """Auto-detection sees a plain 96-dpi desktop; CustomTkinter's scaling is reset afterwards."""
+    from ytdownloader.gui import scaling
+
+    monkeypatch.delenv("GDK_SCALE", raising=False)
+    monkeypatch.setattr(scaling, "read_xresources", lambda: None)
+    yield
+    ctk.set_widget_scaling(1.0)
+    ctk.set_window_scaling(1.0)
+
+
+def test_size_menu_only_on_x11(make_window, auto_scale_1):
+    w = make_window()
+    has_size = "Size" in menu_labels(w, "cascade")
+    assert has_size == (sys.platform.startswith("linux"))
+    if has_size:
+        sizes = menu_labels(w, "radiobutton", w.size_menu)
+        assert sizes == ["Auto (100%)", "100%", "125%", "150%", "175%", "200%"]
+
+
+def test_size_rescales_live_saves_and_refits(make_window, auto_scale_1, monkeypatch, _no_side_effects):
+    if not sys.platform.startswith("linux"):
+        pytest.skip("Linux only")
+    monkeypatch.setattr(app_mod, "work_area", lambda root: (0, 0, 1920, 1040))
+    asked = record_geometry(monkeypatch, MainWindow)
+    w = make_window()
+    assert asked_size(asked) == (540, 600)
+
+    w.set_size(2.0)
+
+    assert w._get_window_scaling() == 2.0
+    assert float(w.tk.call("tk", "scaling")) == pytest.approx(2 * 96 / 72)
+    assert _no_side_effects[-1].ui_scale == 2.0
+    from ytdownloader.gui.placement import FRAME
+
+    assert asked_size(asked) == (540, 1040 // 2 - FRAME)  # refitted to the screen at 2x
+
+    w.set_size(None)
+
+    assert w._get_window_scaling() == 1.0
+    assert float(w.tk.call("tk", "scaling")) == pytest.approx(96 / 72)
+    assert _no_side_effects[-1].ui_scale is None
+    assert asked_size(asked) == (540, 600)
 
 
 def test_footer_menu_keeps_grab_on_x11(make_window):

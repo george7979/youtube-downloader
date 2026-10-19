@@ -30,6 +30,7 @@ class Settings:
     save_note: bool = True
     save_srt: bool = False
     last_update_check: float = 0.0
+    ui_scale: float | None = None  # Linux Size menu; None = detect from the desktop
     recent: list[RecentItem] = field(default_factory=list)
 
 
@@ -49,6 +50,10 @@ def _is_number(v) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
+def _is_scale(v) -> bool:
+    return v is None or (_is_number(v) and 1.0 <= v <= 3.0)
+
+
 _VALIDATORS = {
     "output_dir": _is_str_or_none,
     "mode": lambda v: v in ("mp4", "mp3"),
@@ -57,6 +62,7 @@ _VALIDATORS = {
     "save_note": lambda v: isinstance(v, bool),
     "save_srt": lambda v: isinstance(v, bool),
     "last_update_check": _is_number,
+    "ui_scale": _is_scale,
 }
 
 
@@ -83,6 +89,8 @@ def load_settings(path: Path | None = None) -> Settings:
         return Settings()
     values = {k: data[k] for k, ok in _VALIDATORS.items() if k in data and ok(data[k])}
     values["last_update_check"] = float(values.get("last_update_check", 0.0))
+    if values.get("ui_scale") is not None:
+        values["ui_scale"] = float(values["ui_scale"])
     return Settings(**values, recent=_parse_recent(data.get("recent")))
 
 

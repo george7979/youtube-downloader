@@ -34,9 +34,10 @@
 
 ## Bieżący krok
 
-Zgłoszenie #10 — za małe okno na Linuksie z gęstym ekranem (TECH → Known Issues → Okno).
-Tylko Linux, Windows bez zmian: skala z tego, co pulpit podaje aplikacjom (`GDK_SCALE`,
-`Xft.dpi`), i ręczny rozmiar w menu „⋯” jako zapas. Wydanie razem z v2.0.1.
+Zgłoszenie #10 — za małe okno na Linuksie z gęstym ekranem. Na `dev`: skala z `GDK_SCALE`/`Xft.dpi`
+i menu ⋯ → Size (TECH → Rozmiar okna). Czeka na test PO na Linuksie (Pixelbook i zwykły
+ekran) i akceptację pozycji Size, której nie ma w makietach. Wydanie razem z v2.0.1; PR do `main`
+z `Fixes #10` zamknie zgłoszenie.
 
 ## Backlog
 

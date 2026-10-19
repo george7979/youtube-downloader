@@ -48,6 +48,10 @@ po stronie YouTube.
     po błędzie — Retry) w kolorze akcentu kojarzącym się z YouTube, ale nie jego markowym
     (`#C62828`); błędy wyróżnione własnym tłem i ikoną, nie samym kolorem. Wklejony link
     sprawdza się sam. Makiety: `docs/superpowers/specs/2026-10-18-ui-polish-mockups/index.html`.
+12. Okno czytelnej wielkości na każdym ekranie, także gęstym (HiDPI). Windows skaluje okno sam;
+    na Linuksie aplikacja bierze skalę z tego, co pulpit podaje innym programom, a gdy pulpit nic
+    nie podaje albo podaje źle, użytkownik wybiera rozmiar ręcznie (⋯ → Size, 100–200%,
+    pamiętany). Pozycji Size nie ma w makietach — odstępstwo do akceptacji PO.
 
 ## Poza zakresem
 
