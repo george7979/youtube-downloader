@@ -41,7 +41,7 @@ from ytdownloader.gui.worker import UiQueue  # noqa: E402
 # Tcl/Tk read their library scripts ("Can't find a usable init.tcl" / "tk.tcl", "invalid command
 # name tcl_findLibrary") — an environmental flake, not an app defect (the app creates a single
 # root). Retry only Tcl/Tk initialisation failures.
-_TCL_INIT_ERRORS = ("Can't find a usable", "tcl_findLibrary")
+_TCL_INIT_ERRORS = ("Can't find a usable", "tcl_findLibrary", "auto.tcl")
 
 
 def create_root(factory):
