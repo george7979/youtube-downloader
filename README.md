@@ -1,10 +1,10 @@
 # YouTube Downloader
 
 Save a YouTube video as an MP4 together with a Markdown note and a transcript built from
-YouTube's own captions. Made for an Obsidian vault: the note sits next to the video, embeds it,
+YouTube's own captions. The note is a plain Markdown file next to the video: it embeds the video
 and carries the description, chapters and a timestamped transcript.
 
-A window for Windows and Linux, plus a command line for scripts and Claude Code (Linux / WSL).
+A window for Windows and Linux, plus a command line for scripts and AI agents (Linux / WSL).
 **YouTube only**, one video at a time.
 
 ![The main window](pics/main-window.png)
@@ -97,7 +97,7 @@ youtube-downloader          # opens the window
 
 With a system `ffmpeg` (a recommended package) the app uses it; otherwise it downloads its own.
 
-### Linux / WSL — from the repository (command line, Claude Code)
+### Linux / WSL — from the repository (command line)
 
 ```bash
 sudo apt install python3-tk     # Tk for the window
@@ -181,9 +181,10 @@ The transcript comes from captions YouTube already has; the app transcribes noth
 ### The note
 
 - The header holds title, channel, link, publication and download dates, length, a link to the
-  video, the transcript source and the tags `video` and `youtube` — properties in Obsidian, one
-  field per line elsewhere.
-- `![[Title.mp4]]` embeds the video by file name, so it can move anywhere in the vault.
+  video, the transcript source and the tags `video` and `youtube` — note properties in apps that
+  read YAML frontmatter, one field per line elsewhere.
+- `![[Title.mp4]]` embeds the video by file name — it plays in apps that support wiki links
+  (e.g. Obsidian); elsewhere it shows as text.
 - Title, description, chapters and transcript come from the video's author, so they stay plain
   text: `#`, brackets, `<`, backticks and `~` are escaped. No tags, images, links, HTML or code
   blocks appear that YouTube did not show; plain URLs stay clickable.
@@ -216,6 +217,9 @@ MP4 and MP3 are separate: having the MP4 doesn't block an MP3 of the same video.
 - **Limits:** many videos in a row (about 300 an hour) trigger `rate_limit` — wait a few minutes.
 
 ## Command line (Linux / WSL)
+
+The same for scripts and AI agents: no command ever asks a question, and with `--json` the
+result is one JSON object on stdout.
 
 ```bash
 youtube-downloader get <URL> --out DIR [--quality 1080] [--audio] [--subs LANG|none]
@@ -257,8 +261,8 @@ youtube-downloader tools [--update] [--json]
   without `--update`, else `{"from": "<old>", "to": "<new>"}`; `"to": null` = update failed.
 - **Exit codes:** `0` success, `1` error, `2` wrong usage (stderr, no JSON), `130` Ctrl+C.
 
-**Claude Code skill:** copy `integrations/claude-skill/youtube-downloader/` to
-`~/.claude/skills/youtube-downloader/`. It always asks for the destination folder first.
+A ready-made skill for Claude Code is in `integrations/claude-skill/`; other agents can use the
+commands above directly.
 
 ## Troubleshooting
 

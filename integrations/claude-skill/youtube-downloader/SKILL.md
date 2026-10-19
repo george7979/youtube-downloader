@@ -1,6 +1,6 @@
 ---
 name: youtube-downloader
-description: Download a YouTube video as an MP4 (or MP3) together with a Markdown note and a transcript built from YouTube captions, ready for an Obsidian vault. Use when the user gives a YouTube link and wants the video saved, downloaded, archived, or turned into a note with a transcript.
+description: Download a YouTube video as an MP4 (or MP3) together with a Markdown note and a transcript built from YouTube captions, ready for a notes folder such as an Obsidian vault. Use when the user gives a YouTube link and wants the video saved, downloaded, archived, or turned into a note with a transcript.
 ---
 
 # YouTube Downloader

@@ -1,4 +1,4 @@
-"""Render the Obsidian note (markdown with YAML frontmatter) for a video."""
+"""Render the Markdown note (with YAML frontmatter) for a video."""
 
 from __future__ import annotations
 
