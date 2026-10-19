@@ -38,6 +38,12 @@ Brak — v2.0.0 wydana. Kolejna praca: pozycja z backlogu albo uwaga użytkownik
 
 ## Backlog
 
+- Podpis cyfrowy instalatora i `.exe` na Windows — certyfikat czeka na aktywację po stronie PO
+  (link w mailu PO). Potem: podpis w budowaniu, README bez uwagi „not digitally signed”, wydanie
+  v2.0.1.
+- Język dokumentów projektowych — otwarte, PO nie jest przekonany. Stała zasada: dokumentacja dla
+  użytkownika (README, BUILDING, skill, interfejs) po angielsku. Rozważany wariant: CKM (PRD, PLAN,
+  TECH) po angielsku, robocze pliki `docs/superpowers/` po polsku. Do decyzji PO, nie przed podpisem.
 - Wtyczka PO Token (`bgutil-ytdlp-pot-provider`) jako plan B na blokady YouTube.
 - Przestoje YouTube co ~10 MB (TECH → Known Issues): zbadać przy kolejnym wystąpieniu z `-v`.
 - Playlisty / kolejka (dziś świadomie poza zakresem).

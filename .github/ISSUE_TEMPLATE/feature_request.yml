@@ -1,0 +1,20 @@
+name: Idea or feature request
+description: Suggest something the app could do better.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Some things are out of scope on purpose (other sites, playlists, logging in to YouTube) — see [CONTRIBUTING](https://github.com/george7979/youtube-downloader/blob/main/.github/CONTRIBUTING.md#scope).
+  - type: textarea
+    id: need
+    attributes:
+      label: What do you want to do?
+      description: The situation you are in and what is missing — not only the solution you have in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How the app could help, if you have a picture of it.
