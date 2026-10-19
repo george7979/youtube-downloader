@@ -1,0 +1,55 @@
+name: Bug report
+description: Something does not work as described in the README.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please check [Troubleshooting](https://github.com/george7979/youtube-downloader#troubleshooting) first — many errors are fixed by **Update engine**.
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Shown in the footer of the window and in ⋯ → About. For the command line, the version of the package or the commit you installed.
+      placeholder: v2.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: System
+      options:
+        - Windows (installer)
+        - Linux (.deb)
+        - Linux / WSL (command line from the repository)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what you got instead.
+    validations:
+      required: true
+  - type: input
+    id: code
+    attributes:
+      label: Error code
+      description: For example `bot_check` or `write_failed`, if one was shown.
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: The text from **Show details** (or `error.details` from `--json`).
+      render: text
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: For slow or stuck downloads, the relevant part of `app.log` (⋯ → **Open log folder**).
+      render: text
+  - type: input
+    id: link
+    attributes:
+      label: Video link
+      description: Optional — a public video that shows the problem.
