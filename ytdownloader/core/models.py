@@ -55,6 +55,8 @@ class DownloadRequest:
     force: bool = False
     # Video and main note already here: write Title.<lang>.md for the chosen subtitles.
     add_transcript: bool = False
+    # Video already here, Title.<lang>.srt missing: fetch only the subtitles, write only the .srt.
+    add_srt: bool = False
 
 
 @dataclass
@@ -71,6 +73,9 @@ class DownloadResult:
     # and the language of the main note's transcript (None: no transcript or field missing).
     addable_lang: str | None = None
     note_lang: str | None = None
+    # Only on already_exists results: a language add_srt would add as Title.<lang>.srt
+    # (never together with addable_lang — adding the transcript writes the .srt too).
+    addable_srt: str | None = None
 
 
 @dataclass(frozen=True)

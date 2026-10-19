@@ -126,7 +126,7 @@ gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru r
 | `subtitles.py` | VTT → cue; odszumianie napisów automatycznych (powtarzane linie „przewijanego” tekstu); akapity ~45 s (twardo 90 s, koniec na kropce, granice rozdziałów); SRT |
 | `naming.py` | bezpieczna nazwa pliku (znaki Windows, nazwy zastrzeżone, do 150 znaków i 200 bajtów UTF-8); rozpoznanie istniejących plików filmu; `note_fields` (frontmatter notatki), `is_language_note` (pole `main_note:`), `NamePlan.language_note(lang)` → `<base>.<lang>.md` |
 | `note.py` | notatka Markdown: frontmatter z pustą linią między polami (poprawny YAML; podgląd bez obsługi frontmattera pokazuje pola jako osobne akapity między kreskami, a nie jako jeden nagłówek), osadzone wideo, opis, rozdziały, transkrypt ze znacznikami `[mm:ss](https://youtu.be/ID?t=N)` (przy filmach ≥ 1 h `h:mm:ss`); tekst od autora filmu (tytuł w nagłówku, opis, tytuły rozdziałów, transkrypt) zostaje zwykłym tekstem: `neutralize_markdown` ucieka `\`, `[`, `]`, `<`, grawis i `~` oraz `#` na początku słowa — bez tagów, zdalnych obrazków (ujawniłyby IP przy otwarciu notatki), zamaskowanych łączy, HTML i bloków kodu (Dataview); gołe adresy zostają klikalne |
-| `service.py` | scala wszystko; silnikowi podaje kanoniczny `info.url`, nie wklejony adres; sprząta pliki częściowe po błędzie i anulowaniu; przy filmie z notatką ocenia, czy można dołożyć notatkę językową (`DownloadResult.addable_lang`, `note_lang`), a na `DownloadRequest.add_transcript` pobiera same napisy i ją zapisuje |
+| `service.py` | scala wszystko; silnikowi podaje kanoniczny `info.url`, nie wklejony adres; sprząta pliki częściowe po błędzie i anulowaniu; przy filmie z notatką ocenia, czy można dołożyć notatkę językową (`DownloadResult.addable_lang`, `note_lang`), a na `DownloadRequest.add_transcript` pobiera same napisy i ją zapisuje; gdy notatki dołożyć nie można, a brakuje `.srt` wybranego języka — sam `.srt` (`addable_srt`, `add_srt`) |
 
 ### Kody błędów
 
@@ -295,8 +295,19 @@ język) i `<base>.<lang>.md` jeszcze nie istnieje. Bez `add_transcript` wynik to
 trafia do `warnings`); z nim silnik idzie z `--skip-download` dla tej
 ścieżki, a notatka językowa powstaje tylko z napisów dających choć jeden akapit — bez nich (brak VTT albo pusty VTT) nic nie jest zapisywane
 (`note` = `null`, `transcript` = `none`, ostrzeżenie „No subtitles were downloaded.”). `.srt`
-jak zwykle. Wynik: `already_exists` = `false`, `media` = istniejący plik, `note` = notatka
-językowa. `force` działa jak dotąd (pobiera film, notatek nie rusza).
+jak zwykle, ale istniejący `<base>.<lang>.srt` zostaje nietknięty (`srt` = `null`). Wynik:
+`already_exists` = `false`, `media` = istniejący plik, `note` = notatka językowa. `force` działa
+jak dotąd (pobiera film, notatek nie rusza).
+
+**Sam `.srt`.** W tym samym stanie (plik + notatka główna, bez `force`; zapis notatki może być
+wyłączony) `service` proponuje sam `.srt` (`addable_srt` = język ścieżki), gdy zaznaczono `.srt`
+(`save_srt`), ścieżka istnieje, notatki językowej dołożyć nie można (`addable_lang` puste — tamta
+ścieżka i tak zapisuje `.srt`, więc nigdy obie propozycje naraz) i `<base>.<lang>.srt` jeszcze nie
+istnieje. Z `add_srt` silnik idzie z `--skip-download` dla tej ścieżki, a powstaje tylko
+`<base>.<lang>.srt` — notatki i film zostają nietknięte. Brak VTT albo VTT bez napisów → `.srt` nie
+powstaje, ostrzeżenie „No subtitles were downloaded.” (raz). Wynik: `already_exists` = `false`,
+`media` = istniejący plik, `note` = istniejąca notatka główna, `srt` = nowy plik (albo `null`),
+`transcript` = `none`.
 
 Świadomie: goły `Tytuł.mp4` bez notatki **nie** jest uznawany za ten film — identyfikacja po
 samym tytule mogłaby dopiąć notatkę do cudzego pliku. Ponowne pobranie trafia wtedy do
@@ -396,7 +407,7 @@ Znane, jeszcze niepoprawione; najpierw te widoczne dla użytkownika.
   katalog o nazwie `base.md` koliduje, ale nie jest zgłaszany.
 - Nazwy zastrzeżone `COM¹`/`LPT¹` (indeksy górne) i rozcięcie sekwencji ZWJ przy skracaniu.
 - `info.language` dopasowywany dokładnie (`pl-PL` ≠ `pl`); `nocookie` w adresach `/v/` nieobsługiwane.
-- Pusty plik `.vtt` daje pusty `.srt`.
+- Pusty plik `.vtt` daje pusty `.srt` (poza dokładaniem do filmu, który już jest — wtedy `.srt` nie powstaje).
 
 **Ustawienia i logi**
 - `last_update_check` z absurdalną liczbą może rzucić `OverflowError`, `NaN`/`inf` są

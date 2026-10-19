@@ -814,3 +814,167 @@ def test_already_downloaded_without_subs_choice_has_no_warning(tmp_path, lecture
         result, _ = download(make_service(NoRunner()), request(tmp_path, subs=subs), lecture)
         assert result.already_exists is True
         assert result.warnings == []
+
+
+# --- a missing Title.<lang>.srt without the video ------------------------------------------
+
+
+def test_missing_srt_is_offered(tmp_path, lecture):
+    write_media(tmp_path)
+    write_main(tmp_path, lecture, "youtube-auto-pl")
+
+    result, _ = download(
+        make_service(NoRunner()), request(tmp_path, subs="pl", save_srt=True), lecture
+    )
+
+    assert result.already_exists is True
+    assert result.addable_srt == "pl"
+    assert result.addable_lang is None
+    assert not (tmp_path / "T.pl.srt").exists()
+
+
+def test_add_srt_writes_only_the_srt(tmp_path, lecture, vtt):
+    media = write_media(tmp_path)
+    note = write_main(tmp_path, lecture, "youtube-auto-pl")
+    main_before = note.read_bytes()
+    runner = FakeRunner(tmp_path, files={"T.pl-orig.vtt": vtt}, lines=["CODEC vp9"])
+
+    result, events = download(
+        make_service(runner),
+        request(tmp_path, subs="pl", save_srt=True, add_srt=True),
+        lecture,
+    )
+
+    assert "--skip-download" in runner.calls[0]
+    srt = tmp_path / "T.pl.srt"
+    assert srt.read_bytes().decode("utf-8").startswith("1\n00:00:08,760 --> ")
+    assert note.read_bytes() == main_before
+    assert media.read_bytes() == b"video"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["T.md", "T.mp4", "T.pl.srt"]
+    assert result.already_exists is False
+    assert result.media_path == media
+    assert result.note_path == note
+    assert result.srt_path == srt
+    assert result.transcript == "none"
+    assert result.addable_srt is None
+    assert result.warnings == []
+    assert Status("Video already here — adding pl subtitles.") in events
+    assert Status("Video already here — writing the note only.") not in events
+    assert Status("Writing note…") not in events
+    assert not any(isinstance(e, Status) and "H.264" in e.text for e in events)
+
+
+def test_existing_srt_is_not_offered(tmp_path, lecture):
+    write_media(tmp_path)
+    write_main(tmp_path, lecture, "youtube-auto-pl")
+    srt = tmp_path / "T.pl.srt"
+    srt.write_text("MY OWN SRT\n", encoding="utf-8")
+
+    for add in (False, True):
+        result, _ = download(
+            make_service(NoRunner()),
+            request(tmp_path, subs="pl", save_srt=True, add_srt=add),
+            lecture,
+        )
+        assert result.already_exists is True
+        assert result.addable_srt is None
+    assert srt.read_text(encoding="utf-8") == "MY OWN SRT\n"
+
+
+def test_srt_not_offered_without_srt_option_or_track(tmp_path, lecture):
+    write_media(tmp_path)
+    write_main(tmp_path, lecture, "youtube-auto-pl")
+
+    for kw in ({"subs": "pl"}, {"subs": "none", "save_srt": True}):
+        result, _ = download(make_service(NoRunner()), request(tmp_path, add_srt=True, **kw), lecture)
+        assert result.already_exists is True
+        assert result.addable_srt is None
+
+
+def test_srt_offered_with_notes_off(tmp_path, lecture):
+    write_media(tmp_path)
+    write_main(tmp_path, lecture, "youtube-auto-pl")
+
+    result, _ = download(
+        make_service(NoRunner()),
+        request(tmp_path, subs="pl", save_srt=True, save_note=False),
+        lecture,
+    )
+
+    assert result.already_exists is True
+    assert result.addable_srt == "pl"
+    assert result.addable_lang is None
+
+
+def test_transcript_wins_over_srt(tmp_path, lecture):
+    write_media(tmp_path)
+    write_main(tmp_path, lecture, "youtube-auto-en")
+
+    result, _ = download(
+        make_service(NoRunner()), request(tmp_path, subs="pl", save_srt=True), lecture
+    )
+
+    assert result.already_exists is True
+    assert result.addable_lang == "pl"
+    assert result.addable_srt is None
+
+
+def test_add_transcript_keeps_existing_srt(tmp_path, lecture, vtt):
+    write_media(tmp_path)
+    write_main(tmp_path, lecture, "youtube-auto-en")
+    srt = tmp_path / "T.pl.srt"
+    srt.write_text("MY OWN SRT\n", encoding="utf-8")
+    runner = FakeRunner(tmp_path, files={"T.pl-orig.vtt": vtt})
+
+    result, _ = download(
+        make_service(runner),
+        request(tmp_path, subs="pl", save_srt=True, add_transcript=True),
+        lecture,
+    )
+
+    assert result.note_path == tmp_path / "T.pl.md"
+    assert (tmp_path / "T.pl.md").is_file()
+    assert srt.read_text(encoding="utf-8") == "MY OWN SRT\n"
+    assert result.srt_path is None
+
+
+@pytest.mark.parametrize("files", [{}, {"T.pl-orig.vtt": b"WEBVTT\n\n"}])
+def test_add_srt_without_subtitles_writes_nothing(tmp_path, lecture, files):
+    write_media(tmp_path)
+    note = write_main(tmp_path, lecture, "youtube-auto-pl")
+    before = note.read_bytes()
+    runner = FakeRunner(tmp_path, files=files)
+
+    result, _ = download(
+        make_service(runner),
+        request(tmp_path, subs="pl", save_srt=True, add_srt=True),
+        lecture,
+    )
+
+    assert "--skip-download" in runner.calls[0]
+    assert result.already_exists is False
+    assert result.srt_path is None
+    assert result.note_path == note
+    assert result.transcript == "none"
+    assert result.warnings.count("No subtitles were downloaded.") == 1
+    assert note.read_bytes() == before
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["T.md", "T.mp4"]
+
+
+def test_cancel_while_adding_srt_leaves_everything(tmp_path, lecture, vtt):
+    media = write_media(tmp_path)
+    note = write_main(tmp_path, lecture, "youtube-auto-pl")
+    main_before = note.read_bytes()
+    runner = FakeRunner(tmp_path, files={"T.pl-orig.vtt": vtt}, rc=-1)
+
+    with pytest.raises(FriendlyError) as exc:
+        download(
+            make_service(runner),
+            request(tmp_path, subs="pl", save_srt=True, add_srt=True),
+            lecture,
+        )
+
+    assert exc.value.code == "cancelled"
+    assert note.read_bytes() == main_before
+    assert media.read_bytes() == b"video"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["T.md", "T.mp4"]

@@ -194,6 +194,9 @@ The transcript comes from captions YouTube already has; the app transcribes noth
 - `Title.<lang>.md`: a full note in another language (same header plus `main_note:` linking to
   `Title.md`), added without downloading the video again when you pick subtitles in a language
   the main note doesn't have. Your existing notes are never changed.
+- **Add subtitles** saves a missing `Title.<lang>.srt` without downloading the video again — when
+  **Also save subtitles (.srt)** is ticked and no transcript can be added. An existing `.srt` is
+  never overwritten.
 - **An existing note is never overwritten or deleted** — your edits are safe.
 
 ### File names and downloading again
@@ -207,6 +210,7 @@ the ID in a file name — never by the title alone:
 |---|---|
 | video + note | "Already downloaded" — **Show file** or **Download again** |
 | video + note, subtitles in another language picked | also **Add transcript** → `Title.<lang>.md`, only the subtitles are downloaded |
+| video + note, **Also save subtitles (.srt)** ticked, no `Title.<lang>.srt` | also **Add subtitles** → `Title.<lang>.srt`, only the subtitles are downloaded |
 | note, no video | downloads the video, keeps your note |
 | video with `[ID]`, no note | writes only the note |
 | `Title.mp4` without a note | treated as another video → `Title [ID].mp4` |

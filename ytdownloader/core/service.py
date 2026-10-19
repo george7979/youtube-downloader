@@ -139,6 +139,9 @@ class Service:
         # The note this run writes and, for a language note, the main note it links to.
         note_target: Path | None = None
         main_note: str | None = None
+        # Adding to a video already here (a language note, or the .srt alone when main_note is
+        # None): only the subtitles are fetched and an existing .srt is kept.
+        adding = False
         if names.existing_media and names.existing_note and not req.force:
             track, warning = pick_track(info, req.subs, remembered_lang)
             known, note_lang = _transcript_lang(names.existing_note)
@@ -151,7 +154,22 @@ class Service:
                 and not names.language_note(track.lang).exists()
             ):
                 addable_lang = track.lang
-            if track is None or addable_lang is None or not req.add_transcript:
+            # Adding the transcript writes the .srt too, so the .srt alone is offered only
+            # when no transcript can be added.
+            addable_srt: str | None = None
+            if (
+                req.save_srt
+                and track is not None
+                and addable_lang is None
+                and not (folder / f"{names.base}.{track.lang}.srt").exists()
+            ):
+                addable_srt = track.lang
+            if track is not None and addable_lang is not None and req.add_transcript:
+                note_target, main_note = names.language_note(track.lang), names.base
+                sink(Status(f"Video and note already here — adding the {track.lang} transcript."))
+            elif track is not None and addable_srt is not None and req.add_srt:
+                sink(Status(f"Video already here — adding {track.lang} subtitles."))
+            else:
                 return DownloadResult(
                     video_id=info.id,
                     title=info.title,
@@ -163,11 +181,10 @@ class Service:
                     warnings=[warning] if warning else [],
                     addable_lang=addable_lang,
                     note_lang=note_lang,
+                    addable_srt=addable_srt,
                 )
             # Only the subtitles are fetched; the video and every existing note stay as they are.
-            media_only, note_only = False, True
-            note_target, main_note = names.language_note(track.lang), names.base
-            sink(Status(f"Video and note already here — adding the {track.lang} transcript."))
+            media_only, note_only, adding = False, True, True
         else:
             media_only = names.existing_note is not None
             note_only = (
@@ -192,7 +209,7 @@ class Service:
                 transcript="none",
                 already_exists=True,
             )
-        if note_only and main_note is None:
+        if note_only and not adding:
             sink(Status("Video already here — writing the note only."))
 
         # The canonical watch URL, not whatever the user pasted (tracking, playlist parameters).
@@ -203,12 +220,15 @@ class Service:
 
         try:
             transcript, srt_path, written = self._write_outputs(
-                req, info, names, track, media_path, sink, warnings, note_target, main_note
+                req, info, names, track, media_path, sink, warnings, note_target, main_note, adding
             )
         except OSError as exc:
             _cleanup(names)
             raise friendly("write_failed", details=str(exc)) from exc
 
+        if adding and main_note is None:
+            # The .srt alone: no note is written, so the result names no transcript.
+            transcript = "none"
         note_path = written if written or main_note is not None else names.existing_note
         sink(Status("Done."))
         return DownloadResult(
@@ -232,16 +252,18 @@ class Service:
         warnings: list[str],
         note_target: Path | None,
         main_note: str | None = None,
+        adding: bool = False,
     ) -> tuple[str, Path | None, Path | None]:
         """Transcript, .srt and the note `note_target` (if any) after a successful engine run;
         returns the note written, or None. A language note (`main_note` set) is written only
-        when the subtitles give at least one paragraph.
+        when the subtitles give at least one paragraph. When `adding` to a video already here,
+        an existing .srt is kept and an .srt is written only from subtitles with cues.
         May raise OSError."""
         folder = names.media.parent
         transcript = "none"
         srt_path: Path | None = None
         paragraphs = None
-        have_vtt = False
+        have_vtt = got_cues = False
         if track is not None:
             vtt = folder / f"{names.base}.{track.key}.vtt"
             if vtt.is_file():
@@ -249,16 +271,23 @@ class Service:
                 cues = parse_vtt(vtt.read_text(encoding="utf-8", errors="replace"))
                 if track.kind == "auto":
                     cues = clean_auto(cues)
+                got_cues = bool(cues)
                 paragraphs = to_paragraphs(cues, info.chapters)
                 if paragraphs:
                     transcript = f"youtube-{track.kind}-{track.lang}"
-                if req.save_srt:
-                    srt_path = folder / f"{names.base}.{track.lang}.srt"
+                srt = folder / f"{names.base}.{track.lang}.srt"
+                if req.save_srt and not (adding and (srt.exists() or not got_cues)):
+                    srt_path = srt
                     _write_text(srt_path, to_srt(cues))
                 vtt.unlink()
             else:
                 warnings.append(_NO_SUBS)
 
+        if adding and main_note is None:
+            # Only the .srt was wanted.
+            if have_vtt and not got_cues:
+                warnings.append(_NO_SUBS)
+            return transcript, srt_path, None
         if main_note is not None and not paragraphs:
             # An empty language note makes no sense and would block adding this language later.
             if have_vtt:
