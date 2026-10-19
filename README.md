@@ -182,6 +182,9 @@ The transcript comes from captions YouTube already has; the app transcribes noth
   link to that moment on YouTube.
 - `transcript:` in the note says the source: `youtube-manual-<lang>`, `youtube-auto-<lang>` or
   `none`. The `.srt` comes from the same track, cleaned the same way.
+- **Add subtitles** saves a missing `Title.<lang>.srt` without downloading the video again — when
+  **Also save subtitles (.srt)** is ticked and no transcript can be added. An existing `.srt` is
+  never overwritten.
 
 ### The note
 
@@ -196,21 +199,18 @@ The transcript comes from captions YouTube already has; the app transcribes noth
 - `Title.<lang>.md`: a full note in another language (same header plus `main_note:` linking to
   `Title.md`), added without downloading the video again when you pick subtitles in a language
   the main note doesn't have. Your existing notes are never changed.
-- **Add subtitles** saves a missing `Title.<lang>.srt` without downloading the video again — when
-  **Also save subtitles (.srt)** is ticked and no transcript can be added. An existing `.srt` is
-  never overwritten.
 - **An existing note is never overwritten or deleted** — your edits are safe.
 
 ### File names and downloading again
 
 Files are named after the title (characters Windows forbids replaced, long titles shortened). If
 that name belongs to a different video, the new files get the ID: `Title [AbCdEfGhIjK].mp4`.
-Nothing is ever overwritten. A video already in the folder is recognised by its note (`url:`) or
-the ID in a file name — never by the title alone:
+Only **Download again** overwrites anything, and only the video. A video already in the folder is
+recognised by its note (`url:`) or the ID in a file name — never by the title alone:
 
 | In the folder | What happens |
 |---|---|
-| video + note | "Already downloaded" — **Show file** or **Download again** |
+| video + note | "Already downloaded" — **Show file** or **Download again** (replaces the video under the same name, e.g. in another quality; the note stays and its link still works) |
 | video + note, subtitles in another language picked | also **Add transcript** → `Title.<lang>.md`, only the subtitles are downloaded |
 | video + note, **Also save subtitles (.srt)** ticked, no `Title.<lang>.srt` | also **Add subtitles** → `Title.<lang>.srt`, only the subtitles are downloaded |
 | note, no video | downloads the video, keeps your note |
@@ -243,21 +243,20 @@ youtube-downloader tools [--update] [--json]
 
 - `get` downloads and writes the note. `--audio` = MP3; `--subs pl` picks a language (manual
   before automatic), `--subs none` skips captions; without `--subs` the default rules above apply
-  (no remembered language). An existing video + note is reported and skipped unless `--force`.
-  `--subs pl` writes `Title.pl.md` next to the video instead, without downloading it again, only
-  when the video and its main note are here, the main note's transcript is in another language
-  (or it has none), `Title.pl.md` does not exist yet and `--no-note` is not set — the JSON's
-  `note` points to that file and `transcript` is `youtube-<kind>-pl`. If the video has `pl` but
-  YouTube returns no or empty captions: `note` is `null`, `transcript` is `none`, with a warning.
-  Otherwise the result is `already_exists: true` as before, with a warning when the video has no
-  `pl` captions.
-- `get --srt` also adds a missing `Title.<lang>.srt` to a video that is already in the folder
-  (with its note, or with `--no-note`), whatever language the main note's transcript is in, when
-  `Title.<lang>.srt` does not exist yet and the same command does not add a language note (an
-  explicit `--subs <lang>` above, which writes the `.srt` along with `Title.<lang>.md`): only the
-  `.srt` is written, the JSON has `already_exists: false`, `srt` = the new file, `media` and
-  `note` = the existing files and `transcript` = `none`. If YouTube returns no or empty captions:
-  `srt` is `null`, with a warning. An existing `.srt` is never overwritten.
+  (no remembered language). An existing video + note is reported (`already_exists: true`) and
+  skipped unless `--force`, which downloads the video again and keeps the note.
+- **Adding to a video that is already here** — only the subtitles are downloaded, the video and
+  existing notes stay as they are, the JSON has `already_exists: false`:
+  - `--subs pl` writes `Title.pl.md` when the main note's transcript is in another language (or
+    it has none), `Title.pl.md` does not exist yet and `--no-note` is not set. `note` = that
+    file, `transcript` = `youtube-<kind>-pl`.
+  - `--srt` writes a missing `Title.<lang>.srt` (with or without the note), whatever language
+    the main note is in — unless the same command adds `Title.<lang>.md`, which writes the `.srt`
+    with it. `srt` = the new file, `media` and `note` = the existing files, `transcript` = `none`.
+    An existing `.srt` is never overwritten.
+  - If YouTube returns no or empty captions, nothing is written (`note` or `srt` is `null`), with
+    a warning. If neither case applies, the result is `already_exists: true`, with a warning when
+    the video has no captions in the requested language.
 - `info` shows metadata, heights and caption tracks without downloading.
 - `tools` shows tool paths and versions; `--update` works like **Update engine**.
 - It never asks questions and never uses the window's folder — pass `--out` every time. `get` and

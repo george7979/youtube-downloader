@@ -445,6 +445,11 @@ Znane, jeszcze niepoprawione; najpierw te widoczne dla użytkownika.
 - Świadomie: kod wyjścia 2 (błąd użycia, `argparse`) nie wypisuje JSON-a — wyjaśnienie idzie
   na stderr; skill i README to opisują.
 - Świadomie: goły `Tytuł.mp4` bez notatki nie jest uznawany za ten sam film (patrz wyżej).
+- Świadomie: jedna wersja filmu na format — bez przyrostka rozdzielczości w nazwie. Zmiana
+  jakości idzie przez „Download again” (`--force-overwrites`), które podmienia `Tytuł.mp4` pod
+  tą samą nazwą, więc link `![[Tytuł.mp4]]` w notatce dalej działa. Osobny plik
+  `Tytuł [720p].mp4` obok rozważony i odrzucony przez PO: zamiana na mniejszy plik zerwałaby
+  link w notatce.
 - Świadomie: yt-dlp z kanału stabilnego, nie nightly.
 - Świadomie: aplikacja nie prowadzi historii pobrań — „Recent” to trzy ostatnie
   pozycje w ustawieniach, a stan „już pobrano” wynika z plików w folderze.

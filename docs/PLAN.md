@@ -37,16 +37,11 @@
 ## Bieżący krok
 
 PO testuje na Windows instalator z ostatniego przebiegu „Build and Release” na `dev` (artefakt
-`windows-installer`) — scenariusze ze spec §11 oraz nowy wygląd. Na Linux/WSL scenariusz 2
-przez skill. Nowy scenariusz: ten sam film w innym języku napisów → „Add transcript” w dialogu
-„Already downloaded” dodaje `Tytuł.<lang>.md`, wideo i główna notatka bez zmian. Drugi nowy
-scenariusz: film z notatką, „Also save subtitles (.srt)” zaznaczone, brak `Tytuł.<lang>.srt` →
-„Add subtitles (<lang>)” dodaje tylko ten plik, Recent bez zmian. Uwagi PO → poprawki na `dev`.
-
-Uwaga PO z Linux/WSL: okno z liter „Y”/„Z” i postrzępionych rogów, menu „⋯” nie znika.
-Poprawione na `dev`: menu (X11), paczka Linux na Pythonie z systemowym Tk z Xft (TECH
-„Pakowanie”); CI i budowanie zielone (przebieg 39162447294: 20 rodzin fontów w Tk, okno żyje
-10 s w kontenerach 22.04 i 24.04); retest PO na Linuksie zaliczony (ikony i czcionki dobre).
+`windows-installer`) — scenariusze ze spec §11 oraz nowy wygląd; Linux/WSL zaliczony. „Add
+transcript” i „Add subtitles” sprawdzone przez PO; zrzut `pics/main-window.png` z buildu 2.0.0
+w repo. Do sprawdzenia przy okazji: zmiana jakości przez „Download again” podmienia `Tytuł.mp4`
+pod tą samą nazwą, a link w notatce działa. Uwagi PO → poprawki na `dev`; po akceptacji
+zamknięcie etapu (wyżej).
 
 ## Backlog
 

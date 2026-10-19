@@ -1,6 +1,6 @@
 # Kolejne języki transkrypcji — projekt
 
-Status: wdrożony na `dev`, czeka na testy PO; część wydania v2.0.0.
+Status: wdrożony na `dev`, sprawdzony przez PO na Windows; część wydania v2.0.0.
 
 ## Po co
 
