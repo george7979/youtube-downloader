@@ -71,6 +71,8 @@ nietypowej instalacji — `uv sync --reinstall-package youtube-downloader`.
 - `CTkEntry` z tekstem zastępczym zwraca `get() == ""`, dopóki pole nie dostanie `<FocusIn>`.
 - Wyłączony `CTkButton` zachowuje `fg_color` — przycisk główny przełączaj przez `set_primary_enabled`.
 - Tk usuwa nazwaną czcionkę razem z jej obiektem Pythona — trzymaj referencję (`self._font_menu`).
+- Pusty `CTkFrame` żąda domyślnych 200 px wysokości — pustą ramkę zdejmuj (`pack_forget`), inaczej
+  niewidoczne miejsce wypycha treść i włącza przewijanie (pusta lista Recent).
 - Testy, które ruszają schowek, muszą go przywrócić: WSLg dzieli schowek z Windows.
 - PyInstaller na Linuksie nie znajduje `libtcl`/`libtk` z Pythona uv — dokłada je `.spec`
   (tylko lokalny build na Pythonie uv; wydanie idzie na systemowym Tk).

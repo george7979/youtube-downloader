@@ -885,6 +885,11 @@ class MainWindow(ctk.CTk):
             ).pack(side="right")
             self.recent_labels.append(label)
         self.clear_recent_button.configure(state="normal" if self.settings.recent else "disabled")
+        # An empty CTkFrame still asks for its default 200 px, which made a short window scroll.
+        if self.settings.recent:
+            self.recent_rows.pack(fill="x", padx=4)
+        else:
+            self.recent_rows.pack_forget()
 
     def clear_recent(self) -> None:
         """Forget the history only; the downloaded files stay where they are."""

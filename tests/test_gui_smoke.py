@@ -290,6 +290,23 @@ def test_recent_missing_file_greyed(make_window, tmp_path):
     assert texts[1] == "Here video · MP4"
 
 
+def test_empty_recent_takes_no_room(make_window, tmp_path):
+    """An empty CTkFrame asks for its default 200 px; that pushed a short window into scrolling."""
+    present = tmp_path / "Film.mp4"
+    present.write_bytes(b"x")
+    w = make_window(settings=Settings(output_dir=str(tmp_path)))
+    w.update_idletasks()
+    empty = w.recent_box.winfo_reqheight()
+    assert empty < 60
+    w.settings.recent = [RecentItem("v", "Film", str(present), "2026-10-19")]
+    w.refresh_recent()
+    w.update_idletasks()
+    assert w.recent_box.winfo_reqheight() > empty
+    w.clear_recent()
+    w.update_idletasks()
+    assert w.recent_box.winfo_reqheight() == empty
+
+
 def test_recent_rows_name_the_format(make_window, tmp_path):
     mp4, mp3 = tmp_path / "Film.mp4", tmp_path / "Film.mp3"
     mp4.write_bytes(b"x")
