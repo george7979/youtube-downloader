@@ -233,7 +233,8 @@ class Service:
         main_note: str | None = None,
     ) -> tuple[str, Path | None, Path | None]:
         """Transcript, .srt and the note `note_target` (if any) after a successful engine run;
-        returns the note written, or None. A language note (`main_note` set) needs subtitles.
+        returns the note written, or None. A language note (`main_note` set) is written only
+        when the subtitles give at least one paragraph.
         May raise OSError."""
         folder = names.media.parent
         transcript = "none"
@@ -257,7 +258,12 @@ class Service:
             else:
                 warnings.append(_NO_SUBS)
 
-        if note_target is None or (main_note is not None and not have_vtt):
+        if main_note is not None and not paragraphs:
+            # An empty language note makes no sense and would block adding this language later.
+            if have_vtt:
+                warnings.append(_NO_SUBS)
+            return transcript, srt_path, None
+        if note_target is None:
             return transcript, srt_path, None
         sink(Status("Writing note…"))
         note_text = render_note(

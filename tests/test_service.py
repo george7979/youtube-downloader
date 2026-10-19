@@ -722,3 +722,22 @@ def test_language_note_write_error_keeps_main_note(tmp_path, lecture, vtt, monke
     assert note.read_bytes() == before
     assert media.read_bytes() == b"video"
     assert sorted(p.name for p in tmp_path.iterdir()) == ["T.md", "T.mp4"]
+
+
+def test_add_transcript_with_empty_subtitles_writes_nothing(tmp_path, lecture):
+    write_media(tmp_path)
+    note = write_main(tmp_path, lecture, "youtube-auto-en")
+    before = note.read_bytes()
+    runner = FakeRunner(tmp_path, files={"T.pl-orig.vtt": b"WEBVTT\n\n"})
+
+    result, _ = download(
+        make_service(runner), request(tmp_path, subs="pl", add_transcript=True), lecture
+    )
+
+    assert not (tmp_path / "T.pl.md").exists()
+    assert result.already_exists is False
+    assert result.note_path is None
+    assert result.transcript == "none"
+    assert result.warnings.count("No subtitles were downloaded.") == 1
+    assert note.read_bytes() == before
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["T.md", "T.mp4"]

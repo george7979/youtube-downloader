@@ -288,7 +288,7 @@ jest włączony, ścieżka istnieje, język notatki głównej jest znany, kody j
 (porównanie dokładne: `en-US` ≠ `en`; ręczne i automatyczne napisy jednego języka to ten sam
 język) i `<base>.<lang>.md` jeszcze nie istnieje. Bez `add_transcript` wynik to dzisiejsze
 `already_exists` z `addable_lang` i `note_lang`; z nim silnik idzie z `--skip-download` dla tej
-ścieżki, a notatka językowa powstaje tylko z pliku VTT — bez napisów nic nie jest zapisywane
+ścieżki, a notatka językowa powstaje tylko z napisów dających choć jeden akapit — bez nich (brak VTT albo pusty VTT) nic nie jest zapisywane
 (`note` = `null`, `transcript` = `none`, ostrzeżenie „No subtitles were downloaded.”). `.srt`
 jak zwykle. Wynik: `already_exists` = `false`, `media` = istniejący plik, `note` = notatka
 językowa. `force` działa jak dotąd (pobiera film, notatek nie rusza).
