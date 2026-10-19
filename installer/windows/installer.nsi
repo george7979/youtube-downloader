@@ -69,6 +69,8 @@ Section "Main" SecMain
 SectionEnd
 
 Section "Uninstall"
+  ; RMDir cannot remove the uninstaller's own working directory.
+  SetOutPath "$TEMP"
   Delete "$INSTDIR\${APP_EXE}"
   Delete "$INSTDIR\Uninstall.exe"
   RMDir  "$INSTDIR"
