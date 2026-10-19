@@ -184,7 +184,9 @@ The transcript comes from captions YouTube already has; the app transcribes noth
   video, the transcript source and the tags `video` and `youtube` — properties in Obsidian, one
   field per line elsewhere.
 - `![[Title.mp4]]` embeds the video by file name, so it can move anywhere in the vault.
-- `#` and `[[` from YouTube text are escaped — no accidental Obsidian tags or links.
+- Title, description, chapters and transcript come from the video's author, so they stay plain
+  text: `#`, brackets, `<`, backticks and `~` are escaped. No tags, images, links, HTML or code
+  blocks appear that YouTube did not show; plain URLs stay clickable.
 - **An existing note is never overwritten or deleted** — your edits are safe.
 
 ### File names and downloading again

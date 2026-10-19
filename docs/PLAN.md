@@ -17,7 +17,8 @@
   `Get-FileHash`, ffmpeg z niezmiennego `autobuild-*`, rozmiar okna liczony z ekranu,
   nagłówek notatki czytelny poza Obsidianem, ponowienie HTTP 403, `--force-ipv4`, log
   przestojów, Recent (3 pozycje, Clear), deinstalator czyszczący dane aplikacji, ikona
-  w Ustawieniach Windows, „Run” na końcu instalatora.
+  w Ustawieniach Windows, „Run” na końcu instalatora; po skanie bezpieczeństwa tekst od autora
+  filmu zostaje w notatce zwykłym tekstem (bez zdalnych obrazków, łączy, HTML i bloków kodu).
 - Wygląd po analizie UI (makiety zaakceptowane przez PO:
   `docs/superpowers/specs/2026-10-18-ui-polish-mockups/index.html`): jeden wypełniony przycisk
   w akcencie `#C62828`, zwarty układ, auto-Check po wklejeniu, nowe okno pierwszego

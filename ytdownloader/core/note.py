@@ -10,6 +10,10 @@ from .models import VideoInfo
 from .subtitles import Paragraph
 
 _HASH = re.compile(r"(?:(?<=^)|(?<=\s))#", re.MULTILINE)
+# Brackets open images, links and embeds, `<` raw HTML, backticks and tildes code blocks (which
+# plugins such as Dataview may run). The backslash goes too, so the author's own `\` cannot
+# cancel an escape. `(`, `)` and `!` stay: without `[` they do nothing, and bare URLs keep working.
+_ACTIVE = re.compile(r"[\\\[\]<`~]")
 
 
 def format_ts(seconds: float, long: bool) -> str:
@@ -26,8 +30,9 @@ def ts_link(video_id: str, seconds: float, long: bool) -> str:
 
 
 def neutralize_markdown(text: str) -> str:
-    text = _HASH.sub(r"\\#", text)
-    return text.replace("[[", r"\[\[")
+    """Keep text written by the video's author as plain text in the note."""
+    text = _ACTIVE.sub(r"\\\g<0>", text)
+    return _HASH.sub(r"\\#", text)
 
 
 def _q(value: str) -> str:
@@ -56,7 +61,7 @@ def render_note(
     # `---` stays a rule instead of turning the fields into one setext heading.
     parts = [
         "---\n" + "\n\n".join(front) + "\n\n---",
-        f"# {info.title}",
+        f"# {neutralize_markdown(info.title)}",
         f"![[{media_filename}]]",
         "## Description\n\n" + neutralize_markdown(info.description.strip()),
     ]

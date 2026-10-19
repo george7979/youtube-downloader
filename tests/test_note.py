@@ -92,8 +92,38 @@ def test_long_video_uses_hours():
 def test_neutralize():
     assert (
         neutralize_markdown("#AI news\nsee #tag and https://x.io/#frag [[x]]")
-        == "\\#AI news\nsee \\#tag and https://x.io/#frag \\[\\[x]]"
+        == "\\#AI news\nsee \\#tag and https://x.io/#frag \\[\\[x\\]\\]"
     )
+
+
+def test_neutralize_blocks_images_links_html_and_code():
+    """Text from YouTube must stay text: no remote image, masked link, raw HTML or code block."""
+    assert neutralize_markdown("![](https://evil.example/p.png)") == "!\\[\\](https://evil.example/p.png)"
+    assert neutralize_markdown("[Site](obsidian://open)") == "\\[Site\\](obsidian://open)"
+    assert neutralize_markdown('<img src="https://evil.example/p.png">') == (
+        '\\<img src="https://evil.example/p.png">'
+    )
+    assert neutralize_markdown("```dataviewjs\nx\n```") == "\\`\\`\\`dataviewjs\nx\n\\`\\`\\`"
+    assert neutralize_markdown("~~~js") == "\\~\\~\\~js"
+
+
+def test_neutralize_escapes_backslash_first():
+    # An author's own backslash must not cancel the escape added after it.
+    assert neutralize_markdown("\\[x](y)") == "\\\\\\[x\\](y)"
+
+
+def test_neutralize_keeps_bare_urls_intact():
+    url = "https://en.wikipedia.org/wiki/Foo_(bar)?a=1&b=2"
+    assert neutralize_markdown(f"More: {url}") == f"More: {url}"
+
+
+def test_title_heading_is_neutralized():
+    out = render_note(
+        make_info(title="![](https://evil.example/p.png) #1"), "a.mp4", "none", None,
+        date(2026, 10, 18),
+    )
+    assert "\n# !\\[\\](https://evil.example/p.png) \\#1\n" in out
+    assert 'title: "![](https://evil.example/p.png) #1"\n' in out
 
 
 def test_chapters_and_transcript_are_neutralized():
@@ -101,8 +131,10 @@ def test_chapters_and_transcript_are_neutralized():
         make_info(chapters=[Chapter(0, "#1 Intro [[link]]")]), "a.mp4", "youtube-auto-en",
         [Paragraph(0, "we love #python and [[wiki]]")], date(2026, 10, 18),
     )
-    assert "- [00:00](https://youtu.be/jNQXAC9IVRw?t=0) \\#1 Intro \\[\\[link]]\n" in out
-    assert "[00:00](https://youtu.be/jNQXAC9IVRw?t=0) we love \\#python and \\[\\[wiki]]\n" in out
+    assert "- [00:00](https://youtu.be/jNQXAC9IVRw?t=0) \\#1 Intro \\[\\[link\\]\\]\n" in out
+    assert (
+        "[00:00](https://youtu.be/jNQXAC9IVRw?t=0) we love \\#python and \\[\\[wiki\\]\\]\n" in out
+    )
 
 
 def test_title_with_quotes_is_valid_yaml_string():
