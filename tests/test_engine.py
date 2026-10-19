@@ -286,6 +286,32 @@ def test_runner_passes_non_ascii_lines_intact(tmp_path):
     assert lines == ["YTDL {}", "FILE /OUT/Zażółć gęślą.mp4"]
 
 
+def test_runner_starts_the_child_in_the_work_dir(tmp_path, monkeypatch):
+    """yt-dlp writes format-test files to its working directory; started from a Start Menu
+    shortcut, the app's own one is Program Files, and yt-dlp hung there."""
+    from ytdownloader.core import engine, paths
+
+    work = tmp_path / "work"
+    work.mkdir()
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.setattr(paths, "work_dir", lambda: work)
+    monkeypatch.chdir(elsewhere)
+    lines: list[str] = []
+    code = "import os; print(os.getcwd())"
+    rc, _ = engine.Runner().run([sys.executable, "-c", code], lines.append, threading.Event())
+    assert rc == 0
+    assert Path(lines[0]).resolve() == work.resolve()
+
+
+def test_work_dir_is_writable():
+    from ytdownloader.core import paths
+
+    probe = paths.work_dir() / f"ytdl-probe-{os.getpid()}.tmp"
+    probe.write_bytes(b"x")
+    probe.unlink()
+
+
 def test_runner_forces_utf8_in_child_environment():
     lines: list[str] = []
     code = "import os; print(os.environ['PYTHONUTF8'], os.environ['PYTHONIOENCODING'])"

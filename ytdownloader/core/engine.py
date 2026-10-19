@@ -13,6 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import paths
 from .models import DownloadRequest, Progress, Status, SubtitleTrack
 from .naming import NamePlan
 from .tools import ToolPaths
@@ -233,6 +234,7 @@ class Runner:
             encoding="utf-8",
             errors="replace",
             env={**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
+            cwd=paths.work_dir(),
             **kwargs,
         )
 

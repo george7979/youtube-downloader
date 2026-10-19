@@ -57,6 +57,9 @@ nietypowej instalacji — `uv sync --reinstall-package youtube-downloader`.
 - Plik `.sha256sum` Deno dla Windows ma format PowerShell `Get-FileHash`, nie `<hex>  <nazwa>` — każdy nowy plik sum sprawdzaj dla obu platform.
 - Postęp postprocesorów yt-dlp (scalanie, MP3) idzie na **stderr**, pobierania na stdout.
 - `--print` wycisza yt-dlp → zawsze `--progress`.
+- yt-dlp pisze pliki próbne (`Testing format`) do bieżącego katalogu; w Program Files wisi bez
+  błędu → `Runner` zawsze z `cwd=paths.work_dir()`. Z WSL tego nie odtworzysz, póki nie zrobisz
+  `cd` do katalogu tylko do odczytu.
 - „not a bot” tylko w Windows, a w WSL działa → to IPv6 (WSL go nie ma); stąd `--force-ipv4` w `COMMON`.
   Porównując zachowanie Windows i WSL, sprawdź `api64.ipify.org`, nie tylko IPv4.
 - `-S res:<q>,vcodec:h264,acodec:m4a` — kolejność kluczy ma znaczenie.

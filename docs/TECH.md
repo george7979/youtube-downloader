@@ -111,7 +111,7 @@ gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru r
 
 | Moduł | Odpowiedzialność |
 |---|---|
-| `paths.py` | **jedyne** źródło lokalizacji: konfiguracja, dane, logi, narzędzia, Pobrane, zasoby (`sys._MEIPASS` w paczce) |
+| `paths.py` | **jedyne** źródło lokalizacji: konfiguracja, dane, logi, narzędzia, Pobrane, katalog roboczy yt-dlp, zasoby (`sys._MEIPASS` w paczce) |
 | `settings.py` | `settings.json` (folder, tryb, jakość, język napisów, notatka/srt, czas ostatniej aktualizacji) i lista 3 ostatnich pobrań (`MAX_RECENT`, jeden wpis na plik — `add_recent` usuwa duplikat po `media_path`, nie po ID filmu; okno dopisuje format z rozszerzenia); walidacja typów, zapis atomowy; `resolve_output_dir` wraca do Pobrane z komunikatem, gdy zapisany folder zniknął (pusty `output_dir` = nie wybrano). Jakość to pułap: okno domyślnie wybiera najwyższą wysokość filmu ≤ zapisanej i zapisuje jakość tylko wtedy, gdy użytkownik wybrał inną niż ta domyślna (film z maks. 720p nie obniża ustawienia 1080) |
 | `logsetup.py` | rotujący `app.log` (1 MB × 3), a gdy jest `stderr` — także na konsolę. `Service` loguje na INFO każde uruchomienie silnika (adres, tryb, jakość, próba), linie yt-dlp poza postępem (`--print` wycisza resztę, więc to ostrzeżenia, błędy, `CODEC`, `FILE`), każdą przerwę bez wyjścia ≥ 15 s (`STALL_LOG_S`) z linią sprzed niej oraz kod wyjścia i czas |
 | `urls.py` | ID filmu z linku (`watch`, `youtu.be`, `shorts`, `embed`, `live`); inne → `invalid_url`; playlisty ignorowane |
@@ -245,6 +245,11 @@ Zweryfikowane na prawdziwych uruchomieniach (fixtury w `tests/fixtures/`).
   psuł ścieżki z polskimi znakami. Subprocesy dostają też `PYTHONUTF8=1`, a czytamy je
   `encoding="utf-8", errors="replace"`.
 - **`--` przed URL** — adres zaczynający się od `-` nigdy nie stanie się opcją.
+- **Katalog roboczy = `paths.work_dir()` (katalog tymczasowy systemu).** Gdy YouTube wymusza
+  SABR, yt-dlp sprawdza formaty HLS próbnym pobraniem do pliku `tmp*.tmp` w bieżącym katalogu.
+  Aplikacja ze skrótu w menu Start ma bieżący katalog w Program Files, gdzie zapis jest
+  zabroniony — yt-dlp wisiał wtedy na „Testing format” bez końca („Fetching video info…”).
+  Dotyczy tylko części filmów, dlatego zwykłe pobrania działały.
 - **Zawsze** `--ignore-config --no-playlist --no-mtime`; `stdin=DEVNULL`; na Windows
   `CREATE_NO_WINDOW`, na POSIX proces w nowej sesji (`killpg` zabija całe drzewo; Windows:
   `taskkill /F /T`).

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 from pathlib import Path
 
 import platformdirs
@@ -41,6 +42,12 @@ def log_dir() -> Path:
 
 def tools_dir() -> Path:
     return _ensure(data_dir() / "tools")
+
+
+def work_dir() -> Path:
+    """Working directory for yt-dlp, which writes format-test files there; the app's own may be
+    read-only (Program Files when started from the Start Menu)."""
+    return Path(tempfile.gettempdir())
 
 
 def downloads_dir() -> Path:
