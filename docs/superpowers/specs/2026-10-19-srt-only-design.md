@@ -30,8 +30,9 @@ Recent bez zmian; film i notatki nietknięte.
 
 ### CLI
 
-`get --srt` dla filmu, który już jest, przy spełnionych warunkach **sam** dopisuje brakujący
-`.srt` (jak `--subs <lang>` dopisuje notatkę językową). JSON bez nowych pól:
+`get --srt` dla filmu, który już jest, **sam** dopisuje brakujący `.srt` — przy warunkach 1–3;
+warunek 4 dotyczy tylko okna (w CLI `.srt` dochodzi zawsze, chyba że ta sama komenda dokłada
+notatkę językową, która zapisuje go razem z nią) (jak `--subs <lang>` dopisuje notatkę językową). JSON bez nowych pól:
 `already_exists: false`, `media` = istniejący film, `note` = istniejąca notatka główna albo
 `null`, `srt` = nowy plik, `transcript: "none"`. Bez spełnionych warunków — jak dziś.
 
