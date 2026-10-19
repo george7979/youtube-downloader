@@ -33,7 +33,7 @@ youtube-downloader get "<URL>" --out "<DIR>" --json
 #   --subs pl          caption language; --subs none = no captions
 #   --srt              also write an .srt file
 #   --no-note          skip the Markdown note
-#   --force            download again even if the files already exist (only on request)
+#   --force            download again and replace the video, keep the note (only on request)
 
 # Look first, without downloading (title, channel, length, heights, caption tracks)
 youtube-downloader info "<URL>" --json
@@ -81,8 +81,9 @@ note.", or "No H.264 at this quality — downloading VP9/AV1 instead").
 downloaded; `media` and `note` are the existing files (`transcript` then shows `none` because
 the note was not rebuilt - do not read it as "no transcript"; with `--no-note` `note` can be
 `null`). Say so and give the paths. Run
-again with `--force` only if the user explicitly asks to download again; a note that exists is
-never overwritten.
+again with `--force` only if the user explicitly asks to download again — for example in
+another quality (`--force --quality 720`): it replaces the video under the same file name, so
+the note's link to it keeps working; a note that exists is never overwritten.
 
 Exception: an explicit `--subs <lang>` writes the language note `Title.<lang>.md` next to the
 video, without downloading the video again, only when all of these hold: the video and its main
