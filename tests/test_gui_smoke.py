@@ -885,7 +885,7 @@ def test_dialog_without_add_lang_is_unchanged(make_window):
 def test_add_choice_runs_add_transcript_request(make_window, tmp_path, monkeypatch):
     seen: dict = {}
 
-    def fake_ask(parent, title, has_note=True, add_lang=None, note_lang=None):
+    def fake_ask(parent, title, has_note=True, add_lang=None, note_lang=None, srt_lang=None):
         seen["args"] = (add_lang, note_lang)
         return "add"
 
@@ -930,6 +930,88 @@ def test_add_choice_without_transcript_says_none_added(make_window, tmp_path, mo
     pump(w, lambda: status(w).startswith("No transcript added"), timeout=3)
 
     assert status(w) == "No transcript added · No subtitles were downloaded."
+    assert w.download_button.cget("state") == "normal"
+
+
+def test_dialog_offers_add_subtitles(make_window):
+    w = make_window()
+    seen: dict = {}
+
+    def click(dialog):
+        seen["text"] = dialog.buttons["srt"].cget("text")
+        seen["add"] = "add" in dialog.buttons
+        dialog.buttons["srt"].invoke()
+
+    def run():
+        _dialog_buttons_and_texts(w, click)
+
+    w.after(200, run)
+    choice = widgets.ask_already_downloaded(w, "Me at the zoo", srt_lang="pl", note_lang="en")
+    assert choice == "srt"
+    assert seen == {"text": "Add subtitles (pl)", "add": False}
+
+
+def test_dialog_prefers_add_transcript_over_subtitles(make_window):
+    w = make_window()
+    seen: dict = {}
+
+    def click(dialog):
+        seen["keys"] = set(dialog.buttons)
+        dialog.buttons["add"].invoke()
+
+    def run():
+        _dialog_buttons_and_texts(w, click)
+
+    w.after(200, run)
+    choice = widgets.ask_already_downloaded(
+        w, "Me at the zoo", add_lang="pl", srt_lang="pl", note_lang="en"
+    )
+    assert choice == "add"
+    assert "srt" not in seen["keys"]
+
+
+def test_srt_choice_runs_add_srt_request(make_window, tmp_path, monkeypatch):
+    seen: dict = {}
+
+    def fake_ask(parent, title, has_note=True, add_lang=None, note_lang=None, srt_lang=None):
+        seen["args"] = (add_lang, srt_lang)
+        return "srt"
+
+    monkeypatch.setattr(app_mod, "ask_already_downloaded", fake_ask)
+    service = FakeService()
+    existing = dataclasses.replace(done_result(tmp_path, already=True), addable_srt="pl")
+    added = dataclasses.replace(
+        done_result(tmp_path), srt_path=tmp_path / "T.pl.srt", warnings=["Careful."]
+    )
+    service.download_results = [existing, added]
+    w = make_window(service=service, settings=Settings(output_dir=str(tmp_path)))
+    w.apply_info(zoo())
+    recent_before = list(w.settings.recent)
+    w.download_button.invoke()
+    pump(w, lambda: status(w).startswith("Done."), timeout=3)
+
+    first, second = (call[0] for call in service.download_calls)
+    assert (first.add_srt, second.add_srt, second.force) == (False, True, False)
+    assert seen["args"] == (None, "pl")
+    assert status(w) == "Done. Saved T.pl.srt · Careful."
+    assert w.settings.recent == recent_before
+    assert w.download_button.cget("state") == "normal"
+
+
+def test_srt_choice_without_subtitles_says_none_added(make_window, tmp_path, monkeypatch):
+    monkeypatch.setattr(app_mod, "ask_already_downloaded", lambda parent, title, **kw: "srt")
+    service = FakeService()
+    existing = dataclasses.replace(done_result(tmp_path, already=True), addable_srt="pl")
+    added = dataclasses.replace(
+        done_result(tmp_path), srt_path=None, warnings=["No subtitles were downloaded."]
+    )
+    service.download_results = [existing, added]
+    w = make_window(service=service, settings=Settings(output_dir=str(tmp_path)))
+    w.apply_info(zoo())
+    w.download_button.invoke()
+    pump(w, lambda: status(w).startswith("No subtitles added"), timeout=3)
+
+    assert status(w) == "No subtitles added · No subtitles were downloaded."
     assert w.download_button.cget("state") == "normal"
 
 

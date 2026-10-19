@@ -1,7 +1,6 @@
 # Dołożenie samego `.srt` — projekt
 
-Status: projekt zaakceptowany przez PO w rozmowie (2026-10-19, wariant „przycisk”). Część
-wydania v2.0.0. Rozszerza `2026-10-19-transcript-languages-design.md`.
+Status: wdrożony na `dev`, czeka na testy PO; część wydania v2.0.0. Rozszerza `2026-10-19-transcript-languages-design.md`.
 
 ## Po co
 

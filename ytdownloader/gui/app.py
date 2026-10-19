@@ -615,7 +615,13 @@ class MainWindow(ctk.CTk):
             return
         self._finish_download()
         self.progress_bar.set(1.0)
-        if req.add_transcript:
+        if req.add_srt:
+            head = (
+                f"Done. Saved {result.srt_path.name}"
+                if result.srt_path is not None
+                else "No subtitles added"
+            )
+        elif req.add_transcript:
             head = (
                 f"Done. Saved {result.note_path.name}"
                 if result.note_path is not None
@@ -636,11 +642,17 @@ class MainWindow(ctk.CTk):
             has_note=result.note_path is not None,
             add_lang=result.addable_lang,
             note_lang=result.note_lang,
+            srt_lang=result.addable_srt,
         )
         if choice == "add":
             self._cancel = threading.Event()
             self.cancel_button.configure(state="normal")
             self._run_download(dataclasses.replace(req, add_transcript=True), info)
+            return
+        if choice == "srt":
+            self._cancel = threading.Event()
+            self.cancel_button.configure(state="normal")
+            self._run_download(dataclasses.replace(req, add_srt=True), info)
             return
         if choice == "again":
             self._cancel = threading.Event()
@@ -674,7 +686,7 @@ class MainWindow(ctk.CTk):
             s.subs_lang = req.subs
         s.save_note = req.save_note
         s.save_srt = req.save_srt
-        if result.media_path is not None and not req.add_transcript:
+        if result.media_path is not None and not (req.add_transcript or req.add_srt):
             add_recent(
                 s,
                 RecentItem(

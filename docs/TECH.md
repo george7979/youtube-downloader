@@ -80,8 +80,9 @@ gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru r
   (jasny, ciemny), bo okno idzie za trybem systemu.
 - **Hierarchia:** na ekranie jeden wypełniony przycisk — Download (w oknie pierwszego
   uruchomienia po błędzie: Retry). Wyjątek: dialog „Already downloaded” może mieć jeden
-  wypełniony przycisk, „Add transcript (<lang>)” (tylko gdy da się dodać język); Download
-  okna głównego jest wtedy wyłączony, więc aktywny jest zawsze jeden wypełniony przycisk.
+  wypełniony przycisk — „Add transcript (<lang>)” (gdy da się dodać notatkę w tym języku) albo
+  „Add subtitles (<lang>)” (gdy da się dodać tylko brakujący `.srt`); pojawia się zawsze najwyżej
+  jeden z nich, transkrypt ma pierwszeństwo. Download okna głównego jest wtedy wyłączony, więc aktywny jest zawsze jeden wypełniony przycisk.
   Drugorzędne obrysowane (`OUTLINE_BUTTON`: Check, Change,
   Cancel, Quit, Update engine, pozostałe przyciski dialogu „Already downloaded”, Close w About),
   pomocnicze tekstowe (`TEXT_BUTTON`: Show file, Clear, ⋯, Show details, Copy). Wyłączony

@@ -131,7 +131,9 @@ error and **Retry**.
    partial files. You can check the next link while a download runs.
 
 If the video is already in the folder and you picked another subtitle language, **Add transcript**
-saves a note in that language without downloading the video again.
+saves a note in that language without downloading the video again. If **Also save subtitles
+(.srt)** is ticked and the `.srt` for the chosen language is missing, **Add subtitles** saves only
+that file.
 
 **Recent** lists the last three downloaded files with their format — the MP4 and the MP3 of one
 video are two rows (**Show file**, **Clear** — files stay on disk). The footer shows the engine

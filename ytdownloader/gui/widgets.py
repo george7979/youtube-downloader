@@ -176,10 +176,12 @@ def ask_already_downloaded(
     has_note: bool = True,
     add_lang: str | None = None,
     note_lang: str | None = None,
+    srt_lang: str | None = None,
 ) -> str:
     """Modal: the video (and its note) are already in the folder.
 
-    Returns add | show | again | cancel; "add" only when `add_lang` offers a transcript note.
+    Returns add | srt | show | again | cancel; "add" only when `add_lang` offers a transcript
+    note, "srt" only when `srt_lang` offers subtitles and no transcript can be added.
     """
     dialog = ctk.CTkToplevel(parent)
     dialog.title("Already downloaded")
@@ -219,6 +221,13 @@ def ask_already_downloaded(
             text=f"Add transcript ({add_lang})",
             width=150,
             command=lambda: pick("add"),
+        )
+    elif srt_lang:  # at most one filled button: subtitles only when no transcript can be added
+        dialog.buttons["srt"] = ctk.CTkButton(
+            row,
+            text=f"Add subtitles ({srt_lang})",
+            width=150,
+            command=lambda: pick("srt"),
         )
     # Without an addable language no button is filled: neither choice is the obvious one.
     dialog.buttons |= {

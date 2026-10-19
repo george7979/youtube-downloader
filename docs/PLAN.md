@@ -22,6 +22,10 @@
   ten sam film w innym języku napisów daje drugą notatkę `Tytuł.<lang>.md` bez ponownego
   pobierania wideo — usługa, `get --subs <lang>`, przycisk „Add transcript (<lang>)” w dialogu
   „Already downloaded”.
+- Samo `.srt` (spec `docs/superpowers/specs/2026-10-19-srt-only-design.md`): przy zaznaczonym
+  „Also save subtitles (.srt)” brakujący `Tytuł.<lang>.srt` da się dołożyć bez pobierania wideo
+  i bez ruszania notatki — usługa, `get --srt`, przycisk „Add subtitles (<lang>)” w dialogu
+  „Already downloaded” (gdy nie ma już czego dodać jako transkrypt).
 - Wygląd po analizie UI (makiety zaakceptowane przez PO:
   `docs/superpowers/specs/2026-10-18-ui-polish-mockups/index.html`): jeden wypełniony przycisk
   w akcencie `#C62828`, zwarty układ, auto-Check po wklejeniu, nowe okno pierwszego
@@ -35,7 +39,9 @@
 PO testuje na Windows instalator z ostatniego przebiegu „Build and Release” na `dev` (artefakt
 `windows-installer`) — scenariusze ze spec §11 oraz nowy wygląd. Na Linux/WSL scenariusz 2
 przez skill. Nowy scenariusz: ten sam film w innym języku napisów → „Add transcript” w dialogu
-„Already downloaded” dodaje `Tytuł.<lang>.md`, wideo i główna notatka bez zmian. Uwagi PO → poprawki na `dev`.
+„Already downloaded” dodaje `Tytuł.<lang>.md`, wideo i główna notatka bez zmian. Drugi nowy scenariusz: film z notatką,
+„Also save subtitles (.srt)” zaznaczone, brak `Tytuł.<lang>.srt` → „Add subtitles (<lang>)” dodaje
+tylko ten plik, Recent bez zmian. Uwagi PO → poprawki na `dev`.
 
 Uwaga PO z Linux/WSL: okno z liter „Y”/„Z” i postrzępionych rogów, menu „⋯” nie znika.
 Poprawione na `dev`: menu (X11), paczka Linux na Pythonie z systemowym Tk z Xft (TECH
