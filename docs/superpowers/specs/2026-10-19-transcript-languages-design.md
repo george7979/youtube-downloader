@@ -1,6 +1,6 @@
 # Kolejne języki transkrypcji — projekt
 
-Status: projekt do akceptacji PO. Część wydania v2.0.0 (decyzja PO: przed wydaniem).
+Status: wdrożony na `dev`, czeka na testy PO; część wydania v2.0.0.
 
 ## Po co
 

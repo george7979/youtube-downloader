@@ -79,8 +79,11 @@ gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru r
   (przycisk główny, pola wyboru, postęp), listy i przełącznik MP4/MP3 neutralne. Kolory to pary
   (jasny, ciemny), bo okno idzie za trybem systemu.
 - **Hierarchia:** na ekranie jeden wypełniony przycisk — Download (w oknie pierwszego
-  uruchomienia po błędzie: Retry). Drugorzędne obrysowane (`OUTLINE_BUTTON`: Check, Change,
-  Cancel, Quit, Update engine, przyciski dialogu „Already downloaded”, Close w About),
+  uruchomienia po błędzie: Retry). Wyjątek: dialog „Already downloaded” może mieć jeden
+  wypełniony przycisk, „Add transcript (<lang>)” (tylko gdy da się dodać język); Download
+  okna głównego jest wtedy wyłączony, więc aktywny jest zawsze jeden wypełniony przycisk.
+  Drugorzędne obrysowane (`OUTLINE_BUTTON`: Check, Change,
+  Cancel, Quit, Update engine, pozostałe przyciski dialogu „Already downloaded”, Close w About),
   pomocnicze tekstowe (`TEXT_BUTTON`: Show file, Clear, ⋯, Show details, Copy). Wyłączony
   CTkButton zachowuje `fg_color`, więc `set_primary_enabled` przełącza go na wyciszony kolor.
 - **Układ:** folder to wiersz „Save to <ścieżka> (Change)” na dole opcji; kliknięcie ścieżki
