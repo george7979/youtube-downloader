@@ -35,8 +35,8 @@
 ## Bieżący krok
 
 Zgłoszenie #10 — za małe okno na Linuksie z gęstym ekranem (TECH → Known Issues → Okno).
-Czeka na dane z Chromebooka PO (co widzi Tk i X: `tk scaling`, `Xft.dpi`, `GDK_SCALE`); potem
-ręczne skalowanie i, jeśli dane pozwolą, wykrywanie automatyczne. Wydanie razem z v2.0.1.
+Tylko Linux, Windows bez zmian: skala z tego, co pulpit podaje aplikacjom (`GDK_SCALE`,
+`Xft.dpi`), i ręczny rozmiar w menu „⋯” jako zapas. Wydanie razem z v2.0.1.
 
 ## Backlog
 

@@ -404,7 +404,6 @@ Znane, jeszcze niepoprawione; najpierw te widoczne dla użytkownika.
   o połowę za małe. CustomTkinter wykrywa skalowanie DPI tylko na Windows, na Linuksie zawsze
   przyjmuje 1 (`scaling_tracker.get_window_dpi_scaling`), więc okno rysuje się w 1× na ekranie 2×.
   Pod WSLg tego nie widać, bo Windows skaluje cały obraz. Brak ręcznego skalowania w aplikacji.
-  Obejście: w Crostini prawy klik na ikonie na półce → „Use low density”.
 - Zamknięcie okna przy otwartym dialogu „Already downloaded” może zgłosić `TclError`;
   anulowanie w momencie zwrotu `already_exists` bywa pokazane jako dialog.
 - Przycisk „Update engine” w panelu błędu nie jest wyłączany w trakcie pobierania; kliknięcie
