@@ -45,6 +45,7 @@ def render_note(
     transcript_kind: str,
     paragraphs: list[Paragraph] | None,
     downloaded: date,
+    main_note: str | None = None,
 ) -> str:
     long = (info.duration or 0) >= 3600
     front = [f"title: {_q(info.title)}", f"channel: {_q(info.channel)}", f"url: {info.url}"]
@@ -54,6 +55,8 @@ def render_note(
     front.append(f"duration: {_q(format_ts(info.duration or 0, long))}")
     front.append(f"video: {_q(f'[[{media_filename}]]')}")
     front.append(f"transcript: {transcript_kind}")
+    if main_note is not None:
+        front.append(f"main_note: {_q(f'[[{main_note}]]')}")
     front.append("tags: [video, youtube]")
 
     # Blank lines between fields are valid YAML and keep the header readable in Markdown

@@ -157,3 +157,13 @@ def test_frontmatter_survives_viewers_without_frontmatter_support():
     assert fields[-1] == ""
     assert all(line == "" for line in fields[1::2])
     assert all(": " in line for line in fields[0::2])
+
+
+def test_language_note_links_its_main_note():
+    out = render_note(make_info(), "a.mp4", "youtube-auto-pl", None, date(2026, 10, 19),
+                      main_note="a")
+    assert 'transcript: youtube-auto-pl\n\nmain_note: "[[a]]"\n' in out
+
+
+def test_main_note_has_no_main_note_field():
+    assert "main_note" not in render_note(make_info(), "a.mp4", "none", None, date(2026, 10, 19))

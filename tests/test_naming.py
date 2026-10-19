@@ -2,7 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from ytdownloader.core.naming import note_video_id, plan_names, safe_filename
+from ytdownloader.core.naming import (
+    is_language_note,
+    note_fields,
+    note_video_id,
+    plan_names,
+    safe_filename,
+)
 
 VID = "dQw4w9WgXcQ"
 OTHER = "VIw16SXObUQ"
@@ -198,3 +204,56 @@ def test_plan_reports_unrecognised_suffixed_media(tmp_path):
     media.write_bytes(b"x")
     plan = plan_names(tmp_path, "T", VID, "mp4")
     assert plan.existing_media == media
+
+
+def make_lang_note(path: Path, video_id: str, main: str = "T") -> None:
+    path.write_text(
+        f"---\ntitle: x\nurl: https://www.youtube.com/watch?v={video_id}\n"
+        f'main_note: "[[{main}]]"\n---\n\nbody\n',
+        encoding="utf-8",
+    )
+
+
+def test_language_note_is_not_the_main_note(tmp_path):
+    make_note(tmp_path / "T.md", VID)
+    make_lang_note(tmp_path / "T.pl.md", VID)
+    (tmp_path / "T.mp4").write_bytes(b"v")
+    plan = plan_names(tmp_path, "T", VID, "mp4")
+    assert plan.existing_note == tmp_path / "T.md"
+    assert plan.base == "T"
+    assert plan.language_note("pl") == tmp_path / "T.pl.md"
+
+
+def test_language_note_alone_identifies_the_video(tmp_path):
+    make_lang_note(tmp_path / "T.pl.md", VID)
+    (tmp_path / "T.mp4").write_bytes(b"v")
+    plan = plan_names(tmp_path, "Other title", VID, "mp4")
+    assert plan.base == "T"
+    assert plan.existing_media == tmp_path / "T.mp4"
+    assert plan.existing_note is None
+    assert plan.note == tmp_path / "T.md"
+
+
+def test_title_ending_like_a_language_stays_main(tmp_path):
+    make_note(tmp_path / "Report.pl.md", VID)
+    (tmp_path / "Report.pl.mp4").write_bytes(b"v")
+    plan = plan_names(tmp_path, "Report.pl", VID, "mp4")
+    assert plan.existing_note == tmp_path / "Report.pl.md"
+    assert plan.base == "Report.pl"
+
+
+def test_regional_language_note(tmp_path):
+    make_note(tmp_path / "T.md", VID)
+    make_lang_note(tmp_path / "T.pt-BR.md", VID)
+    plan = plan_names(tmp_path, "T", VID, "mp4")
+    assert plan.existing_note == tmp_path / "T.md"
+    assert is_language_note(tmp_path / "T.pt-BR.md")
+    assert not is_language_note(tmp_path / "T.md")
+
+
+def test_note_fields_decodes_quotes(tmp_path):
+    note = tmp_path / "n.md"
+    note.write_text(
+        '---\ntitle: "A \\"b\\""\nmain_note: "[[T]]"\n---\n', encoding="utf-8"
+    )
+    assert note_fields(note) == {"title": 'A "b"', "main_note": "[[T]]"}
