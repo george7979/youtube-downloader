@@ -299,7 +299,8 @@ samym tytule mogłaby dopiąć notatkę do cudzego pliku. Ponowne pobranie trafi
   budowaniu ręcznemu.
 - **`.deb`** (`installer/linux/build-deb.sh`): jeden plik `/usr/bin/youtube-downloader`, ikony,
   plik `.desktop`; `Recommends: ffmpeg`; wersja z `version.py`.
-- **CI:** `ci.yml` — lint (tylko błędy składni), testy na Ubuntu (przez `xvfb-run`) i Windows;
+- **CI:** `ci.yml` — lint (tylko błędy składni), testy na Ubuntu (przez `xvfb-run`) i Windows,
+  prosty skan plików wrażliwych (`.env`, `*.pem`, `*.key`);
   `build.yml` — paczki na obu systemach, test instalacji `.deb` na Ubuntu 22.04/24.04 (po
   `dpkg -i` zamrożony plik uruchamia `youtube-downloader tools --json` i musi zwrócić
   `"ok": true` — to pobiera narzędzia, więc wymaga sieci; potem okno musi żyć 10 s pod

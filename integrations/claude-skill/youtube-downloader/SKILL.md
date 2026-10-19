@@ -11,8 +11,8 @@ YouTube links only. Linux / WSL.
 
 Requires `youtube-downloader` on `PATH`. If `command -v youtube-downloader` finds nothing, tell
 the user to install it (`uv tool install --managed-python --python 3.12 <path-to-repo>`, see the
-repo README) instead of trying to work around it. The first run downloads yt-dlp, Deno and
-ffmpeg and can take a few minutes.
+repo README) instead of trying to work around it. The first run downloads yt-dlp, Deno and,
+without a system ffmpeg, ffmpeg; it can take a few minutes.
 
 ## Always ask for the destination folder first
 

@@ -22,7 +22,8 @@ po stronie YouTube.
    opis, rozdziały, transkrypt z napisów YouTube (ręcznych przed automatycznymi) jako
    akapity ze znacznikami czasu-linkami do YouTube. Opcjonalnie plik `.srt`. Notatka czytelna
    także poza Obsidianem — w edytorze Markdown bez obsługi frontmattera metadane są osobnymi
-   liniami, nie sklejonym nagłówkiem.
+   liniami, nie sklejonym nagłówkiem. Tekst od autora filmu (tytuł, opis, rozdziały, napisy)
+   zostaje w notatce zwykłym tekstem — nie może w niej stać się obrazkiem, łączem ani kodem.
 3. Folder docelowy wybierany przez użytkownika, domyślnie systemowe Pobrane, pamiętany.
 4. Aplikacja sama pobiera i aktualizuje swoje narzędzia (yt-dlp, ffmpeg, Deno) — działa
    dalej po zmianach YouTube bez nowego wydania.
