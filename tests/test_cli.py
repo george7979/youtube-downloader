@@ -454,3 +454,15 @@ def test_get_json_warns_when_the_video_has_no_such_language(tmp_path, capsys):
     assert payload["note"] == str(tmp_path / "T.md")
     assert payload["warnings"] == ["No xx subtitles for this video."]
     assert sorted(p.name for p in tmp_path.iterdir() if p.name != "cfg") == ["T.md", "T.mp4"]
+
+
+def test_srt_flag_asks_to_add_srt(tmp_path):
+    service = FakeService(tmp_path)
+    run(["get", "u", "--out", str(tmp_path), "--srt"], service)
+    assert service.requests[0].add_srt is True
+
+
+def test_no_srt_flag_does_not_add(tmp_path):
+    service = FakeService(tmp_path)
+    run(["get", "u", "--out", str(tmp_path)], service)
+    assert service.requests[0].add_srt is False

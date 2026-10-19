@@ -94,6 +94,13 @@ is `none` and a warning says so. Otherwise the result is `already_exists: true` 
 the video has no captions in that language, a warning says so. The existing notes are never
 changed.
 
+Exception: `--srt` on a video that is already in the folder (with its note, or with `--no-note`)
+adds only the missing `Title.<lang>.srt`, without downloading the video again, when no
+note-language addition above is possible and `Title.<lang>.srt` does not exist yet. Then
+`already_exists` is `false`, `srt` is the new file, `media` and `note` are the existing files and
+`transcript` is `none`. If YouTube returns no or empty captions, `srt` is `null` and a warning
+says so. An existing `.srt` is never overwritten.
+
 ## Errors
 
 Failure: `{"ok": false, "error": {"code", "message", "hint", "details"}}`, exit code 1.

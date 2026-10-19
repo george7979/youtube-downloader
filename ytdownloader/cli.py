@@ -201,6 +201,7 @@ def _run_get(service: Service, args: argparse.Namespace, cancel: threading.Event
         add_transcript=subs not in (SUBS_DEFAULT, SUBS_NONE),
         save_note=not args.no_note,
         save_srt=args.srt,
+        add_srt=args.srt,
         force=args.force,
     )
     result = service.download(req, None, _Sink(), cancel)

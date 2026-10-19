@@ -249,6 +249,12 @@ youtube-downloader tools [--update] [--json]
   YouTube returns no or empty captions: `note` is `null`, `transcript` is `none`, with a warning.
   Otherwise the result is `already_exists: true` as before, with a warning when the video has no
   `pl` captions.
+- `get --srt` also adds a missing `Title.<lang>.srt` to a video that is already in the folder
+  (with its note, or with `--no-note`), only when no note-language addition above is possible and
+  `Title.<lang>.srt` does not exist yet: only the `.srt` is written, the JSON has
+  `already_exists: false`, `srt` = the new file, `media` and `note` = the existing files and
+  `transcript` = `none`. If YouTube returns no or empty captions: `srt` is `null`, with a warning.
+  An existing `.srt` is never overwritten.
 - `info` shows metadata, heights and caption tracks without downloading.
 - `tools` shows tool paths and versions; `--update` works like **Update engine**.
 - It never asks questions and never uses the window's folder — pass `--out` every time. `get` and
