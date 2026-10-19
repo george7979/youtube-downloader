@@ -864,7 +864,9 @@ class MainWindow(ctk.CTk):
             present = path.is_file()
             row = ctk.CTkFrame(self.recent_rows, fg_color="transparent")
             row.pack(fill="x")
-            text = _shorten_end(item.title, 46)
+            text = _shorten_end(item.title, 40)
+            if path.suffix:
+                text += f" · {path.suffix[1:].upper()}"
             if not present:
                 text += "  (file missing)"
             label = ctk.CTkLabel(row, text=text, font=self._font_small, anchor="w")

@@ -130,9 +130,9 @@ error and **Retry**.
 4. **Download.** A progress bar and a status line show each step; **Cancel** stops and removes
    partial files. You can check the next link while a download runs.
 
-**Recent** lists the last three downloads (**Show file**, **Clear** — files stay on disk). The
-footer shows the engine version; the **⋯** menu has **Update engine**, **Open log folder** and
-**About**.
+**Recent** lists the last three downloaded files with their format — the MP4 and the MP3 of one
+video are two rows (**Show file**, **Clear** — files stay on disk). The footer shows the engine
+version; the **⋯** menu has **Update engine**, **Open log folder** and **About**.
 
 ## How it works
 

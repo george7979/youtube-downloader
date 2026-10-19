@@ -101,7 +101,8 @@ def save_settings(s: Settings, path: Path | None = None) -> None:
 
 
 def add_recent(s: Settings, item: RecentItem) -> None:
-    s.recent = [r for r in s.recent if r.video_id != item.video_id]
+    # One row per file: the MP4 and the MP3 of one video are separate downloads.
+    s.recent = [r for r in s.recent if r.media_path != item.media_path]
     s.recent.insert(0, item)
     del s.recent[MAX_RECENT:]
 

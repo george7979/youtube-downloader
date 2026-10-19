@@ -57,6 +57,13 @@ def test_add_recent_dedupes_and_caps():
     assert ids.count("c") == 1
 
 
+def test_add_recent_keeps_mp4_and_mp3_of_one_video():
+    s = Settings()
+    settings.add_recent(s, RecentItem("v", "T", "/m/T.mp4", "2026-10-19"))
+    settings.add_recent(s, RecentItem("v", "T", "/m/T.mp3", "2026-10-19"))
+    assert [r.media_path for r in s.recent] == ["/m/T.mp3", "/m/T.mp4"]
+
+
 def test_resolve_output_dir(tmp_path, monkeypatch):
     dl = tmp_path / "Downloads"
     monkeypatch.setattr(paths, "downloads_dir", lambda: dl)

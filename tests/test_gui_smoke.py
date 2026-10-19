@@ -286,9 +286,29 @@ def test_recent_missing_file_greyed(make_window, tmp_path):
     )
     w = make_window(settings=settings)
     texts = [label.cget("text") for label in w.recent_labels]
-    assert "(file missing)" in texts[0]
-    assert "Gone video" in texts[0]
-    assert "(file missing)" not in texts[1]
+    assert texts[0] == "Gone video · MP4  (file missing)"
+    assert texts[1] == "Here video · MP4"
+
+
+def test_recent_rows_name_the_format(make_window, tmp_path):
+    mp4, mp3 = tmp_path / "Film.mp4", tmp_path / "Film.mp3"
+    mp4.write_bytes(b"x")
+    mp3.write_bytes(b"x")
+    long_title = "A" * 60
+    settings = Settings(
+        output_dir=str(tmp_path),
+        recent=[
+            RecentItem("v", "Film", str(mp3), "2026-10-19"),
+            RecentItem("v", "Film", str(mp4), "2026-10-19"),
+            RecentItem("w", long_title, str(mp4), "2026-10-19"),
+        ],
+    )
+    w = make_window(settings=settings)
+    texts = [label.cget("text") for label in w.recent_labels]
+    assert texts[:2] == ["Film · MP3", "Film · MP4"]
+    # The format tag never falls off a shortened title.
+    assert texts[2].endswith("… · MP4")
+    assert len(texts[2]) == len("Film · MP4") - len("Film") + 40
 
 
 def test_check_success_fills_card(make_window):
@@ -418,7 +438,7 @@ def test_download_success_updates_recent_and_status(make_window, tmp_path, monke
     pump(w, lambda: status(w).startswith("Done."), timeout=3)
 
     assert status(w) == f"Done. Saved {result.media_path.name} · No subtitles were downloaded."
-    assert w.recent_labels[0].cget("text") == "Me at the zoo"
+    assert w.recent_labels[0].cget("text") == "Me at the zoo · MP4"
     assert w.download_button.cget("state") == "normal"
     assert w.cancel_button.cget("state") == "disabled"
     assert w.error_panel.winfo_manager() == ""
