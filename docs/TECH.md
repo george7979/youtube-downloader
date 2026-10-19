@@ -121,9 +121,9 @@ gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru r
 | `engine.py` | argumenty yt-dlp (`base_args`, `probe_args`, `download_args`), `ProgressParser`, `Runner` (zabija całe drzewo procesów) |
 | `probe.py` | `yt-dlp -J` → `VideoInfo`; `pick_track` — wybór napisów wg reguły: wskazany język, zapamiętany, oryginalny ręczny, pierwszy ręczny, automatyczny |
 | `subtitles.py` | VTT → cue; odszumianie napisów automatycznych (powtarzane linie „przewijanego” tekstu); akapity ~45 s (twardo 90 s, koniec na kropce, granice rozdziałów); SRT |
-| `naming.py` | bezpieczna nazwa pliku (znaki Windows, nazwy zastrzeżone, do 150 znaków i 200 bajtów UTF-8); rozpoznanie istniejących plików filmu |
+| `naming.py` | bezpieczna nazwa pliku (znaki Windows, nazwy zastrzeżone, do 150 znaków i 200 bajtów UTF-8); rozpoznanie istniejących plików filmu; `note_fields` (frontmatter notatki), `is_language_note` (pole `main_note:`), `NamePlan.language_note(lang)` → `<base>.<lang>.md` |
 | `note.py` | notatka Markdown: frontmatter z pustą linią między polami (poprawny YAML; podgląd bez obsługi frontmattera pokazuje pola jako osobne akapity między kreskami, a nie jako jeden nagłówek), osadzone wideo, opis, rozdziały, transkrypt ze znacznikami `[mm:ss](https://youtu.be/ID?t=N)` (przy filmach ≥ 1 h `h:mm:ss`); tekst od autora filmu (tytuł w nagłówku, opis, tytuły rozdziałów, transkrypt) zostaje zwykłym tekstem: `neutralize_markdown` ucieka `\`, `[`, `]`, `<`, grawis i `~` oraz `#` na początku słowa — bez tagów, zdalnych obrazków (ujawniłyby IP przy otwarciu notatki), zamaskowanych łączy, HTML i bloków kodu (Dataview); gołe adresy zostają klikalne |
-| `service.py` | scala wszystko; silnikowi podaje kanoniczny `info.url`, nie wklejony adres; sprząta pliki częściowe po błędzie i anulowaniu |
+| `service.py` | scala wszystko; silnikowi podaje kanoniczny `info.url`, nie wklejony adres; sprząta pliki częściowe po błędzie i anulowaniu; przy filmie z notatką ocenia, czy można dołożyć notatkę językową (`DownloadResult.addable_lang`, `note_lang`), a na `DownloadRequest.add_transcript` pobiera same napisy i ją zapisuje |
 
 ### Kody błędów
 
@@ -274,6 +274,24 @@ notatka; [plik `[ID]` bez notatki, notatka niechciana i bez `.srt` do zapisania]
 Kolizja nazwy z innym filmem → oba pliki dostają ` [ID]`. Istniejąca notatka nigdy nie jest
 nadpisywana ani kasowana (także przy sprzątaniu po błędzie); zapis notatki idzie przez
 `write_failed` i usuwa niedokończony plik, żeby nie został uznany za „istniejącą”.
+
+**Notatki językowe.** `<base>.<lang>.md` to pełna notatka z `render_note` (ten sam
+frontmatter, `transcript: youtube-<kind>-<lang>`, osadzony plik w żądanym formacie) z dodatkowym
+polem `main_note: "[[<base>]]"`. Notatka z polem `main_note:` nigdy nie jest notatką główną: ani
+przy `already_exists`, ani przy wyznaczaniu `base`. Gdy została tylko ona (użytkownik usunął
+`Tytuł.md`), `base` to jej nazwa bez ostatniego sufiksu, film jest „już tutaj”, a pobranie
+idzie ścieżką „sama notatka” — powstaje nowe `Tytuł.md`. Przy [plik + notatka główna], bez
+`force`, `service` bierze ścieżkę z `pick_track` i język notatki głównej z jej pola
+`transcript:` (`youtube-<kind>-<lang>` → `<lang>`, `none` → bez języka, brak pola lub inna
+wartość → język nieznany). Notatkę językową można dołożyć (`addable_lang`), gdy zapis notatki
+jest włączony, ścieżka istnieje, język notatki głównej jest znany, kody języka różnią się
+(porównanie dokładne: `en-US` ≠ `en`; ręczne i automatyczne napisy jednego języka to ten sam
+język) i `<base>.<lang>.md` jeszcze nie istnieje. Bez `add_transcript` wynik to dzisiejsze
+`already_exists` z `addable_lang` i `note_lang`; z nim silnik idzie z `--skip-download` dla tej
+ścieżki, a notatka językowa powstaje tylko z pliku VTT — bez napisów nic nie jest zapisywane
+(`note` = `null`, `transcript` = `none`, ostrzeżenie „No subtitles were downloaded.”). `.srt`
+jak zwykle. Wynik: `already_exists` = `false`, `media` = istniejący plik, `note` = notatka
+językowa. `force` działa jak dotąd (pobiera film, notatek nie rusza).
 
 Świadomie: goły `Tytuł.mp4` bez notatki **nie** jest uznawany za ten film — identyfikacja po
 samym tytule mogłaby dopiąć notatkę do cudzego pliku. Ponowne pobranie trafia wtedy do

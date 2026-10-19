@@ -53,6 +53,8 @@ class DownloadRequest:
     save_note: bool = True
     save_srt: bool = False
     force: bool = False
+    # Video and main note already here: write Title.<lang>.md for the chosen subtitles.
+    add_transcript: bool = False
 
 
 @dataclass
@@ -65,6 +67,10 @@ class DownloadResult:
     transcript: str  # "youtube-manual-pl" | "youtube-auto-pl" | "none"
     already_exists: bool = False
     warnings: list[str] = field(default_factory=list)
+    # Only on already_exists results: a language add_transcript would add as Title.<lang>.md,
+    # and the language of the main note's transcript (None: no transcript or field missing).
+    addable_lang: str | None = None
+    note_lang: str | None = None
 
 
 @dataclass(frozen=True)

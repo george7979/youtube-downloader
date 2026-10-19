@@ -31,7 +31,8 @@ po stronie YouTube.
    błędy opisane prostym językiem z podpowiedzią i szczegółami do skopiowania.
 6. Ponowne pobranie rozpoznane po plikach w folderze (po notatce tego filmu albo po nazwie
    z `[ID]` — sam `Tytuł.mp4` bez notatki nie jest uznawany za ten film); istniejąca notatka
-   nigdy nie jest nadpisywana.
+   nigdy nie jest nadpisywana. Gdy film i notatka już są, a wybrano napisy w innym języku,
+   aplikacja dokłada pełną notatkę `Tytuł.<lang>.md`, pobierając tylko napisy.
 7. Nieinteraktywne CLI z wynikiem JSON dla Claude Code; Claude zawsze pyta o folder.
 8. Lista 3 ostatnich pobrań w oknie (zwarta — nie dominuje okna), z ręcznym czyszczeniem
    (pliki zostają). Jeden wiersz na plik z formatem: MP4 i MP3 tego samego filmu to dwa wiersze.

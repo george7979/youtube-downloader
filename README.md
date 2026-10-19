@@ -188,6 +188,9 @@ The transcript comes from captions YouTube already has; the app transcribes noth
 - Title, description, chapters and transcript come from the video's author, so they stay plain
   text: `#`, brackets, `<`, backticks and `~` are escaped. No tags, images, links, HTML or code
   blocks appear that YouTube did not show; plain URLs stay clickable.
+- `Title.<lang>.md`: a full note in another language (same header plus `main_note:` linking to
+  `Title.md`), added without downloading the video again when you pick subtitles in a language
+  the main note doesn't have. Your existing notes are never changed.
 - **An existing note is never overwritten or deleted** — your edits are safe.
 
 ### File names and downloading again
@@ -200,6 +203,7 @@ the ID in a file name — never by the title alone:
 | In the folder | What happens |
 |---|---|
 | video + note | "Already downloaded" — **Show file** or **Download again** |
+| video + note, subtitles in another language picked | also **Add transcript** → `Title.<lang>.md`, only the subtitles are downloaded |
 | note, no video | downloads the video, keeps your note |
 | video with `[ID]`, no note | writes only the note |
 | `Title.mp4` without a note | treated as another video → `Title [ID].mp4` |
