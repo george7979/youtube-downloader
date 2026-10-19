@@ -1,6 +1,6 @@
 # Dołożenie samego `.srt` — projekt
 
-Status: wdrożony na `dev`, sprawdzony przez PO na Windows; część wydania v2.0.0. Rozszerza `2026-10-19-transcript-languages-design.md`.
+Status: wydany w v2.0.0. Rozszerza `2026-10-19-transcript-languages-design.md`.
 
 ## Po co
 
