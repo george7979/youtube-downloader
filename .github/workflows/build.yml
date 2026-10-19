@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build — ${{ matrix.os }}
@@ -26,24 +29,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
+      - name: Set up uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
 
-      - name: Install dependencies
-        run: pip install yt-dlp customtkinter "pyinstaller>=6.0" pillow
+      # Linux: uv-managed Python ships Tk without Xft — Tk then sees only the X11 "fixed" font and
+      # CustomTkinter draws letters in place of arrows and check marks. setup-python's build links
+      # the runner's libtk8.6, which has Xft.
+      - name: Set up Python 3.12 (Linux)
+        if: runner.os == 'Linux'
+        id: python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y libtk8.6
+          uv sync --locked --python "${{ steps.python.outputs.python-path }}"
+
+      - name: Check that Tk renders fonts through Xft (Linux)
+        if: runner.os == 'Linux'
+        run: >
+          xvfb-run -a uv run python -c "import tkinter, tkinter.font as f; tkinter.Tk();
+          fam = f.families(); print(len(fam), 'font families'); assert len(fam) > 1, fam"
+
+      - name: Install Python 3.12 and dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: uv sync --locked --managed-python --python 3.12
 
       - name: Get version
         id: version
         shell: bash
         run: |
-          VERSION=$(python3 -c "from version import __version__; print(__version__)")
+          VERSION=$(uv run python -c "from version import __version__; print(__version__)")
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build binary (PyInstaller)
-        run: pyinstaller youtube-downloader.spec --clean
+        run: uv run pyinstaller youtube-downloader.spec --clean
 
       - name: Build .deb package (Linux)
         if: runner.os == 'Linux'
@@ -57,7 +80,17 @@ jobs:
 
       - name: Install NSIS (Windows)
         if: runner.os == 'Windows'
-        run: choco install nsis --yes
+        shell: pwsh
+        # The Chocolatey feed fails now and then while choco still exits 0 ("installed 0/0").
+        run: |
+          $makensis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          foreach ($try in 1..3) {
+            choco install nsis --yes
+            if (Test-Path $makensis) { exit 0 }
+            Start-Sleep -Seconds 20
+          }
+          Write-Error "NSIS not installed after 3 attempts"
+          exit 1
 
       - name: Build NSIS installer (Windows)
         if: runner.os == 'Windows'
@@ -80,12 +113,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ubuntu: ['20.04', '22.04', '24.04']
+        ubuntu: ['22.04', '24.04']
     container:
       image: ubuntu:${{ matrix.ubuntu }}
     steps:
       - name: Install tools
-        run: apt-get update && apt-get install -y wget
+        run: apt-get update && apt-get install -y wget ca-certificates
 
       - name: Download .deb
         uses: actions/download-artifact@v4
@@ -99,6 +132,23 @@ jobs:
           dpkg -l | grep youtube-downloader
           test -f /usr/bin/youtube-downloader
           echo "Install OK on Ubuntu ${{ matrix.ubuntu }}"
+
+      - name: Download tools through the CLI (network)
+        run: |
+          out=$(youtube-downloader tools --json)
+          echo "$out"
+          echo "$out" | grep -q '"ok": true'
+
+      # The CLI never loads Tk; this catches a missing X11/Xft library on a bare system.
+      - name: Window starts on a virtual display
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get install -y xvfb xauth
+          status=0
+          timeout 10 xvfb-run -a youtube-downloader || status=$?
+          echo "exit status $status (124 = still running after 10 s)"
+          test "$status" -eq 124
 
   release:
     name: Create GitHub Release
@@ -120,7 +170,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           name: YouTube Downloader v${{ steps.version.outputs.VERSION }}
           generate_release_notes: true
@@ -129,12 +179,14 @@ jobs:
             ## YouTube Downloader v${{ steps.version.outputs.VERSION }}
 
             ### Linux (Debian/Ubuntu)
-            Pobierz `.deb` i zainstaluj: `sudo dpkg -i youtube-downloader_VERSION_amd64.deb`
+            Download the `.deb` and install it: `sudo apt install ./youtube-downloader_${{ steps.version.outputs.VERSION }}_amd64.deb`
 
             ### Windows
-            Pobierz `youtube-downloader-VERSION-setup.exe` i uruchom instalator.
+            Download `youtube-downloader-${{ steps.version.outputs.VERSION }}-setup.exe` and run the installer.
 
-            Przetestowano: Ubuntu 20.04 / 22.04 / 24.04 LTS, Windows 10/11
+            On first run the app downloads yt-dlp and Deno (and ffmpeg on Windows, or on Linux when no system ffmpeg is installed).
+
+            Install tested on Ubuntu 22.04 / 24.04 LTS.
 
             ---
-            Uzytkownik odpowiada za legalnosc pobieranych tresci.
+            You are responsible for the legality of the content you download.

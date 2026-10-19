@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YouTube Downloader — UI mockups</title>
+<style>
+  :root { --accent: #C62828; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; background: #161616; color: #DCE4EE;
+         font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; font-size: 13px; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 24px; }
+  .bar h1 { font-size: 18px; font-weight: 600; margin: 0 16px 0 0; }
+  .swatch { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 6px;
+            border: 1px solid #4A4F54; background: #242424; color: #DCE4EE; font: inherit; cursor: pointer; }
+  .swatch[aria-pressed="true"] { border-color: #DCE4EE; }
+  .swatch i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+  .screens { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+  figure { margin: 0; }
+  figcaption { color: #8A9096; font-size: 12px; margin-bottom: 8px; }
+
+  .win { width: 540px; background: #242424; border: 1px solid #3A3A3A; border-radius: 8px; overflow: hidden;
+         display: flex; flex-direction: column; }
+  .win.small { width: 480px; height: 360px; }
+  .title { height: 32px; display: flex; align-items: center; gap: 8px; padding-left: 12px; background: #202020;
+           font-size: 12px; color: #C8CDD2; }
+  .title span { flex-grow: 1; }
+  .title .ctl { width: 46px; height: 32px; display: flex; align-items: center; justify-content: center; flex-grow: 0; }
+  .body { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 10px; flex-grow: 1; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .between { justify-content: space-between; }
+  input[type=text] { flex-grow: 1; height: 32px; padding: 0 10px; background: #343638; color: #DCE4EE;
+                     border: 1px solid #565B5E; border-radius: 6px; font: inherit; }
+  .btn-outline { height: 32px; padding: 0 14px; background: transparent; color: #DCE4EE; border: 1px solid #6B7075;
+                 border-radius: 6px; font: inherit; }
+  .btn-text { height: 22px; padding: 0 4px; background: transparent; color: #A3A9AE; border: 0; font: inherit; font-size: 12px; }
+  .btn-primary { height: 42px; background: var(--accent); color: #fff; border: 0; border-radius: 6px; font: inherit;
+                 font-size: 15px; font-weight: 600; }
+  .btn-primary[disabled] { opacity: .45; }
+  .section { background: #2B2B2B; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .card { background: #2B2B2B; border-radius: 8px; padding: 10px; display: flex; gap: 12px; }
+  .thumb { width: 160px; height: 90px; flex-shrink: 0; border-radius: 4px; background: #3A3D40; color: #8A9096;
+           font-size: 11px; display: flex; align-items: center; justify-content: center; }
+  .vtitle { font-size: 15px; font-weight: 600; line-height: 1.3; color: #F2F4F6; }
+  .dim { color: #A3A9AE; }
+  .small { font-size: 12px; }
+  .seg { display: flex; padding: 2px; background: #343638; border-radius: 6px; }
+  .seg button { height: 26px; padding: 0 16px; border: 0; border-radius: 4px; font: inherit; background: transparent; color: #A3A9AE; }
+  .seg button.on { background: #4A4F54; color: #fff; }
+  .select { height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px;
+            background: #343638; color: #DCE4EE; border: 0; border-radius: 6px; font: inherit; }
+  label.chk { display: flex; align-items: center; gap: 8px; }
+  label.chk input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+  .saveto { padding-top: 10px; border-top: 1px solid #3A3D40; }
+  .saveto a { flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #DCE4EE;
+              text-decoration: underline; text-decoration-color: #6B7075; text-underline-offset: 3px; }
+  .track { height: 6px; border-radius: 3px; background: #3A3D40; overflow: hidden; flex-grow: 1; }
+  .fill { height: 6px; background: var(--accent); }
+  .recent { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+  .recent .item { height: 26px; }
+  .recent .item span { flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .footer { margin-top: auto; font-size: 12px; color: #8A9096; }
+  .footer span:first-child { flex-grow: 1; }
+  .error { background: #3A2324; border: 1px solid #6E2F31; border-radius: 6px; padding: 10px 12px;
+           display: flex; gap: 10px; }
+  .error svg { flex-shrink: 0; margin-top: 2px; }
+  .error b { color: #FCA5A5; font-weight: 600; }
+  .note { max-width: 1240px; margin-top: 28px; color: #A3A9AE; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <h1>YouTube Downloader — proposed UI</h1>
+  <button class="swatch" type="button" data-accent="#C62828" aria-pressed="true"><i style="background:#C62828"></i>Red #C62828</button>
+  <button class="swatch" type="button" data-accent="#1E7A68" aria-pressed="false"><i style="background:#1E7A68"></i>Sea green #1E7A68</button>
+  <button class="swatch" type="button" data-accent="#2F6FB0" aria-pressed="false"><i style="background:#2F6FB0"></i>Blue #2F6FB0</button>
+  <button class="swatch" type="button" data-accent="#7A4FB5" aria-pressed="false"><i style="background:#7A4FB5"></i>Purple #7A4FB5</button>
+</div>
+
+<template id="titlebar">
+  <div class="title">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" rx="3.5" fill="var(--accent)"/><path d="M8 4v6M5 7.5 8 10.5 11 7.5M4.5 12.5h7" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>YouTube Downloader 2.0.0</span>
+    <div class="ctl" aria-hidden="true"><svg width="10" height="10"><path d="M0 5h10" stroke="currentColor"/></svg></div>
+    <div class="ctl" aria-hidden="true"><svg width="10" height="10"><rect x=".5" y=".5" width="9" height="9" fill="none" stroke="currentColor"/></svg></div>
+    <div class="ctl" aria-hidden="true"><svg width="10" height="10"><path d="M0 0l10 10M10 0 0 10" stroke="currentColor"/></svg></div>
+  </div>
+</template>
+
+<template id="card">
+  <div class="card">
+    <div class="thumb">thumbnail</div>
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+      <div class="vtitle">Video title</div>
+      <div class="dim small">Channel name · 26:02 · 2026-10-01</div>
+      <div class="dim small">Subtitles: pl (auto)</div>
+    </div>
+  </div>
+</template>
+
+<template id="options">
+  <div class="section">
+    <div class="row between">
+      <div class="seg"><button class="on" type="button">MP4</button><button type="button">MP3</button></div>
+      <div class="row"><span>Quality</span><button class="select" type="button" style="width:100px">1080p <span aria-hidden="true">▾</span></button></div>
+    </div>
+    <div class="row"><span>Subtitles</span><button class="select" type="button" style="width:140px">pl (auto) <span aria-hidden="true">▾</span></button></div>
+    <div class="row" style="gap:20px">
+      <label class="chk"><input type="checkbox" checked>Save note with transcript (.md)</label>
+      <label class="chk"><input type="checkbox">Also save subtitles (.srt)</label>
+    </div>
+    <div class="row saveto">
+      <span class="dim">Save to</span>
+      <a href="#" title="Open folder">C:\Users\User\Downloads</a>
+      <button class="btn-outline" type="button" style="height:28px;padding:0 12px">Change</button>
+    </div>
+  </div>
+</template>
+
+<template id="recent">
+  <div class="recent">
+    <div class="row between" style="height:22px"><span class="small dim" style="font-weight:600">Recent</span><button class="btn-text" type="button">Clear</button></div>
+    <div class="row item"><span>Video title</span><button class="btn-text" type="button">Show file</button></div>
+    <div class="row item"><span>Another video</span><button class="btn-text" type="button">Show file</button></div>
+    <div class="row item"><span>One more video with a longer title that gets shortened</span><button class="btn-text" type="button">Show file</button></div>
+  </div>
+</template>
+
+<template id="footer">
+  <div class="row footer"><span>yt-dlp 2026.08.19 · up to date</span><span>v2.0.0</span><button class="btn-text" type="button" aria-label="More" style="font-size:16px;width:28px">⋯</button></div>
+</template>
+
+<div class="screens">
+  <figure>
+    <figcaption>1. Video checked — Download is the only filled button</figcaption>
+    <div class="win">
+      <div data-use="titlebar"></div>
+      <div class="body">
+        <div class="row"><input type="text" aria-label="YouTube link" value="https://www.youtube.com/watch?v=AbCdEfGhIjK"><button class="btn-outline" type="button">Check</button></div>
+        <div data-use="card"></div>
+        <div data-use="options"></div>
+        <button class="btn-primary" type="button">Download</button>
+        <div data-use="recent"></div>
+        <div data-use="footer"></div>
+      </div>
+    </div>
+  </figure>
+
+  <figure>
+    <figcaption>2. Downloading — progress and status appear only now</figcaption>
+    <div class="win">
+      <div data-use="titlebar"></div>
+      <div class="body">
+        <div class="row"><input type="text" aria-label="YouTube link" placeholder="Paste a YouTube link"><button class="btn-outline" type="button">Check</button></div>
+        <div data-use="card"></div>
+        <div data-use="options"></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="row"><button class="btn-primary" type="button" disabled style="flex-grow:1">Download</button><button class="btn-outline" type="button" style="height:42px;width:96px">Cancel</button></div>
+          <div class="track" role="progressbar" aria-valuenow="42" aria-valuemin="0" aria-valuemax="100" aria-label="Download progress"><div class="fill" style="width:42%"></div></div>
+          <div class="small" style="color:#C8CDD2">Downloading video 42% · 6.2 MB/s</div>
+        </div>
+        <div data-use="recent"></div>
+        <div data-use="footer"></div>
+      </div>
+    </div>
+  </figure>
+
+  <figure>
+    <figcaption>3. Error — its own tint and icon, so it stays apart from a red accent</figcaption>
+    <div class="win">
+      <div data-use="titlebar"></div>
+      <div class="body">
+        <div class="row"><input type="text" aria-label="YouTube link" value="https://www.youtube.com/watch?v=ZyXwVuTsRqP"><button class="btn-outline" type="button">Check</button></div>
+        <div class="error" role="alert">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="#FCA5A5" stroke-width="1.5"/><path d="M8 4.5v4.5M8 11.2v.3" stroke="#FCA5A5" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <b>YouTube is blocking this request.</b>
+            <span>This often happens on VPNs or office networks. Try again in a few minutes, or update the engine.</span>
+            <div class="row"><button class="btn-outline" type="button" style="height:28px;padding:0 12px">Update engine</button><button class="btn-text" type="button">Show details</button></div>
+          </div>
+        </div>
+        <div data-use="options"></div>
+        <button class="btn-primary" type="button" disabled>Download</button>
+        <div data-use="recent"></div>
+        <div data-use="footer"></div>
+      </div>
+    </div>
+  </figure>
+
+  <figure>
+    <figcaption>4. First run</figcaption>
+    <div class="win small">
+      <div data-use="titlebar"></div>
+      <div class="body" style="gap:14px;padding:18px 18px 16px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:16px;font-weight:600;color:#F2F4F6">Setting up</div>
+          <div class="dim" style="line-height:1.4">Downloading yt-dlp, ffmpeg and Deno, about 148 MB. This happens once; later the app keeps them up to date on its own.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
+          <div class="row" style="gap:12px"><span style="width:56px">yt-dlp</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="small" style="width:110px;text-align:right;color:#C8CDD2">Done</span></div>
+          <div class="row" style="gap:12px"><span style="width:56px">ffmpeg</span><div class="track"><div class="fill" style="width:29%"></div></div><span class="small" style="width:110px;text-align:right;color:#C8CDD2">26.1 / 91.4 MB</span></div>
+          <div class="row" style="gap:12px"><span style="width:56px;color:#8A9096">deno</span><div class="track"></div><span class="small" style="width:110px;text-align:right;color:#8A9096">Waiting</span></div>
+        </div>
+        <div class="row" style="margin-top:auto;justify-content:flex-end"><button class="btn-outline" type="button" style="padding:0 18px">Quit</button></div>
+      </div>
+    </div>
+  </figure>
+</div>
+
+<p class="note">Static mockup of the proposed CustomTkinter window (dark theme, Windows fonts). Auto-Check on paste is a
+behaviour change and has no screen of its own: pasting a link checks the video right away; Check stays for retries and
+typed links.</p>
+
+<script>
+  // Fill the repeated parts from the templates, then wire the colour switcher.
+  document.querySelectorAll('[data-use]').forEach(function (slot) {
+    var tpl = document.getElementById(slot.dataset.use);
+    slot.replaceWith(tpl.content.cloneNode(true));
+  });
+  document.querySelectorAll('.swatch').forEach(function (button) {
+    button.addEventListener('click', function () {
+      document.documentElement.style.setProperty('--accent', button.dataset.accent);
+      document.querySelectorAll('.swatch').forEach(function (b) { b.setAttribute('aria-pressed', String(b === button)); });
+    });
+  });
+</script>
+</body>
+</html>

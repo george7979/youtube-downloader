@@ -10,15 +10,17 @@ log_error()   { echo -e "${RED}!! $1${NC}"; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 BINARY="$PROJECT_ROOT/dist/youtube-downloader"
-VERSION="${1:-$(python3 -c "from version import __version__; print(__version__)" 2>/dev/null || echo "1.2.0")}"
+VERSION="${1:-$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' "$PROJECT_ROOT/version.py")}"
+[ -n "$VERSION" ] || { echo "Cannot read __version__ from $PROJECT_ROOT/version.py" >&2; exit 1; }
 PACKAGE_NAME="youtube-downloader"
-BUILD_DIR="$(mktemp -d -p /tmp ytdl-deb-XXXXXX)"
+mkdir -p "$PROJECT_ROOT/build"
+BUILD_DIR="$(mktemp -d -p "$PROJECT_ROOT/build" deb-XXXXXX)"
 PKG_DIR="$BUILD_DIR/$PACKAGE_NAME"
 
-trap "rm -rf $BUILD_DIR" EXIT
+trap 'rm -rf "$BUILD_DIR"' EXIT
 
 log_info "Building .deb v$VERSION from PyInstaller binary"
-[ -f "$BINARY" ] || log_error "Binary not found at $BINARY — run 'pyinstaller youtube-downloader.spec --clean' first"
+[ -f "$BINARY" ] || log_error "Binary not found at $BINARY — run 'uv run pyinstaller youtube-downloader.spec --clean' first"
 
 mkdir -p "$PKG_DIR/DEBIAN"
 mkdir -p "$PKG_DIR/usr/bin"
@@ -53,7 +55,7 @@ Keywords=youtube;download;video;mp4;mp3;
 StartupNotify=true
 DESKTOP
 
-printf "youtube-downloader ($VERSION) stable; urgency=medium\n\n  * Release $VERSION\n\n -- Jerzy Maczewski <jerzymaczewski@gmail.com>  $(date -R)\n" \
+printf "youtube-downloader ($VERSION) stable; urgency=medium\n\n  * Release $VERSION\n\n -- Jerzy Maczewski <76055443+george7979@users.noreply.github.com>  $(date -R)\n" \
   | gzip -9 > "$PKG_DIR/usr/share/doc/$PACKAGE_NAME/changelog.gz"
 
 INSTALLED_SIZE=$(du -sk "$PKG_DIR/usr" | cut -f1)
@@ -61,14 +63,15 @@ cat > "$PKG_DIR/DEBIAN/control" <<CTRL
 Package: $PACKAGE_NAME
 Version: $VERSION
 Architecture: amd64
-Maintainer: Jerzy Maczewski <jerzymaczewski@gmail.com>
+Maintainer: Jerzy Maczewski <76055443+george7979@users.noreply.github.com>
 Installed-Size: $INSTALLED_SIZE
-Recommends: ffmpeg
+Depends: libx11-6, libxft2, libfontconfig1, libxss1
+Recommends: ffmpeg, fonts-dejavu-core
 Section: utils
 Priority: optional
 Homepage: https://github.com/george7979/youtube-downloader
 Description: YouTube Downloader - download videos from YouTube
- Self-contained binary. No Python or other runtime required.
+ Self-contained binary. Downloads yt-dlp and Deno on first run; uses system ffmpeg when installed.
 CTRL
 
 cd "$PKG_DIR"
