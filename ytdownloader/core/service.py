@@ -140,7 +140,7 @@ class Service:
         note_target: Path | None = None
         main_note: str | None = None
         if names.existing_media and names.existing_note and not req.force:
-            track = pick_track(info, req.subs, remembered_lang)[0]
+            track, warning = pick_track(info, req.subs, remembered_lang)
             known, note_lang = _transcript_lang(names.existing_note)
             addable_lang: str | None = None
             if (
@@ -160,6 +160,7 @@ class Service:
                     srt_path=None,
                     transcript="none",
                     already_exists=True,
+                    warnings=[warning] if warning else [],
                     addable_lang=addable_lang,
                     note_lang=note_lang,
                 )

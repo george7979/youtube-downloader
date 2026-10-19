@@ -234,6 +234,20 @@ def test_language_note_alone_identifies_the_video(tmp_path):
     assert plan.note == tmp_path / "T.md"
 
 
+def test_lone_language_note_does_not_take_another_videos_base(tmp_path):
+    # Video A was saved as T.mp4 + T.md + T.pl.md; the user deleted A's T.mp4 and T.md.
+    make_lang_note(tmp_path / "T.pl.md", VID)
+    # Another video B with the same title then took T.mp4 + T.md.
+    make_note(tmp_path / "T.md", OTHER)
+    (tmp_path / "T.mp4").write_bytes(b"B")
+    plan = plan_names(tmp_path, "T", VID, "mp4")
+    assert plan.base == f"T [{VID}]"
+    assert plan.media == tmp_path / f"T [{VID}].mp4"
+    assert plan.note == tmp_path / f"T [{VID}].md"
+    assert plan.existing_media is None
+    assert plan.existing_note is None
+
+
 def test_title_ending_like_a_language_stays_main(tmp_path):
     make_note(tmp_path / "Report.pl.md", VID)
     (tmp_path / "Report.pl.mp4").write_bytes(b"v")

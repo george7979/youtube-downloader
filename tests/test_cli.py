@@ -419,3 +419,38 @@ def test_tools_unexpected_exception_is_unknown_error(capsys):
     assert out.count("\n") == 1
     error = json.loads(out)["error"]
     assert error["code"] == "unknown" and "kaput" in error["details"]
+
+
+def test_get_json_warns_when_the_video_has_no_such_language(tmp_path, capsys):
+    """Real Service, files on disk: --subs xx on an existing download is already_exists + warning."""
+    from datetime import date
+
+    from ytdownloader.core.note import render_note
+    from ytdownloader.core.service import Service
+
+    info = dataclasses.replace(
+        info_from_json(json.loads((FIXTURES / "info_lecture.json").read_text("utf-8"))), title="T"
+    )
+
+    class NoRunner:
+        def run(self, args, on_line, cancel):
+            raise AssertionError("runner must not be called")
+
+    class ProbedService(Service):
+        def probe(self, url):
+            return info
+
+    (tmp_path / "T.mp4").write_bytes(b"video")
+    (tmp_path / "T.md").write_text(
+        render_note(info, "T.mp4", "youtube-auto-en", None, date(2026, 10, 18)), encoding="utf-8"
+    )
+    service = ProbedService(FakeTools(), runner_factory=NoRunner)
+
+    code = run(["get", info.url, "--out", str(tmp_path), "--subs", "xx", "--json"], service)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert payload["already_exists"] is True
+    assert payload["note"] == str(tmp_path / "T.md")
+    assert payload["warnings"] == ["No xx subtitles for this video."]
+    assert sorted(p.name for p in tmp_path.iterdir() if p.name != "cfg") == ["T.md", "T.mp4"]

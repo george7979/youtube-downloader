@@ -741,3 +741,76 @@ def test_add_transcript_with_empty_subtitles_writes_nothing(tmp_path, lecture):
     assert result.warnings.count("No subtitles were downloaded.") == 1
     assert note.read_bytes() == before
     assert sorted(p.name for p in tmp_path.iterdir()) == ["T.md", "T.mp4"]
+
+
+def test_lone_language_note_never_reuses_another_videos_files(tmp_path, lecture, vtt):
+    # Video A (lecture) was saved as T.mp4 + T.md + T.pl.md; the user deleted T.mp4 and T.md.
+    language_note = tmp_path / "T.pl.md"
+    language_note.write_text(
+        render_note(lecture, "T.mp4", "youtube-auto-pl", None, TODAY, main_note="T"),
+        encoding="utf-8",
+    )
+    # Another video B with the same title then took T.mp4 + T.md.
+    other = dataclasses.replace(lecture, id="dQw4w9WgXcQ", url="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    b_media = write_media(tmp_path)
+    b_note = write_main(tmp_path, other, "youtube-auto-en")
+    b_before = (b_media.read_bytes(), b_note.read_bytes())
+    base = "T [VIw16SXObUQ]"
+    runner = FakeRunner(
+        tmp_path,
+        files={f"{base}.mp4": b"A", f"{base}.pl-orig.vtt": vtt},
+        lines=[f"FILE {tmp_path / (base + '.mp4')}"],
+    )
+
+    result, _ = download(make_service(runner), request(tmp_path), lecture)
+
+    assert result.already_exists is False
+    assert "--force-overwrites" not in runner.calls[0]
+    assert "--skip-download" not in runner.calls[0]
+    assert result.media_path == tmp_path / f"{base}.mp4"
+    assert result.note_path == tmp_path / f"{base}.md"
+    assert (b_media.read_bytes(), b_note.read_bytes()) == b_before
+
+
+def test_download_again_after_lone_language_note_keeps_other_video(tmp_path, lecture):
+    language_note = tmp_path / "T.pl.md"
+    language_note.write_text(
+        render_note(lecture, "T.mp4", "youtube-auto-pl", None, TODAY, main_note="T"),
+        encoding="utf-8",
+    )
+    other = dataclasses.replace(lecture, id="dQw4w9WgXcQ", url="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    b_media = write_media(tmp_path)
+    b_note = write_main(tmp_path, other, "youtube-auto-en")
+    b_before = (b_media.read_bytes(), b_note.read_bytes())
+    base = "T [VIw16SXObUQ]"
+    runner = FakeRunner(
+        tmp_path, files={f"{base}.mp4": b"A"}, lines=[f"FILE {tmp_path / (base + '.mp4')}"]
+    )
+
+    result, _ = download(make_service(runner), request(tmp_path, force=True), lecture)
+
+    args = runner.calls[0]
+    assert args[args.index("-o") + 1] == str(tmp_path / base) + ".%(ext)s"
+    assert result.media_path == tmp_path / f"{base}.mp4"
+    assert (b_media.read_bytes(), b_note.read_bytes()) == b_before
+
+
+def test_missing_language_warns_on_already_downloaded(tmp_path, lecture):
+    write_media(tmp_path)
+    write_main(tmp_path, lecture, "youtube-auto-en")
+
+    result, _ = download(make_service(NoRunner()), request(tmp_path, subs="xx"), lecture)
+
+    assert result.already_exists is True
+    assert result.addable_lang is None
+    assert result.warnings == ["No xx subtitles for this video."]
+
+
+def test_already_downloaded_without_subs_choice_has_no_warning(tmp_path, lecture):
+    write_media(tmp_path)
+    write_main(tmp_path, lecture, "youtube-auto-en")
+
+    for subs in ("default", "none"):
+        result, _ = download(make_service(NoRunner()), request(tmp_path, subs=subs), lecture)
+        assert result.already_exists is True
+        assert result.warnings == []

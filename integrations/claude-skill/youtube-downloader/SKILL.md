@@ -84,11 +84,15 @@ the note was not rebuilt - do not read it as "no transcript"; with `--no-note` `
 again with `--force` only if the user explicitly asks to download again; a note that exists is
 never overwritten.
 
-Exception: with an explicit `--subs <lang>` on a video that is already there with its note,
-nothing is downloaded again; the language note `Title.<lang>.md` is written next to the video
-(`already_exists: false`, `note` points to it, `transcript` is `youtube-<kind>-<lang>`). If
-YouTube has no captions in that language, `note` is `null`, `transcript` is `none` and a warning
-says so. The existing notes are never changed.
+Exception: an explicit `--subs <lang>` writes the language note `Title.<lang>.md` next to the
+video, without downloading the video again, only when all of these hold: the video and its main
+note `Title.md` are in that folder, the main note's transcript is in another language (or it has
+none), `Title.<lang>.md` does not exist yet, and `--no-note` is not set. Then `already_exists` is
+`false`, `note` points to `Title.<lang>.md` and `transcript` is `youtube-<kind>-<lang>`. If the
+video has that language but YouTube returns no or empty captions, `note` is `null`, `transcript`
+is `none` and a warning says so. Otherwise the result is `already_exists: true` as above; when
+the video has no captions in that language, a warning says so. The existing notes are never
+changed.
 
 ## Errors
 

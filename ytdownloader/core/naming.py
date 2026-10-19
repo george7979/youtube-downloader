@@ -118,10 +118,14 @@ def plan_names(folder: Path, title: str, video_id: str, media_ext: str) -> NameP
         if p.suffix == ".md" and p.is_file() and note_video_id(p) == video_id
     ]
     existing_note = next((p for p in notes if not is_language_note(p)), None)
-    # A language note alone still names the video's base: its stem minus the language suffix.
+    # A language note alone still names the video's base: its stem minus the language suffix —
+    # unless <base>.md exists: it is then another video's note (this video's would be
+    # existing_note), and the title with the [ID] collision rule names this one.
     language_base = None
     if existing_note is None and notes:
-        language_base = notes[0].stem.rsplit(".", 1)[0]
+        candidate = notes[0].stem.rsplit(".", 1)[0]
+        if not (folder / f"{candidate}.md").exists():
+            language_base = candidate
     existing_media: Path | None = None
     if existing_note is not None:
         existing_media = _find_media(folder, existing_note.stem, media_ext)

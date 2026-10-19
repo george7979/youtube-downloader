@@ -282,7 +282,8 @@ nadpisywana ani kasowana (także przy sprzątaniu po błędzie); zapis notatki i
 frontmatter, `transcript: youtube-<kind>-<lang>`, osadzony plik w żądanym formacie) z dodatkowym
 polem `main_note: "[[<base>]]"`. Notatka z polem `main_note:` nigdy nie jest notatką główną: ani
 przy `already_exists`, ani przy wyznaczaniu `base`. Gdy została tylko ona (użytkownik usunął
-`Tytuł.md`), `base` to jej nazwa bez ostatniego sufiksu, film jest „już tutaj”, a pobranie
+`Tytuł.md`), `base` to jej nazwa bez ostatniego sufiksu (o ile `<base>.md` nie istnieje — wtedy
+to notatka innego filmu i `base` wyznacza tytuł z regułą ` [ID]`), film jest „już tutaj”, a pobranie
 idzie ścieżką „sama notatka” — powstaje nowe `Tytuł.md`. Przy [plik + notatka główna], bez
 `force`, `service` bierze ścieżkę z `pick_track` i język notatki głównej z jej pola
 `transcript:` (`youtube-<kind>-<lang>` → `<lang>`, `none` → bez języka, brak pola lub inna
@@ -290,7 +291,8 @@ wartość → język nieznany). Notatkę językową można dołożyć (`addable_
 jest włączony, ścieżka istnieje, język notatki głównej jest znany, kody języka różnią się
 (porównanie dokładne: `en-US` ≠ `en`; ręczne i automatyczne napisy jednego języka to ten sam
 język) i `<base>.<lang>.md` jeszcze nie istnieje. Bez `add_transcript` wynik to dzisiejsze
-`already_exists` z `addable_lang` i `note_lang`; z nim silnik idzie z `--skip-download` dla tej
+`already_exists` z `addable_lang` i `note_lang` (ostrzeżenie `pick_track` o braku żądanego języka
+trafia do `warnings`); z nim silnik idzie z `--skip-download` dla tej
 ścieżki, a notatka językowa powstaje tylko z napisów dających choć jeden akapit — bez nich (brak VTT albo pusty VTT) nic nie jest zapisywane
 (`note` = `null`, `transcript` = `none`, ostrzeżenie „No subtitles were downloaded.”). `.srt`
 jak zwykle. Wynik: `already_exists` = `false`, `media` = istniejący plik, `note` = notatka
