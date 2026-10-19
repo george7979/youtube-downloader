@@ -10,8 +10,7 @@
 
 ### Etap 1 — v2.0.0: przebudowa (wdrożony, testy akceptacyjne PO w toku)
 
-- Projekt: `docs/superpowers/specs/2026-10-18-v2-design.md` (decyzje PO D1–D14); plan
-  wykonawczy: `docs/superpowers/plans/2026-10-18-v2.md` (archiwum).
+- Projekt: `docs/superpowers/specs/2026-10-18-v2-design.md` (decyzje PO D1–D14).
 - Gotowe: rdzeń, CLI, GUI, paczki i CI, dokumentacja, skill Claude Code.
 - Poprawki po testach PO na Windows (stan opisują PRD, TECH i README): suma Deno w formacie
   `Get-FileHash`, ffmpeg z niezmiennego `autobuild-*`, rozmiar okna liczony z ekranu,

@@ -55,7 +55,7 @@ Keywords=youtube;download;video;mp4;mp3;
 StartupNotify=true
 DESKTOP
 
-printf "youtube-downloader ($VERSION) stable; urgency=medium\n\n  * Release $VERSION\n\n -- Jerzy Maczewski <jerzymaczewski@gmail.com>  $(date -R)\n" \
+printf "youtube-downloader ($VERSION) stable; urgency=medium\n\n  * Release $VERSION\n\n -- Jerzy Maczewski <76055443+george7979@users.noreply.github.com>  $(date -R)\n" \
   | gzip -9 > "$PKG_DIR/usr/share/doc/$PACKAGE_NAME/changelog.gz"
 
 INSTALLED_SIZE=$(du -sk "$PKG_DIR/usr" | cut -f1)
@@ -63,7 +63,7 @@ cat > "$PKG_DIR/DEBIAN/control" <<CTRL
 Package: $PACKAGE_NAME
 Version: $VERSION
 Architecture: amd64
-Maintainer: Jerzy Maczewski <jerzymaczewski@gmail.com>
+Maintainer: Jerzy Maczewski <76055443+george7979@users.noreply.github.com>
 Installed-Size: $INSTALLED_SIZE
 Depends: libx11-6, libxft2, libfontconfig1, libxss1
 Recommends: ffmpeg, fonts-dejavu-core
