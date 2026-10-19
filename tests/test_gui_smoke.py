@@ -912,6 +912,27 @@ def test_add_choice_runs_add_transcript_request(make_window, tmp_path, monkeypat
     assert w.download_button.cget("state") == "normal"
 
 
+def test_add_choice_without_transcript_says_none_added(make_window, tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        app_mod, "ask_already_downloaded", lambda parent, title, **kw: "add"
+    )
+    service = FakeService()
+    existing = dataclasses.replace(
+        done_result(tmp_path, already=True), addable_lang="pl", note_lang="en"
+    )
+    added = dataclasses.replace(
+        done_result(tmp_path), note_path=None, warnings=["No subtitles were downloaded."]
+    )
+    service.download_results = [existing, added]
+    w = make_window(service=service, settings=Settings(output_dir=str(tmp_path)))
+    w.apply_info(zoo())
+    w.download_button.invoke()
+    pump(w, lambda: status(w).startswith("No transcript added"), timeout=3)
+
+    assert status(w) == "No transcript added · No subtitles were downloaded."
+    assert w.download_button.cget("state") == "normal"
+
+
 class FakeInstaller:
     """ToolManager stand-in: the first install raises, every later one succeeds."""
 
