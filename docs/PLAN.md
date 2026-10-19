@@ -2,13 +2,12 @@
 
 ## Stan
 
-- **Produkcja:** v1.3.0 (GitHub Releases) — na Windows nie startuje; zastąpi ją v2.0.0.
-- **Na `dev`:** v2.0.0 gotowa w kodzie, dokumentacji i skillu, z poprawkami po pierwszych
-  testach PO; CI (Ubuntu, Windows) i budowanie paczek przechodzą.
+- **Produkcja:** v2.0.0 (GitHub Releases, tag `v2.0.0`) — instalator Windows i paczka `.deb`.
+- **`dev` = `main`** po wydaniu; nowe prace zaczynają się na `dev`.
 
 ## Etapy
 
-### Etap 1 — v2.0.0: przebudowa (wdrożony, testy akceptacyjne PO w toku)
+### Etap 1 — v2.0.0: przebudowa (zamknięty — wydany)
 
 - Projekt: `docs/superpowers/specs/2026-10-18-v2-design.md` (decyzje PO D1–D14).
 - Gotowe: rdzeń, CLI, GUI, paczki i CI, dokumentacja, skill Claude Code.
@@ -30,18 +29,12 @@
   `docs/superpowers/specs/2026-10-18-ui-polish-mockups/index.html`): jeden wypełniony przycisk
   w akcencie `#C62828`, zwarty układ, auto-Check po wklejeniu, nowe okno pierwszego
   uruchomienia.
-- Zamknięcie: akceptacja PO na Windows i Linux/WSL (spec §11), potem PR `dev` → `main` i tag
-  `v2.0.0` (za zgodą PO). Na GitHubie wisi stary lekki tag `v2.0.0` (`fc52839`, 2025-08-17,
-  bez wydania) — przed nowym tagiem trzeba go usunąć z remote'u (za zgodą PO).
+- Zamknięcie: akceptacja PO na Windows i Linux/WSL (spec §11), PR `dev` → `main`, tag
+  `v2.0.0` i wydanie na GitHubie (stary lekki tag `v2.0.0` z 2025 usunięty).
 
 ## Bieżący krok
 
-PO testuje na Windows instalator z ostatniego przebiegu „Build and Release” na `dev` (artefakt
-`windows-installer`) — scenariusze ze spec §11 oraz nowy wygląd; Linux/WSL zaliczony. „Add
-transcript” i „Add subtitles” sprawdzone przez PO; zrzut `pics/main-window.png` z buildu 2.0.0
-w repo. Do sprawdzenia przy okazji: zmiana jakości przez „Download again” podmienia `Tytuł.mp4`
-pod tą samą nazwą, a link w notatce działa. Uwagi PO → poprawki na `dev`; po akceptacji
-zamknięcie etapu (wyżej).
+Brak — v2.0.0 wydana. Kolejna praca: pozycja z backlogu albo uwaga użytkownika, na `dev`.
 
 ## Backlog
 
