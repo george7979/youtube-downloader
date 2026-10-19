@@ -34,7 +34,8 @@ po stronie YouTube.
    nigdy nie jest nadpisywana. Gdy film i notatka już są, a wybrano napisy w innym języku,
    aplikacja dokłada pełną notatkę `Tytuł.<lang>.md`, pobierając tylko napisy. Gdy notatki
    językowej dołożyć nie można, a zaznaczono `.srt` i brakuje `Tytuł.<lang>.srt`, aplikacja
-   dokłada sam `.srt`, też pobierając tylko napisy; istniejący `.srt` nigdy nie jest nadpisywany.
+   dokłada sam `.srt`, też pobierając tylko napisy (CLI `get --srt` także wtedy, gdy notatkę
+   dałoby się dołożyć, ale polecenie o nią nie prosi); istniejący `.srt` nigdy nie jest nadpisywany.
 7. Nieinteraktywne CLI z wynikiem JSON dla Claude Code; Claude zawsze pyta o folder.
 8. Lista 3 ostatnich pobrań w oknie (zwarta — nie dominuje okna), z ręcznym czyszczeniem
    (pliki zostają). Jeden wiersz na plik z formatem: MP4 i MP3 tego samego filmu to dwa wiersze.

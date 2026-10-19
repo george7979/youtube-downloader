@@ -95,11 +95,12 @@ the video has no captions in that language, a warning says so. The existing note
 changed.
 
 Exception: `--srt` on a video that is already in the folder (with its note, or with `--no-note`)
-adds only the missing `Title.<lang>.srt`, without downloading the video again, when no
-note-language addition above is possible and `Title.<lang>.srt` does not exist yet. Then
-`already_exists` is `false`, `srt` is the new file, `media` and `note` are the existing files and
-`transcript` is `none`. If YouTube returns no or empty captions, `srt` is `null` and a warning
-says so. An existing `.srt` is never overwritten.
+adds only the missing `Title.<lang>.srt`, without downloading the video again, whatever language
+the main note's transcript is in, when `Title.<lang>.srt` does not exist yet and the same command
+does not add a language note (an explicit `--subs <lang>` above; that writes the `.srt` along
+with `Title.<lang>.md`). Then `already_exists` is `false`, `srt` is the new file, `media` and
+`note` are the existing files and `transcript` is `none`. If YouTube returns no or empty
+captions, `srt` is `null` and a warning says so. An existing `.srt` is never overwritten.
 
 ## Errors
 

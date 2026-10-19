@@ -466,3 +466,60 @@ def test_no_srt_flag_does_not_add(tmp_path):
     service = FakeService(tmp_path)
     run(["get", "u", "--out", str(tmp_path)], service)
     assert service.requests[0].add_srt is False
+
+
+@pytest.mark.parametrize("transcript", ["none", "youtube-auto-en"])
+def test_get_srt_json_adds_the_srt_without_subs(tmp_path, capsys, transcript):
+    """Real Service, files on disk: `get --srt` without `--subs` writes the missing .srt even
+    when the main note's language differs from the default track or it has no transcript."""
+    from datetime import date
+
+    from ytdownloader.core.note import render_note
+    from ytdownloader.core.service import Service
+    from ytdownloader.core.tools import ToolPaths
+
+    info = dataclasses.replace(
+        info_from_json(json.loads((FIXTURES / "info_lecture.json").read_text("utf-8"))), title="T"
+    )
+
+    class PathTools(FakeTools):
+        def paths(self):
+            return ToolPaths(Path("yt-dlp"), Path("ffmpeg"), Path("deno"))
+
+    class VttRunner:
+        def __init__(self):
+            self.calls = []
+
+        def run(self, args, on_line, cancel):
+            self.calls.append(args)
+            (tmp_path / "T.pl-orig.vtt").write_bytes((FIXTURES / "auto_pl.vtt").read_bytes())
+            return 0, ""
+
+    class ProbedService(Service):
+        def probe(self, url):
+            return info
+
+    runner = VttRunner()
+    (tmp_path / "T.mp4").write_bytes(b"video")
+    note = tmp_path / "T.md"
+    note.write_text(
+        render_note(info, "T.mp4", transcript, None, date(2026, 10, 18)), encoding="utf-8"
+    )
+    before = note.read_bytes()
+    service = ProbedService(PathTools(), runner_factory=lambda: runner)
+
+    code = run(["get", info.url, "--out", str(tmp_path), "--srt", "--json"], service)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert payload["already_exists"] is False
+    assert payload["srt"] == str(tmp_path / "T.pl.srt")
+    assert payload["transcript"] == "none"
+    assert payload["warnings"] == []
+    assert "--skip-download" in runner.calls[0]
+    assert note.read_bytes() == before
+    assert sorted(p.name for p in tmp_path.iterdir() if p.name != "cfg") == [
+        "T.md",
+        "T.mp4",
+        "T.pl.srt",
+    ]

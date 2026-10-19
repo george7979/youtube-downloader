@@ -82,11 +82,12 @@ gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru r
   uruchomienia po błędzie: Retry). Wyjątek: dialog „Already downloaded” może mieć jeden
   wypełniony przycisk — „Add transcript (<lang>)” (gdy da się dodać notatkę w tym języku) albo
   „Add subtitles (<lang>)” (gdy da się dodać tylko brakujący `.srt`); pojawia się zawsze najwyżej
-  jeden z nich, transkrypt ma pierwszeństwo. Download okna głównego jest wtedy wyłączony, więc aktywny jest zawsze jeden wypełniony przycisk.
-  Drugorzędne obrysowane (`OUTLINE_BUTTON`: Check, Change,
-  Cancel, Quit, Update engine, pozostałe przyciski dialogu „Already downloaded”, Close w About),
-  pomocnicze tekstowe (`TEXT_BUTTON`: Show file, Clear, ⋯, Show details, Copy). Wyłączony
-  CTkButton zachowuje `fg_color`, więc `set_primary_enabled` przełącza go na wyciszony kolor.
+  jeden z nich, transkrypt ma pierwszeństwo. Download okna głównego jest wtedy wyłączony, więc
+  aktywny jest zawsze jeden wypełniony przycisk. Drugorzędne obrysowane (`OUTLINE_BUTTON`:
+  Check, Change, Cancel, Quit, Update engine, pozostałe przyciski dialogu „Already downloaded”,
+  Close w About), pomocnicze tekstowe (`TEXT_BUTTON`: Show file, Clear, ⋯, Show details, Copy).
+  Wyłączony CTkButton zachowuje `fg_color`, więc `set_primary_enabled` przełącza go na
+  wyciszony kolor.
 - **Układ:** folder to wiersz „Save to <ścieżka> (Change)” na dole opcji; kliknięcie ścieżki
   otwiera folder. Cancel i pasek postępu są spakowane tylko w trakcie pobierania
   (`_sync_controls`), linia stanu tylko gdy ma tekst (`set_status`), panel błędu ma własne tło,
@@ -127,7 +128,7 @@ gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru r
 | `subtitles.py` | VTT → cue; odszumianie napisów automatycznych (powtarzane linie „przewijanego” tekstu); akapity ~45 s (twardo 90 s, koniec na kropce, granice rozdziałów); SRT |
 | `naming.py` | bezpieczna nazwa pliku (znaki Windows, nazwy zastrzeżone, do 150 znaków i 200 bajtów UTF-8); rozpoznanie istniejących plików filmu; `note_fields` (frontmatter notatki), `is_language_note` (pole `main_note:`), `NamePlan.language_note(lang)` → `<base>.<lang>.md` |
 | `note.py` | notatka Markdown: frontmatter z pustą linią między polami (poprawny YAML; podgląd bez obsługi frontmattera pokazuje pola jako osobne akapity między kreskami, a nie jako jeden nagłówek), osadzone wideo, opis, rozdziały, transkrypt ze znacznikami `[mm:ss](https://youtu.be/ID?t=N)` (przy filmach ≥ 1 h `h:mm:ss`); tekst od autora filmu (tytuł w nagłówku, opis, tytuły rozdziałów, transkrypt) zostaje zwykłym tekstem: `neutralize_markdown` ucieka `\`, `[`, `]`, `<`, grawis i `~` oraz `#` na początku słowa — bez tagów, zdalnych obrazków (ujawniłyby IP przy otwarciu notatki), zamaskowanych łączy, HTML i bloków kodu (Dataview); gołe adresy zostają klikalne |
-| `service.py` | scala wszystko; silnikowi podaje kanoniczny `info.url`, nie wklejony adres; sprząta pliki częściowe po błędzie i anulowaniu; przy filmie z notatką ocenia, czy można dołożyć notatkę językową (`DownloadResult.addable_lang`, `note_lang`), a na `DownloadRequest.add_transcript` pobiera same napisy i ją zapisuje; gdy notatki dołożyć nie można, a brakuje `.srt` wybranego języka — sam `.srt` (`addable_srt`, `add_srt`) |
+| `service.py` | scala wszystko; silnikowi podaje kanoniczny `info.url`, nie wklejony adres; sprząta pliki częściowe po błędzie i anulowaniu; przy filmie z notatką ocenia, czy można dołożyć notatkę językową (`DownloadResult.addable_lang`, `note_lang`), a na `DownloadRequest.add_transcript` pobiera same napisy i ją zapisuje; gdy notatki dołożyć nie można, a brakuje `.srt` wybranego języka, proponuje sam `.srt` (`addable_srt`); `add_srt` dokłada brakujący `.srt`, gdy to samo żądanie nie dokłada notatki |
 
 ### Kody błędów
 
@@ -304,11 +305,16 @@ jak dotąd (pobiera film, notatek nie rusza).
 wyłączony) `service` proponuje sam `.srt` (`addable_srt` = język ścieżki), gdy zaznaczono `.srt`
 (`save_srt`), ścieżka istnieje, notatki językowej dołożyć nie można (`addable_lang` puste — tamta
 ścieżka i tak zapisuje `.srt`, więc nigdy obie propozycje naraz) i `<base>.<lang>.srt` jeszcze nie
-istnieje. Z `add_srt` silnik idzie z `--skip-download` dla tej ścieżki, a powstaje tylko
-`<base>.<lang>.srt` — notatki i film zostają nietknięte. Brak VTT albo VTT bez napisów → `.srt` nie
-powstaje, ostrzeżenie „No subtitles were downloaded.” (raz). Wynik: `already_exists` = `false`,
-`media` = istniejący plik, `note` = istniejąca notatka główna, `srt` = nowy plik (albo `null`),
-`transcript` = `none`.
+istnieje. `add_srt` działa szerzej niż propozycja: wystarczy `save_srt`, ścieżka i brak
+`<base>.<lang>.srt`, o ile to samo żądanie nie dokłada notatki językowej (`addable_lang` z
+`add_transcript` — tamta ścieżka zapisuje `.srt` sama). Tak `get --srt` bez `--subs` dokłada
+`.srt` także wtedy, gdy notatka główna ma transkrypt w innym języku albo nie ma go wcale. Silnik
+idzie wtedy z `--skip-download` dla tej ścieżki, a powstaje tylko `<base>.<lang>.srt` — notatki
+i film zostają nietknięte. Brak VTT albo VTT bez napisów → `.srt` nie powstaje, ostrzeżenie
+„No subtitles were downloaded.” (raz). Wynik: `already_exists` = `false`, `media` = istniejący
+plik, `note` = istniejąca notatka główna, `srt` = nowy plik (albo `null`), `transcript` = `none`.
+Zapis `.srt`, jak zapis notatki, idzie przez `write_failed` i usuwa niedokończony plik, żeby nie
+został uznany za istniejący.
 
 Świadomie: goły `Tytuł.mp4` bez notatki **nie** jest uznawany za ten film — identyfikacja po
 samym tytule mogłaby dopiąć notatkę do cudzego pliku. Ponowne pobranie trafia wtedy do
@@ -409,6 +415,9 @@ Znane, jeszcze niepoprawione; najpierw te widoczne dla użytkownika.
 - Nazwy zastrzeżone `COM¹`/`LPT¹` (indeksy górne) i rozcięcie sekwencji ZWJ przy skracaniu.
 - `info.language` dopasowywany dokładnie (`pl-PL` ≠ `pl`); `nocookie` w adresach `/v/` nieobsługiwane.
 - Pusty plik `.vtt` daje pusty `.srt` (poza dokładaniem do filmu, który już jest — wtedy `.srt` nie powstaje).
+- Plik `Tytuł [ID]` bez notatki z zaznaczonym `.srt` (ścieżka „sama notatka”) przy każdym
+  przebiegu nadpisuje istniejący `Tytuł [ID].<lang>.srt` — świadomie bez zmian, ta ścieżka działa
+  jak przed dokładaniem samego `.srt`.
 
 **Ustawienia i logi**
 - `last_update_check` z absurdalną liczbą może rzucić `OverflowError`, `NaN`/`inf` są

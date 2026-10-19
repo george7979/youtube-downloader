@@ -39,9 +39,9 @@
 PO testuje na Windows instalator z ostatniego przebiegu „Build and Release” na `dev` (artefakt
 `windows-installer`) — scenariusze ze spec §11 oraz nowy wygląd. Na Linux/WSL scenariusz 2
 przez skill. Nowy scenariusz: ten sam film w innym języku napisów → „Add transcript” w dialogu
-„Already downloaded” dodaje `Tytuł.<lang>.md`, wideo i główna notatka bez zmian. Drugi nowy scenariusz: film z notatką,
-„Also save subtitles (.srt)” zaznaczone, brak `Tytuł.<lang>.srt` → „Add subtitles (<lang>)” dodaje
-tylko ten plik, Recent bez zmian. Uwagi PO → poprawki na `dev`.
+„Already downloaded” dodaje `Tytuł.<lang>.md`, wideo i główna notatka bez zmian. Drugi nowy
+scenariusz: film z notatką, „Also save subtitles (.srt)” zaznaczone, brak `Tytuł.<lang>.srt` →
+„Add subtitles (<lang>)” dodaje tylko ten plik, Recent bez zmian. Uwagi PO → poprawki na `dev`.
 
 Uwaga PO z Linux/WSL: okno z liter „Y”/„Z” i postrzępionych rogów, menu „⋯” nie znika.
 Poprawione na `dev`: menu (X11), paczka Linux na Pythonie z systemowym Tk z Xft (TECH

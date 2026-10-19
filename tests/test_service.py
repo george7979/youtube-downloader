@@ -978,3 +978,65 @@ def test_cancel_while_adding_srt_leaves_everything(tmp_path, lecture, vtt):
     assert note.read_bytes() == main_before
     assert media.read_bytes() == b"video"
     assert sorted(p.name for p in tmp_path.iterdir()) == ["T.md", "T.mp4"]
+
+
+@pytest.mark.parametrize("transcript", ["none", "youtube-auto-en"])
+def test_add_srt_without_transcript_request_writes_the_srt(tmp_path, lecture, vtt, transcript):
+    """`get --srt` without `--subs`: the default track differs from the note's language (or the
+    note has no transcript), so a transcript is addable, but only the .srt is asked for."""
+    media = write_media(tmp_path)
+    note = write_main(tmp_path, lecture, transcript)
+    main_before = note.read_bytes()
+
+    offer, _ = download(make_service(NoRunner()), request(tmp_path, save_srt=True), lecture)
+    assert offer.already_exists is True
+    assert (offer.addable_lang, offer.addable_srt) == ("pl", None)  # one filled button
+
+    runner = FakeRunner(tmp_path, files={"T.pl-orig.vtt": vtt})
+    result, events = download(
+        make_service(runner), request(tmp_path, save_srt=True, add_srt=True), lecture
+    )
+
+    assert "--skip-download" in runner.calls[0]
+    srt = tmp_path / "T.pl.srt"
+    assert result.already_exists is False
+    assert result.srt_path == srt
+    assert result.note_path == note
+    assert result.transcript == "none"
+    assert note.read_bytes() == main_before
+    assert media.read_bytes() == b"video"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["T.md", "T.mp4", "T.pl.srt"]
+    assert Status("Video already here — adding pl subtitles.") in events
+
+
+def test_srt_write_error_removes_the_partial_srt(tmp_path, lecture, vtt, monkeypatch):
+    write_media(tmp_path)
+    note = write_main(tmp_path, lecture, "youtube-auto-pl")
+    main_before = note.read_bytes()
+    real_write = service_module._write_text
+
+    def failing_write(path, text):
+        if path.suffix == ".srt":
+            path.write_text("1\n00:00:08,760 --> ", encoding="utf-8")
+            raise OSError(28, "No space left on device", str(path))
+        real_write(path, text)
+
+    monkeypatch.setattr(service_module, "_write_text", failing_write)
+    runner = FakeRunner(tmp_path, files={"T.pl-orig.vtt": vtt})
+
+    with pytest.raises(FriendlyError) as exc:
+        download(
+            make_service(runner),
+            request(tmp_path, subs="pl", save_srt=True, add_srt=True),
+            lecture,
+        )
+
+    assert exc.value.code == "write_failed"
+    assert not (tmp_path / "T.pl.srt").exists()  # the half-written .srt is removed
+    assert note.read_bytes() == main_before
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["T.md", "T.mp4"]
+    # ...so the .srt is offered again next time.
+    result, _ = download(
+        make_service(NoRunner()), request(tmp_path, subs="pl", save_srt=True), lecture
+    )
+    assert result.addable_srt == "pl"

@@ -154,20 +154,20 @@ class Service:
                 and not names.language_note(track.lang).exists()
             ):
                 addable_lang = track.lang
-            # Adding the transcript writes the .srt too, so the .srt alone is offered only
-            # when no transcript can be added.
-            addable_srt: str | None = None
-            if (
+            srt_missing = (
                 req.save_srt
                 and track is not None
-                and addable_lang is None
                 and not (folder / f"{names.base}.{track.lang}.srt").exists()
-            ):
-                addable_srt = track.lang
+            )
+            # Adding the transcript writes the .srt too, so the window offers the .srt alone
+            # only when no transcript can be added (one filled button).
+            addable_srt = track.lang if srt_missing and addable_lang is None else None
             if track is not None and addable_lang is not None and req.add_transcript:
                 note_target, main_note = names.language_note(track.lang), names.base
                 sink(Status(f"Video and note already here — adding the {track.lang} transcript."))
-            elif track is not None and addable_srt is not None and req.add_srt:
+            elif srt_missing and req.add_srt:
+                # Asked for the .srt, not the transcript (`get --srt` without `--subs`):
+                # the .srt is added even when a transcript could be.
                 sink(Status(f"Video already here — adding {track.lang} subtitles."))
             else:
                 return DownloadResult(
@@ -278,7 +278,15 @@ class Service:
                 srt = folder / f"{names.base}.{track.lang}.srt"
                 if req.save_srt and not (adding and (srt.exists() or not got_cues)):
                     srt_path = srt
-                    _write_text(srt_path, to_srt(cues))
+                    try:
+                        _write_text(srt_path, to_srt(cues))
+                    except OSError:
+                        # A half-written .srt would later count as existing and never be offered.
+                        try:
+                            srt_path.unlink(missing_ok=True)
+                        except OSError:
+                            pass
+                        raise
                 vtt.unlink()
             else:
                 warnings.append(_NO_SUBS)
