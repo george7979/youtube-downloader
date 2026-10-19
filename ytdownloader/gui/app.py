@@ -615,15 +615,33 @@ class MainWindow(ctk.CTk):
             return
         self._finish_download()
         self.progress_bar.set(1.0)
-        name = result.media_path.name if result.media_path else result.title
-        parts = [f"Done. Saved {name}", *result.warnings]
+        if req.add_transcript:
+            head = (
+                f"Done. Saved {result.note_path.name}"
+                if result.note_path is not None
+                else "No transcript added"
+            )
+        else:
+            head = f"Done. Saved {result.media_path.name if result.media_path else result.title}"
+        parts = [head, *result.warnings]
         if not self._remember(req, info, result):
             parts.append("Settings could not be saved.")
         self.set_status(" · ".join(parts))
         self.refresh_recent()
 
     def _ask_already(self, req: DownloadRequest, info: VideoInfo, result: DownloadResult) -> None:
-        choice = ask_already_downloaded(self, result.title, has_note=result.note_path is not None)
+        choice = ask_already_downloaded(
+            self,
+            result.title,
+            has_note=result.note_path is not None,
+            add_lang=result.addable_lang,
+            note_lang=result.note_lang,
+        )
+        if choice == "add":
+            self._cancel = threading.Event()
+            self.cancel_button.configure(state="normal")
+            self._run_download(dataclasses.replace(req, add_transcript=True), info)
+            return
         if choice == "again":
             self._cancel = threading.Event()
             self.cancel_button.configure(state="normal")
@@ -656,7 +674,7 @@ class MainWindow(ctk.CTk):
             s.subs_lang = req.subs
         s.save_note = req.save_note
         s.save_srt = req.save_srt
-        if result.media_path is not None:
+        if result.media_path is not None and not req.add_transcript:
             add_recent(
                 s,
                 RecentItem(

@@ -170,8 +170,17 @@ class ErrorPanel(ctk.CTkFrame):
         self.details_button.configure(text="Show details")
 
 
-def ask_already_downloaded(parent, title: str, has_note: bool = True) -> str:
-    """Modal: the video (and its note) are already in the folder. Returns show | again | cancel."""
+def ask_already_downloaded(
+    parent,
+    title: str,
+    has_note: bool = True,
+    add_lang: str | None = None,
+    note_lang: str | None = None,
+) -> str:
+    """Modal: the video (and its note) are already in the folder.
+
+    Returns add | show | again | cancel; "add" only when `add_lang` offers a transcript note.
+    """
     dialog = ctk.CTkToplevel(parent)
     dialog.title("Already downloaded")
     dialog.resizable(False, False)
@@ -191,7 +200,9 @@ def ask_already_downloaded(parent, title: str, has_note: bool = True) -> str:
     ctk.CTkLabel(
         dialog,
         text=(
-            "The video and its note are already in this folder."
+            f"The video and its note (transcript: {note_lang}) are already in this folder."
+            if has_note and note_lang
+            else "The video and its note are already in this folder."
             if has_note
             else "The video is already in this folder."
         ),
@@ -201,8 +212,16 @@ def ask_already_downloaded(parent, title: str, has_note: bool = True) -> str:
 
     row = ctk.CTkFrame(dialog, fg_color="transparent")
     row.pack(fill="x", padx=16, pady=(0, 14))
-    dialog.buttons = {
-        # No filled button: neither choice is the obvious next step.
+    dialog.buttons = {}
+    if add_lang:  # the only filled button: the obvious next step
+        dialog.buttons["add"] = ctk.CTkButton(
+            row,
+            text=f"Add transcript ({add_lang})",
+            width=150,
+            command=lambda: pick("add"),
+        )
+    # Without an addable language no button is filled: neither choice is the obvious one.
+    dialog.buttons |= {
         "show": ctk.CTkButton(
             row, text="Show file", width=96, command=lambda: pick("show"), **OUTLINE_BUTTON
         ),

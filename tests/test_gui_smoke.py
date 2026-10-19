@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 import sys
@@ -565,7 +566,7 @@ def test_already_downloaded_choices(make_window, tmp_path, monkeypatch, choice):
     monkeypatch.setattr(
         app_mod,
         "ask_already_downloaded",
-        lambda parent, title, has_note=True: asked.append(title) or choice,
+        lambda parent, title, has_note=True, **kw: asked.append(title) or choice,
     )
     monkeypatch.setattr(app_mod.system, "show_file", shown.append)
     service = FakeService()
@@ -838,6 +839,77 @@ def test_ask_already_downloaded_text(make_window, has_note, text):
     w.after(200, read_and_cancel)
     assert widgets.ask_already_downloaded(w, "Me at the zoo", has_note=has_note) == "cancel"
     assert text in seen
+
+
+def _dialog_buttons_and_texts(w, action):
+    dialog = next(c for c in w.winfo_children() if isinstance(c, ctk.CTkToplevel))
+    texts = [c.cget("text") for c in dialog.winfo_children() if isinstance(c, ctk.CTkLabel)]
+    action(dialog)
+    return texts
+
+
+def test_dialog_offers_add_transcript(make_window):
+    w = make_window()
+    seen: dict = {}
+
+    def click(dialog):
+        seen["text"] = dialog.buttons["add"].cget("text")
+        dialog.buttons["add"].invoke()
+
+    def run():
+        seen["labels"] = _dialog_buttons_and_texts(w, click)
+
+    w.after(200, run)
+    choice = widgets.ask_already_downloaded(w, "Me at the zoo", add_lang="pl", note_lang="en")
+    assert choice == "add"
+    assert seen["text"] == "Add transcript (pl)"
+    assert "The video and its note (transcript: en) are already in this folder." in seen["labels"]
+
+
+def test_dialog_without_add_lang_is_unchanged(make_window):
+    w = make_window()
+    seen: list[bool] = []
+
+    def run():
+        def act(dialog):
+            seen.append("add" in dialog.buttons)
+            dialog.buttons["cancel"].invoke()
+
+        _dialog_buttons_and_texts(w, act)
+
+    w.after(200, run)
+    assert widgets.ask_already_downloaded(w, "Me at the zoo") == "cancel"
+    assert seen == [False]
+
+
+def test_add_choice_runs_add_transcript_request(make_window, tmp_path, monkeypatch):
+    seen: dict = {}
+
+    def fake_ask(parent, title, has_note=True, add_lang=None, note_lang=None):
+        seen["args"] = (add_lang, note_lang)
+        return "add"
+
+    monkeypatch.setattr(app_mod, "ask_already_downloaded", fake_ask)
+    service = FakeService()
+    existing = dataclasses.replace(
+        done_result(tmp_path, already=True), addable_lang="pl", note_lang="en"
+    )
+    added = dataclasses.replace(
+        done_result(tmp_path), note_path=tmp_path / "T.pl.md", warnings=["Careful."]
+    )
+    service.download_results = [existing, added]
+    w = make_window(service=service, settings=Settings(output_dir=str(tmp_path)))
+    w.apply_info(zoo())
+    recent_before = list(w.settings.recent)
+    w.download_button.invoke()
+    pump(w, lambda: status(w).startswith("Done."), timeout=3)
+
+    first, second = (call[0] for call in service.download_calls)
+    assert (first.add_transcript, second.add_transcript, second.force) == (False, True, False)
+    assert seen["args"] == ("pl", "en")
+    assert status(w) == "Done. Saved T.pl.md · Careful."
+    assert w.settings.recent == recent_before
+    assert w.download_button.cget("state") == "normal"
 
 
 class FakeInstaller:
