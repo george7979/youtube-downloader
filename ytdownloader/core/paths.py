@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import sys
-import tempfile
 from pathlib import Path
 
 import platformdirs
@@ -46,8 +45,9 @@ def tools_dir() -> Path:
 
 def work_dir() -> Path:
     """Working directory for yt-dlp, which writes format-test files there; the app's own may be
-    read-only (Program Files when started from the Start Menu)."""
-    return Path(tempfile.gettempdir())
+    read-only (Program Files when started from the Start Menu). Private to the user, not the
+    shared temp: tools yt-dlp starts (Deno) read config files from their working directory."""
+    return _ensure(Path(platformdirs.user_cache_dir(**_app_kwargs())) / "work")
 
 
 def downloads_dir() -> Path:

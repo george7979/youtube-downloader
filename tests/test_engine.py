@@ -304,9 +304,15 @@ def test_runner_starts_the_child_in_the_work_dir(tmp_path, monkeypatch):
     assert Path(lines[0]).resolve() == work.resolve()
 
 
-def test_work_dir_is_writable():
+def test_work_dir_is_private_and_writable():
+    """Not the shared system temp: on Linux /tmp is open to every user, and tools yt-dlp starts
+    (Deno) look for their config in the working directory."""
+    import tempfile
+
     from ytdownloader.core import paths
 
+    assert paths.work_dir().resolve() != Path(tempfile.gettempdir()).resolve()
+    assert paths.work_dir().resolve().is_relative_to(Path.home().resolve())
     probe = paths.work_dir() / f"ytdl-probe-{os.getpid()}.tmp"
     probe.write_bytes(b"x")
     probe.unlink()

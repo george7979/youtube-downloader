@@ -208,6 +208,7 @@ albo gdy Deno nie odpowiada wersją ≥ 2.3.0.
 | ustawienia `settings.json` | `%APPDATA%\YouTube Downloader\` | `~/.config/youtube-downloader/` |
 | narzędzia `tools/{yt-dlp,ffmpeg,deno}/` | `%LOCALAPPDATA%\YouTube Downloader\tools\` | `~/.local/share/youtube-downloader/tools/` |
 | log `app.log` | `%LOCALAPPDATA%\YouTube Downloader\Logs\` | `~/.local/state/youtube-downloader/log/` |
+| katalog roboczy yt-dlp (pliki próbne, kasowane przez yt-dlp) | `%LOCALAPPDATA%\YouTube Downloader\Cache\work\` | `~/.cache/youtube-downloader/work/` |
 | domyślny folder pobierania | systemowy „Pobrane” | `~/Downloads` (wg XDG) |
 
 Deinstalator Windows usuwa całe `%LOCALAPPDATA%\YouTube Downloader\` (narzędzia, logi) i
@@ -245,7 +246,8 @@ Zweryfikowane na prawdziwych uruchomieniach (fixtury w `tests/fixtures/`).
   psuł ścieżki z polskimi znakami. Subprocesy dostają też `PYTHONUTF8=1`, a czytamy je
   `encoding="utf-8", errors="replace"`.
 - **`--` przed URL** — adres zaczynający się od `-` nigdy nie stanie się opcją.
-- **Katalog roboczy = `paths.work_dir()` (katalog tymczasowy systemu).** Gdy YouTube wymusza
+- **Katalog roboczy = `paths.work_dir()` (prywatny katalog cache użytkownika, nie wspólny
+  `/tmp` — Deno czyta konfigurację z katalogu roboczego).** Gdy YouTube wymusza
   SABR, yt-dlp sprawdza formaty HLS próbnym pobraniem do pliku `tmp*.tmp` w bieżącym katalogu.
   Aplikacja ze skrótu w menu Start ma bieżący katalog w Program Files, gdzie zapis jest
   zabroniony — yt-dlp wisiał wtedy na „Testing format” bez końca („Fetching video info…”).
