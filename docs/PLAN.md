@@ -2,7 +2,8 @@
 
 ## Stan
 
-- **Produkcja:** v2.0.0 (GitHub Releases, tag `v2.0.0`) — instalator Windows i paczka `.deb`.
+- **Produkcja:** v2.0.1 (GitHub Releases, tag `v2.0.1`) — instalator Windows i paczka `.deb`.
+  v2.0.1: okno właściwej wielkości na Linuksie z gęstym ekranem (zgłoszenie #10).
 - **`dev` = `main`** po wydaniu; nowe prace zaczynają się na `dev`.
 
 ## Etapy
@@ -34,18 +35,15 @@
 
 ## Bieżący krok
 
-Zgłoszenie #10 — za małe okno na Linuksie z gęstym ekranem: poprawione na `dev` (skala z
-`GDK_SCALE`/`Xft.dpi` i menu ⋯ → Size, TECH → Rozmiar okna), zaakceptowane przez PO na Pixelbooku
-(Crostini, Wayland: Auto wykrywa 200%). Wychodzi w v2.0.1; PR `dev` → `main` z `Fixes #10`
-zamknie zgłoszenie.
+Brak — v2.0.1 wydana. Kolejna praca: pozycja z backlogu albo uwaga użytkownika, na `dev`.
 
 ## Backlog
 
 - Podpis cyfrowy instalatora i `.exe` na Windows — certyfikat czeka na aktywację po stronie PO
-  (link w mailu PO). Potem: podpis w budowaniu, README bez uwagi „not digitally signed”, wydanie
-  v2.0.1.
+  (link w mailu PO). Potem: podpis w budowaniu, README bez uwagi „not digitally signed”, kolejne
+  wydanie.
 - Opis wydania z pliku: `CHANGELOG.md` w repo, z którego `build.yml` bierze sekcję wersji do
-  opisu wydania na GitHubie (dziś stały szablon, „What's new” v2.0.0 dopisane ręcznie). Przy v2.0.1.
+  opisu wydania na GitHubie (dziś stały szablon, „What's new” dopisywane ręcznie). Przy kolejnym wydaniu.
 - Dependabot tylko dla akcji GitHuba (`.github/dependabot.yml`, `github-actions`, co miesiąc,
   `target-branch: dev`); poprawki bezpieczeństwa bibliotek nadal ręcznie na `dev` z alertów.
 - Język dokumentów projektowych — otwarte, PO nie jest przekonany. Stała zasada: dokumentacja dla
