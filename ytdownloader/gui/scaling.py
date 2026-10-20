@@ -47,13 +47,22 @@ def linux_factor(env: Mapping[str, str], xresources: str | None) -> float:
     return 1.0
 
 
+def _load_x11():
+    # Tk has already loaded libX11 by its soname; find_library shells out to ldconfig and can
+    # come back empty inside a PyInstaller bundle.
+    try:
+        return ctypes.CDLL("libX11.so.6")
+    except OSError:
+        name = ctypes.util.find_library("X11")
+        return ctypes.CDLL(name) if name else None
+
+
 def read_xresources() -> str | None:
     """The X resource database (what `xrdb -query` prints), or None — never raises."""
     try:
-        name = ctypes.util.find_library("X11")
-        if not name:
+        x11 = _load_x11()
+        if x11 is None:
             return None
-        x11 = ctypes.CDLL(name)
         x11.XOpenDisplay.restype = ctypes.c_void_p
         x11.XOpenDisplay.argtypes = [ctypes.c_char_p]
         x11.XResourceManagerString.restype = ctypes.c_char_p

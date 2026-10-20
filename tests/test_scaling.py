@@ -46,8 +46,26 @@ def test_ui_factor_leaves_windows_and_macos_alone():
 
 
 def test_read_xresources_without_libx11(monkeypatch):
+    def missing(name):
+        raise OSError(f"{name}: cannot open shared object file")
+
+    monkeypatch.setattr(ctypes, "CDLL", missing)
     monkeypatch.setattr(ctypes.util, "find_library", lambda name: None)
     assert scaling.read_xresources() is None
+
+
+def test_libx11_loaded_by_soname_first(monkeypatch):
+    # find_library can come back empty inside a PyInstaller bundle although Tk loaded libX11.
+    opened = []
+
+    def cdll(name):
+        opened.append(name)
+        raise OSError("stop here")
+
+    monkeypatch.setattr(ctypes, "CDLL", cdll)
+    monkeypatch.setattr(ctypes.util, "find_library", lambda name: None)
+    scaling.read_xresources()
+    assert opened == ["libX11.so.6"]
 
 
 def test_read_xresources_never_raises(monkeypatch):
