@@ -1183,7 +1183,8 @@ def test_size_rescales_live_saves_and_refits(make_window, auto_scale_1, monkeypa
     w.set_size(2.0)
 
     assert w._get_window_scaling() == 2.0
-    assert float(w.tk.call("tk", "scaling")) == pytest.approx(2 * 96 / 72)
+    # Tk stores the scaling as whole screen millimetres, so it comes back slightly rounded.
+    assert float(w.tk.call("tk", "scaling")) == pytest.approx(2 * 96 / 72, rel=0.01)
     assert _no_side_effects[-1].ui_scale == 2.0
     from ytdownloader.gui.placement import FRAME
 
@@ -1192,7 +1193,7 @@ def test_size_rescales_live_saves_and_refits(make_window, auto_scale_1, monkeypa
     w.set_size(None)
 
     assert w._get_window_scaling() == 1.0
-    assert float(w.tk.call("tk", "scaling")) == pytest.approx(96 / 72)
+    assert float(w.tk.call("tk", "scaling")) == pytest.approx(96 / 72, rel=0.01)
     assert _no_side_effects[-1].ui_scale is None
     assert asked_size(asked) == (540, 600)
 
