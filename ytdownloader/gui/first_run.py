@@ -12,6 +12,7 @@ from ytdownloader import __version__
 from ytdownloader.core.errors import FriendlyError, friendly
 from ytdownloader.core.tools import OnBytes, ToolManager, ToolSpec
 
+from . import scaling
 from .placement import fit_window, max_height, work_area
 from .theme import ACCENT, DIM_TEXT, OUTLINE_BUTTON, apply_theme
 from .widgets import ErrorPanel, set_window_icon
@@ -39,6 +40,7 @@ class FirstRunWindow(ctk.CTk):
         ctk.set_appearance_mode("system")
         apply_theme()
         super().__init__()
+        scaling.sync_tk(self)
         self.tools = tools
         self.specs = list(specs)
         self.ok = False

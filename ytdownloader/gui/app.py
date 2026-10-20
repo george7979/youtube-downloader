@@ -45,7 +45,7 @@ from ytdownloader.core.settings import (
 from ytdownloader.core.tools import ToolManager, should_check_update
 from ytdownloader.core.urls import parse_video_id
 
-from . import system
+from . import scaling, system
 from .first_run import size_text
 from .placement import fit_window, work_area
 from .theme import DIM_TEXT, OUTLINE_BUTTON, TEXT_BUTTON, apply_theme, set_primary_enabled
@@ -126,6 +126,7 @@ class MainWindow(ctk.CTk):
         ctk.set_appearance_mode("system")
         apply_theme()
         super().__init__()
+        scaling.sync_tk(self)
         self.service = service
         self.tools = tools
         self.settings = settings
@@ -148,9 +149,7 @@ class MainWindow(ctk.CTk):
         self.recent_labels: list[ctk.CTkLabel] = []
 
         self.title(f"YouTube Downloader {__version__}")
-        place = fit_window(work_area(self), self._get_window_scaling())
-        self.minsize(place.min_width, place.min_height)
-        self.geometry(f"{place.width}x{place.height}+{place.x}+{place.y}")
+        self._fit_to_screen()
         set_window_icon(self)
 
         self._font_title = ctk.CTkFont(size=15, weight="bold")
@@ -369,16 +368,49 @@ class MainWindow(ctk.CTk):
         # Kept on self: Tk deletes a named font when its Python object is garbage-collected.
         self._font_menu = tkfont.nametofont("TkMenuFont").copy()
         self._font_menu.configure(size=MENU_FONT_SIZE)
-        pad = round(4 * self._get_window_scaling())
-        self.engine_menu = tk.Menu(
-            self, tearoff=False, font=self._font_menu, borderwidth=pad, activeborderwidth=pad
-        )
+        self.engine_menu = tk.Menu(self, tearoff=False, font=self._font_menu)
         for label, command in (
             ("Update engine", self.update_engine),
             ("Open log folder", self.open_log_folder),
-            ("About", self.about),
         ):
             self.engine_menu.add_command(label=f"  {label}    ", command=command)
+        menus = [self.engine_menu]
+        if scaling.is_linux():
+            # CustomTkinter detects no display scaling on Linux; let the user pick a size.
+            self.size_menu = tk.Menu(self.engine_menu, tearoff=False, font=self._font_menu)
+            self._size_var = tk.StringVar(master=self, value=str(self.settings.ui_scale or "auto"))
+            auto = round(scaling.ui_factor(None) * 100)
+            for value, label in ((None, f"Auto ({auto}%)"), *scaling.SIZES):
+                self.size_menu.add_radiobutton(
+                    label=f"  {label}    ",
+                    variable=self._size_var,
+                    value=str(value or "auto"),
+                    command=lambda v=value: self.set_size(v),
+                )
+            self.engine_menu.add_cascade(label="  Size    ", menu=self.size_menu)
+            menus.append(self.size_menu)
+        self.engine_menu.add_command(label="  About    ", command=self.about)
+        self._menus = menus
+        self._pad_menus()
+
+    def _pad_menus(self) -> None:
+        pad = round(4 * self._get_window_scaling())
+        for menu in self._menus:
+            menu.configure(borderwidth=pad, activeborderwidth=pad)
+
+    def _fit_to_screen(self) -> None:
+        place = fit_window(work_area(self), self._get_window_scaling())
+        self.minsize(place.min_width, place.min_height)
+        self.geometry(f"{place.width}x{place.height}+{place.x}+{place.y}")
+
+    def set_size(self, factor: float | None) -> None:
+        """Size menu (Linux): an explicit factor replaces detection, None goes back to auto."""
+        self.settings.ui_scale = factor
+        self._save_settings()
+        scaling.apply(scaling.ui_factor(factor))
+        scaling.sync_tk(self)
+        self._pad_menus()
+        self._fit_to_screen()
 
     def _open_menu(self) -> None:
         x = self.menu_button.winfo_rootx()

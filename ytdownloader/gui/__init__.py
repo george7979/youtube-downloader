@@ -99,9 +99,12 @@ def _run(reporter: CrashReporter) -> int:
     from ytdownloader.core.settings import load_settings
     from ytdownloader.core.tools import ToolManager
 
+    from . import scaling
     from .app import MainWindow
     from .first_run import FirstRunWindow
 
+    settings = load_settings()
+    scaling.apply(scaling.ui_factor(settings.ui_scale))
     tools = ToolManager()
     missing = tools.missing()
     if missing:
@@ -116,7 +119,7 @@ def _run(reporter: CrashReporter) -> int:
         if not ok:
             return 0
 
-    window = MainWindow(Service(tools), tools, load_settings())
+    window = MainWindow(Service(tools), tools, settings)
     reporter.attach(window)
     window.start_engine_status()
     window.mainloop()

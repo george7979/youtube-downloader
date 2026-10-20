@@ -72,6 +72,18 @@ przewijania jest ukryty, dopóki wszystko się mieści (`_on_body_scroll`). Okno
 pierwszego uruchomienia startuje tak samo (480×360) i rośnie (`_fit_content`, nigdy nie maleje),
 gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru roboczego.
 
+**Skalowanie na Linuksie** (`gui/scaling.py`): CustomTkinter wykrywa skalowanie tylko na Windows,
+na Linuksie zawsze przyjmuje 1. `run()` przed pierwszym oknem liczy skalę i podaje ją
+`ctk.set_widget_scaling`/`set_window_scaling`: zapisana `Settings.ui_scale` (menu ⋯ → Size), a bez
+niej `GDK_SCALE`, potem `Xft.dpi`/96 z bazy zasobów X (czytanej przez `libX11`
+`XResourceManagerString`, bez `xrdb`), zaokrąglone do 0,25, w granicach 1–3; bez sygnału 1.
+`_get_window_scaling()` zwraca wtedy tę skalę, więc `placement.py` liczy rozmiar bez zmian.
+Natywne części Tk (menu ⋯, okna komunikatów) mają czcionki w punktach, przeliczane przez
+`tk scaling` — `sync_tk` ustawia je na skalę × 96/72 zaraz po utworzeniu każdego okna.
+Zmiana w menu Size działa od razu: nowa skala, `tk scaling` (istniejące czcionki Tk przeliczają
+się same), odstępy menu i ponowne dopasowanie okna do ekranu. Windows i macOS bez zmian —
+`ui_factor` zwraca tam 1, a menu Size się nie pojawia.
+
 ### Wygląd i zachowanie okna
 
 - **Motyw** (`gui/theme.py`): `apply_theme()` nadpisuje domyślny niebieski CustomTkinter, zanim
@@ -109,6 +121,7 @@ gdy panel błędu się pojawi albo rozwinie szczegóły — do granicy obszaru r
 | `widgets.py` | `ErrorPanel`, dialog „Already downloaded”, About, `set_window_icon` |
 | `theme.py` | kolory i style przycisków, `apply_theme`, `set_primary_enabled` |
 | `placement.py` | rozmiar i położenie okna z obszaru roboczego ekranu |
+| `scaling.py` | skala okna na Linuksie: `GDK_SCALE`/`Xft.dpi` albo wybór z menu Size; `tk scaling` dla natywnych części Tk |
 | `worker.py` | `UiQueue`: praca w tle, wyniki do wątku Tk przez `after` |
 | `system.py` | otwarcie folderu, pokazanie pliku w Eksploratorze |
 
@@ -453,3 +466,7 @@ Znane, jeszcze niepoprawione; najpierw te widoczne dla użytkownika.
 - Świadomie: yt-dlp z kanału stabilnego, nie nightly.
 - Świadomie: aplikacja nie prowadzi historii pobrań — „Recent” to trzy ostatnie
   pozycje w ustawieniach, a stan „już pobrano” wynika z plików w folderze.
+- Świadomie: skala na Linuksie tylko z sygnałów pulpitu (`GDK_SCALE`, `Xft.dpi`), nie z fizycznych
+  milimetrów ekranu zgłaszanych przez serwer X — te bywają zmyślone (stałe 96 dpi, telewizory).
+  Pulpit, który nic nie podaje (np. GNOME na Waylandzie skaluje okna X sam), dostaje 100%; gdy
+  okno mimo to jest za małe, zostaje ręczny wybór w menu Size.
