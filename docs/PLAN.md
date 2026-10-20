@@ -34,11 +34,10 @@
 
 ## Bieżący krok
 
-Zgłoszenie #10 — za małe okno na Linuksie z gęstym ekranem. Na `dev`: skala z `GDK_SCALE`/`Xft.dpi`
-i menu ⋯ → Size (TECH → Rozmiar okna). Test PO na Pixelbooku (Crostini, Wayland): Auto
-wykrywa 200%, okno duże. Czeka na potwierdzenie, że rozmiar jest jak w innych aplikacjach,
-i akceptację pozycji Size, której nie ma w makietach. Wydanie razem z v2.0.1; PR do `main`
-z `Fixes #10` zamknie zgłoszenie.
+Zgłoszenie #10 — za małe okno na Linuksie z gęstym ekranem: poprawione na `dev` (skala z
+`GDK_SCALE`/`Xft.dpi` i menu ⋯ → Size, TECH → Rozmiar okna), zaakceptowane przez PO na Pixelbooku
+(Crostini, Wayland: Auto wykrywa 200%). Wychodzi w v2.0.1; PR `dev` → `main` z `Fixes #10`
+zamknie zgłoszenie.
 
 ## Backlog
 

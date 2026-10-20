@@ -51,7 +51,7 @@ po stronie YouTube.
 12. Okno czytelnej wielkości na każdym ekranie, także gęstym (HiDPI). Windows skaluje okno sam;
     na Linuksie aplikacja bierze skalę z tego, co pulpit podaje innym programom, a gdy pulpit nic
     nie podaje albo podaje źle, użytkownik wybiera rozmiar ręcznie (⋯ → Size, 100–200%,
-    pamiętany). Pozycji Size nie ma w makietach — odstępstwo do akceptacji PO.
+    pamiętany). Pozycji Size nie ma w makietach — odstępstwo zaakceptowane przez PO (zgłoszenie #10).
 
 ## Poza zakresem
 
